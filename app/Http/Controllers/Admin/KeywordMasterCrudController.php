@@ -18,7 +18,7 @@ class KeywordMasterCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\KeywordMaster::class);
+        CRUD::setModel(\App\Models\Utilities\KeyValue\KeywordMaster::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/keyword-master');
         CRUD::setEntityNameStrings('keyword', 'keywords');
     }

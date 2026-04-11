@@ -18,7 +18,7 @@ class ProcessCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Process::class);
+        CRUD::setModel(\App\Models\IAM\Process::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/process');
         CRUD::setEntityNameStrings('process', 'processes');
     }

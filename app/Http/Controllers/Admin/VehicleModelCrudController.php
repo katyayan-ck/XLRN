@@ -15,7 +15,7 @@ class VehicleModelCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\VehicleModel::class);
+        CRUD::setModel(\App\Models\Vehicle\VehicleModel::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/vehicle-model');
         CRUD::setEntityNameStrings('vehicle model', 'vehicle models');
     }

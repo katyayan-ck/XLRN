@@ -9,8 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Throwable;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Core\Document;
-use App\Models\Core\DocGroup;
+use App\Models\Utilities\Docs\Document;
+use App\Models\Utilities\Docs\DocGroup;
 
 /**
  * @OA\Tag(

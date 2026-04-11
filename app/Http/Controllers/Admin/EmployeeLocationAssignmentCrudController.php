@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Employee;
-use App\Models\Core\Location;
-use App\Models\Core\Branch;
+use App\Models\Admin\Employee;
+use App\Models\Admin\Location;
+use App\Models\Admin\Branch;
 
 class EmployeeLocationAssignmentCrudController extends CrudController
 {

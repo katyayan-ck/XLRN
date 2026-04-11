@@ -15,7 +15,7 @@ class SubSegmentCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\SubSegment::class);
+        CRUD::setModel(\App\Models\Vehicle\SubSegment::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/sub-segment');
         CRUD::setEntityNameStrings('sub segment', 'sub segments');
     }

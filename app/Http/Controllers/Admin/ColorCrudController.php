@@ -15,7 +15,7 @@ class ColorCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Color::class);
+        CRUD::setModel(\App\Models\Vehicle\Color::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/color');
         CRUD::setEntityNameStrings('color', 'colors');
     }

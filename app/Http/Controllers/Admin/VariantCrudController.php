@@ -15,7 +15,7 @@ class VariantCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Variant::class);
+        CRUD::setModel(\App\Models\Vehicle\Variant::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/variant');
         CRUD::setEntityNameStrings('variant', 'variants');
     }

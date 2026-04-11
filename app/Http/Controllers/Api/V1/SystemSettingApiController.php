@@ -7,7 +7,7 @@ use App\Exceptions\AuthorizationException;
 use App\Exceptions\ResourceNotFoundException;
 use App\Exceptions\ValidationException;
 use App\Http\Controllers\BaseController;
-use App\Models\Core\SystemSetting;
+use App\Models\Utilities\Settings\SystemSetting;
 use App\Services\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

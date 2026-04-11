@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Core\{Notification, Alert, Message,  UserDeviceToken};
+use App\Models\Utilities\Noty\{Notification, Alert, Message};
+use App\Models\IAM\UserDeviceToken;
 use App\Models\User;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;

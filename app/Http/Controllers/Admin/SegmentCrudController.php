@@ -15,7 +15,7 @@ class SegmentCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Segment::class);
+        CRUD::setModel(\App\Models\Vehicle\Segment::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/segment');
         CRUD::setEntityNameStrings('segment', 'segments');
     }

@@ -21,7 +21,7 @@ class BranchCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Branch::class);
+        CRUD::setModel(\App\Models\Admin\Branch::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/branch');
         CRUD::setEntityNameStrings('branch', 'branches');
     }
@@ -35,7 +35,7 @@ class BranchCrudController extends CrudController
     {
         $this->crud->setListView('admin.branch.list');
 
-        $branches = \App\Models\Core\Branch::select([
+        $branches = \App\Models\Admin\Branch::select([
             'id',
             'code',
             'name',

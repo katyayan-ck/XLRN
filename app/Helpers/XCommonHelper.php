@@ -21,8 +21,8 @@ use App\Models\X_Vertical;
 use App\Models\PinCodes;
 use App\Models\XlFeeCollection;
 use App\Models\XlSpareClosure;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\IAM\Role;
+use Spatie\Permission\Models\IAM\Permission;
 use Illuminate\Support\Facades\Log;
 
 

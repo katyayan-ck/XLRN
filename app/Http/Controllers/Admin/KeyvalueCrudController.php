@@ -18,7 +18,7 @@ class KeyValueCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Keyvalue::class);
+        CRUD::setModel(\App\Models\Utilities\KeyValue\Keyvalue::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/keyvalue');
         CRUD::setEntityNameStrings('key-value', 'key-values');
     }

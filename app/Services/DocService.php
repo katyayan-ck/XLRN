@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\Core\Document;
-use App\Models\Core\DocGroup;
-use App\Models\Core\DocAccess;
+use App\Models\Utilities\Docs\Document;
+use App\Models\Utilities\Docs\DocGroup;
+use App\Models\Utilities\Docs\DocAccess;
 use App\Services\KeywordValueService;
 use App\Services\EntityHistoryService;
 use App\Services\NotificationService;

@@ -11,6 +11,8 @@ class ApprovalHierarchy extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
+
+    protected $table = 'xlr8_approval_hierarchies';
     protected $fillable = [
         'approver_id',
         'level',

@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Core\{Branch, Location, Department, Employee,  Enquiry, Booking, Sale};
+use App\Models\Admin\{Branch, Location, Department, Employee};
+use App\Models\Core\{Enquiry, Booking, Sale};
 use App\Models\User;
 use App\Services\{RBACService, DataScopeService};
 use Backpack\CRUD\app\Http\Controllers\CrudController;

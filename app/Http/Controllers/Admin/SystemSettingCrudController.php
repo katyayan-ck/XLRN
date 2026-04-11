@@ -16,7 +16,7 @@ class SystemSettingCrudController extends CrudController
 
     public function setup()
     {
-        $this->crud->setModel(\App\Models\Core\SystemSetting::class);
+        $this->crud->setModel(\App\Models\Utilities\Settings\SystemSetting::class);
         $this->crud->setRoute(config('backpack.base.route_prefix') . '/system-settings');
         $this->crud->setEntityNameStrings('system setting', 'system settings');
 

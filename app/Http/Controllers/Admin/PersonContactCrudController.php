@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Person;
-use App\Models\Core\PersonContact;
+use App\Models\Admin\Person;
+use App\Models\Admin\PersonContact;
 
 class PersonContactCrudController extends CrudController
 {
