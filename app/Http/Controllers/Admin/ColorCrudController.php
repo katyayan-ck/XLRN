@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use Backpack\CRUD\app\Http\Controllers\CrudController;
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Illuminate\Http\Request;
+
+class ColorCrudController extends CrudController
+{
+    use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
+
+    public function setup()
+    {
+        CRUD::setModel(\App\Models\Core\Color::class);
+        CRUD::setRoute(config('backpack.base.route_prefix') . '/color');
+        CRUD::setEntityNameStrings('color', 'colors');
+    }
+
+    protected function setupListOperation()
+    {
+        $this->crud->setListView('admin.color.list');
+    }
+
+    public function index()
+    {
+        $this->crud->setListView('admin.color.list');
+
+        $colors = \App\Models\Core\Color::with('brand')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $gridData = $colors->map(function ($color, $index) {
+            $mapped = $color->toArray();
+            $mapped['serial_no'] = $index + 1;
+            $mapped['brand'] = $color->brand?->name ?? '—';
+
+            $editUrl = backpack_url("color/{$color->id}/edit");
+
+            $mapped['action'] = '
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="' . $editUrl . '"
+                       class="btn btn-sm btn-primary py-1 px-2"
+                       title="Edit">
+                         Edit
+                    </a>
+                </div>
+            ';
+
+            $mapped['is_active'] = $color->is_active ? 'Active' : 'Inactive';
+
+            return $mapped;
+        })->values();
+
+        return view('admin.color.list', [
+            'title' => 'All Colors',
+            'gridConfig' => [
+                'columns' => [
+                    ['field' => 'serial_no', 'headerName' => 'S.No'],
+                    ['field' => 'brand',     'headerName' => 'Brand'],
+                    ['field' => 'name',      'headerName' => 'Color Name'],
+                    ['field' => 'code',      'headerName' => 'Color Code'],
+                    ['field' => 'hex_code',  'headerName' => 'Hex Code'],
+                    ['field' => 'is_active', 'headerName' => 'Active'],
+                    ['field' => 'action',    'headerName' => 'Actions']
+                ],
+                'data' => $gridData
+            ]
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $this->crud->setEditView('admin.color.edit');
+
+        $color = \App\Models\Core\Color::findOrFail($id);
+
+        return view('admin.color.edit', [
+            'title'  => 'Edit Color - ' . $color->name,
+            'color'  => $color,
+            'brands' => \App\Models\Core\Brand::orderBy('name')->get()
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $color = \App\Models\Core\Color::findOrFail($id);
+
+        $validated = $request->validate([
+            'brand_id' => 'required|exists:brands,id',
+            'name'     => 'required|string|max:255',
+            'code'     => 'required|string|max:50|unique:colors,code,' . $id,
+            'hex_code' => 'required|string|max:7',
+            'is_active' => 'boolean',
+        ]);
+
+        $color->update($validated);
+
+        \Alert::success('Color updated successfully!')->flash();
+
+        return redirect(backpack_url('color'));
+    }
+
+    public function create()
+    {
+        $this->crud->setCreateView('admin.color.create');
+
+        return view('admin.color.create', [
+            'title'  => 'Add New Color',
+            'brands' => \App\Models\Core\Brand::orderBy('name')->get()
+        ]);
+    }
+}

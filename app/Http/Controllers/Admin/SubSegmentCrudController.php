@@ -1,0 +1,118 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use Backpack\CRUD\app\Http\Controllers\CrudController;
+use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Illuminate\Http\Request;
+
+class SubSegmentCrudController extends CrudController
+{
+    use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
+
+    public function setup()
+    {
+        CRUD::setModel(\App\Models\Core\SubSegment::class);
+        CRUD::setRoute(config('backpack.base.route_prefix') . '/sub-segment');
+        CRUD::setEntityNameStrings('sub segment', 'sub segments');
+    }
+
+    protected function setupListOperation()
+    {
+        $this->crud->setListView('admin.sub-segment.list');
+    }
+
+    public function index()
+    {
+        $this->crud->setListView('admin.sub-segment.list');
+
+        $subsegments = \App\Models\Core\SubSegment::with(['segment.brand'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $gridData = $subsegments->map(function ($item, $index) {
+            $mapped = $item->toArray();
+            $mapped['serial_no'] = $index + 1;
+            $mapped['brand']     = $item->segment?->brand?->name ?? '—';
+            $mapped['segment']   = $item->segment?->name ?? '—';
+
+            $editUrl = backpack_url("sub-segment/{$item->id}/edit");
+
+            $mapped['action'] = '
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="' . $editUrl . '"
+                       class="btn btn-sm btn-primary py-1 px-2"
+                       title="Edit">
+                         Edit
+                    </a>
+                </div>
+            ';
+
+            $mapped['is_active'] = $item->is_active ? 'Active' : 'Inactive';
+
+            return $mapped;
+        })->values();
+
+        return view('admin.sub-segment.list', [
+            'title' => 'All Sub Segments',
+            'gridConfig' => [
+                'columns' => [
+                    ['field' => 'serial_no',   'headerName' => 'S.No'],
+                    ['field' => 'code',        'headerName' => 'Code'],
+                    ['field' => 'name',        'headerName' => 'Sub Segment Name'],
+                    ['field' => 'brand',       'headerName' => 'Brand'],
+                    ['field' => 'segment',     'headerName' => 'Segment'],
+                    ['field' => 'description', 'headerName' => 'Description'],
+                    ['field' => 'is_active',   'headerName' => 'Active'],
+                    ['field' => 'action',      'headerName' => 'Actions']
+                ],
+                'data' => $gridData
+            ]
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $this->crud->setEditView('admin.sub-segment.edit');
+
+        $subsegment = \App\Models\Core\SubSegment::with('segment.brand')->findOrFail($id);
+
+        return view('admin.sub-segment.edit', [
+            'title'      => 'Edit Sub Segment - ' . $subsegment->name,
+            'subsegment' => $subsegment,
+            'segments'   => \App\Models\Core\Segment::with('brand')->orderBy('name')->get()
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $subsegment = \App\Models\Core\SubSegment::findOrFail($id);
+
+        $validated = $request->validate([
+            'segment_id'  => 'required|exists:segments,id',
+            'name'        => 'required|string|max:255',
+            'code'        => 'required|string|size:5|unique:sub_segments,code,' . $id . ',id,segment_id,' . $request->segment_id,
+            'description' => 'nullable|string',
+            'is_active'   => 'boolean',
+        ]);
+
+        $subsegment->update($validated);
+
+        \Alert::success('Sub Segment updated successfully!')->flash();
+
+        return redirect(backpack_url('sub-segment'));
+    }
+
+    public function create()
+    {
+        $this->crud->setCreateView('admin.sub-segment.create');
+
+        return view('admin.sub-segment.create', [
+            'title'    => 'Add New Sub Segment',
+            'segments' => \App\Models\Core\Segment::with('brand')->orderBy('name')->get()
+        ]);
+    }
+}

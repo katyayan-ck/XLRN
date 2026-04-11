@@ -1,0 +1,100 @@
+@extends(backpack_view('blank'))
+
+@section('title', 'Edit Designation - ' . $designation->name)
+
+@push('after_styles')
+<style>
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+    }
+
+    .readonly-value {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        padding: 10px 15px;
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-black">
+                    <h2 class="mb-0">Edit Designation Information</h2>
+                </div>
+                <div class="card-body">
+
+                    <form method="POST" action="{{ backpack_url('designation/' . $designation->id) }}">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="row">
+                            <!-- Read Only -->
+                            <div class="col-md-12 mb-4">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Designation ID</label>
+                                        <div class="readonly-value">{{ $designation->id }}</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Created At</label>
+                                        <div class="readonly-value">
+                                            {{ $designation->created_at?->format('d-m-Y H:i') ?? '—' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label>Designation Code <span class="text-danger">*</span></label>
+                                <input type="text" name="code" class="form-control"
+                                    value="{{ old('code', $designation->code) }}" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label>Designation Name <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control"
+                                    value="{{ old('name', $designation->name) }}" required>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label>Description</label>
+                                <textarea name="description" class="form-control"
+                                    rows="4">{{ old('description', $designation->description) }}</textarea>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Is Active?</label>
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="is_active" value="0">
+                                    <input type="checkbox" name="is_active" value="1" class="form-check-input" {{
+                                        old('is_active', $designation->is_active) ? 'checked' : '' }}>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success btn-lg px-5">
+                                <i class="la la-save"></i> Update Designation
+                            </button>
+                            <a href="{{ backpack_url('designation') }}" class="btn btn-secondary btn-lg">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
