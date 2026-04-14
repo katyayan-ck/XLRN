@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
@@ -19,7 +19,7 @@ class XlDelivery extends BaseModel  implements HasMedia
      */
     use SoftDeletes;
     use InteractsWithMedia;
-    protected $table = 'xcelr8_booking_delivered';
+    protected $table = 'xlr8_booking_delivered';
 
     /**
      * The attributes to be fillable from the model.

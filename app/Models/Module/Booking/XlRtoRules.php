@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
@@ -13,7 +13,7 @@ class XlRtoRules extends BaseModel
      * @var string
      */
     use SoftDeletes;
-    protected $table = 'xcelr8_rto_rules';
+    protected $table = 'xlr8_booking_rto_rules';
 
     /**
      * The attributes to be fillable from the model.

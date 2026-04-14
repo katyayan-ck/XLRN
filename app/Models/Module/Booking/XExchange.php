@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -8,7 +8,7 @@ class XExchange extends BaseModel
 {
     use SoftDeletes;
 
-    protected $table = 'xcelr8_exchange';
+    protected $table = 'xlr8_booking_exchange';
     protected $fillable = [];
     protected $guarded = ['id'];
 

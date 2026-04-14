@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
@@ -13,7 +13,7 @@ class X_Vh_Order extends BaseModel
 	 * @var string
 	 */
 	use SoftDeletes;
-	protected $table = 'xcelr8_order_master';
+	protected $table = 'xlr8_booking_order_master';
 
 	/**
 	 * The attributes to be fillable from the model.

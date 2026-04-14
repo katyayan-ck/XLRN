@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,7 @@ class XFinance extends BaseModel  implements HasMedia
 {
     use SoftDeletes;
 
-    protected $table = 'xcelr8_finance';
+    protected $table = 'xlr8_booking_finance';
     protected $fillable = [];
     protected $guarded = ['id'];
 

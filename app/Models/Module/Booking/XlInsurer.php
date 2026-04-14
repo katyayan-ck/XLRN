@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
@@ -9,8 +9,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\Traits\HasHashedMediaTrait;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-
-class XlRto extends BaseModel  implements HasMedia
+class Xlinsurer extends  BaseModel  implements HasMedia
 {
     /**
      * The database table used by the model.
@@ -19,7 +18,7 @@ class XlRto extends BaseModel  implements HasMedia
      */
     use SoftDeletes;
     use InteractsWithMedia;
-    protected $table = 'xcelr8_booking_rto';
+    protected $table = 'xlr8_booking_insurer';
 
     /**
      * The attributes to be fillable from the model.
@@ -39,20 +38,7 @@ class XlRto extends BaseModel  implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('trc_copy')
-            ->registerMediaConversions(function (Media $media) {
-                $this->addMediaConversion('thumb250')
-                    ->width(250)
-                    ->height(250)
-                    ->quality(70);
-
-                $this->addMediaConversion('thumb100')
-                    ->width(100)
-                    ->height(100)
-                    ->quality(70);
-            });
-
-        $this->addMediaCollection('tax_receipt_copy')
+        $this->addMediaCollection('policy_copy')
             ->registerMediaConversions(function (Media $media) {
                 $this->addMediaConversion('thumb250')
                     ->width(250)

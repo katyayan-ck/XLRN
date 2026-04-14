@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,7 +17,7 @@ class Booking extends BaseModel  implements HasMedia
     use SoftDeletes;
     use InteractsWithMedia;
     //protected Carpdates = ['booking_date'];
-    protected $table = 'xcelr8_booking_master';
+    protected $table = 'xlr8_booking_master';
     protected $fillable = [];
     protected $guarded = ['id'];
 

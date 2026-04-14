@@ -2,7 +2,7 @@
 
 
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 
 
@@ -28,7 +28,7 @@ class Xessories extends BaseModel
 
     use SoftDeletes;
 
-    protected $table = 'xcelr8_accessories';
+    protected $table = 'xlr8_booking_accessories';
     protected $transformations = [
         'segment' => 'strtoupper',
         'model' => 'strtoupper',

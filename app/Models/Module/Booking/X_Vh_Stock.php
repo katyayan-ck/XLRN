@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 class XVehicleStock extends BaseModel
 {
-	use SoftDeletes;
+use SoftDeletes;
 
-	protected $table = 'xcelr8_stock_master';
+protected $table = 'xlr8_booking_stock_master';
 	protected $fillable = [];
 	protected $guarded = ['id'];
 
@@ -54,6 +54,7 @@ class XVehicleStock extends BaseModel
 		$locations = Location::whereNull('deleted_at')->pluck('abbr', 'id')->toArray();
 
 		$branchColumns = [];
+		   ///
 		foreach ($branches as $id => $abbr) {
 			$sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
 			$branchColumns["stock_branch_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_stock_master.branch_id = $id THEN xcelr8_stock_master.id END)");
