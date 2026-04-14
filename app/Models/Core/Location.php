@@ -13,7 +13,7 @@ class Location extends BaseModel
     protected $table = 'locations';
     public $scopeType = 'location';
     protected $fillable = [
-        'branch_id',
+        'branch_code',
         'code',
         'name',
         'description',

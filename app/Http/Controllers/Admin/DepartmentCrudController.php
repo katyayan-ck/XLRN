@@ -46,6 +46,8 @@ class DepartmentCrudController extends CrudController
         $gridData = $departments->map(function ($dept, $index) {
             $mapped = $dept->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $dept->is_active ? 'Active' : 'Inactive';
+
             $mapped['branch'] = $dept->branch?->name ?? '—';
 
             $editUrl = backpack_url("department/{$dept->id}/edit");

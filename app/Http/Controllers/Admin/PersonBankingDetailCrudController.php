@@ -41,6 +41,7 @@ class PersonBankingDetailCrudController extends CrudController
                 'ifsc_code',
                 'account_type',
                 'branch_name',
+                'swift_code',
                 'is_primary',
                 'is_verified'
             ])
@@ -50,6 +51,8 @@ class PersonBankingDetailCrudController extends CrudController
         $gridData = $bankings->map(function ($banking, $index) {
             $mapped = $banking->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_primary'] = $banking->is_primary ? 'Primary' : 'Secondary';
+            $mapped['is_verified'] = $banking->is_verified ? 'Verified' : 'Not Verified';
             $mapped['person_name'] = $banking->person
                 ? $banking->person->first_name . ' ' . $banking->person->last_name
                 : '—';
@@ -74,6 +77,8 @@ class PersonBankingDetailCrudController extends CrudController
                     ['field' => 'account_holder_name', 'headerName' => 'Account Holder'],
                     ['field' => 'account_number',      'headerName' => 'Account Number'],
                     ['field' => 'ifsc_code',           'headerName' => 'IFSC Code'],
+                    ['field' => 'branch_name',         'headerName' => 'Branch Name'],     // ← Added
+                    ['field' => 'swift_code',          'headerName' => 'Swift Code'],      // ← Added
                     ['field' => 'account_type',        'headerName' => 'Account Type'],
                     ['field' => 'is_primary',          'headerName' => 'Primary'],
                     ['field' => 'is_verified',         'headerName' => 'Verified'],
@@ -101,9 +106,9 @@ class PersonBankingDetailCrudController extends CrudController
         $validated = $request->validate([
             'person_id'           => 'required|exists:persons,id',
             'bank_name'           => 'required|string|max:255',
-            'account_holder_name' => 'required|string|max:255',
-            'account_number'      => 'required|string|max:50',
-            'ifsc_code'           => 'required|string|max:20',
+            'account_holder_name' => 'required|string|max:255|regex:/^[a-zA-Z\s.]+$/u', // Letters, space, dot only
+            'account_number'      => 'required|numeric|digits_between:8,20',           // Only numbers, 8-20 digits
+            'ifsc_code'           => 'required|string|size:11|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/', // Strict IFSC format
             'account_type'        => 'required|in:savings,current,fd,rd,other',
             'branch_name'         => 'nullable|string|max:255',
             'swift_code'          => 'nullable|string|max:50',
@@ -139,9 +144,9 @@ class PersonBankingDetailCrudController extends CrudController
         $validated = $request->validate([
             'person_id'           => 'required|exists:persons,id',
             'bank_name'           => 'required|string|max:255',
-            'account_holder_name' => 'required|string|max:255',
-            'account_number'      => 'required|string|max:50',
-            'ifsc_code'           => 'required|string|max:20',
+            'account_holder_name' => 'required|string|max:255|regex:/^[a-zA-Z\s.]+$/u',
+            'account_number'      => 'required|numeric|digits_between:8,20',
+            'ifsc_code'           => 'required|string|size:11|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/',
             'account_type'        => 'required|in:savings,current,fd,rd,other',
             'branch_name'         => 'nullable|string|max:255',
             'swift_code'          => 'nullable|string|max:50',

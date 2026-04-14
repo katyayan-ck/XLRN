@@ -53,17 +53,17 @@ class BranchCrudController extends CrudController
             $mapped = $branch->toArray();
             $mapped['serial_no'] = $index + 1;
 
+            // Show Active / Inactive
+            $mapped['is_active'] = $branch->is_active ? 'Active' : 'Inactive';
+            $mapped['is_head_office'] = $branch->is_head_office ? 'Yes' : 'No';
+
             $editUrl = backpack_url("branch/{$branch->id}/edit");
 
             $mapped['action'] = '
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="' . $editUrl . '"
-                       class="btn btn-sm btn-primary py-1 px-2"
-                       title="Edit">
-                         Edit
-                    </a>
-                </div>
-            ';
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
+            </div>
+        ';
             return $mapped;
         })->values();
 
@@ -81,7 +81,7 @@ class BranchCrudController extends CrudController
                     ['field' => 'state',          'headerName' => 'State'],
                     ['field' => 'pincode',        'headerName' => 'Pincode'],
                     ['field' => 'is_head_office', 'headerName' => 'Head Office'],
-                    ['field' => 'is_active',      'headerName' => 'Active'],
+                    ['field' => 'is_active',      'headerName' => 'Status'],
                     ['field' => 'action',         'headerName' => 'Actions']
                 ],
                 'data' => $gridData

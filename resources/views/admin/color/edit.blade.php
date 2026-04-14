@@ -82,13 +82,16 @@
                             <div class="col-md-4 mb-3">
                                 <label>Color Code <span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control text-uppercase"
-                                    value="{{ old('code', $color->code) }}" style="text-transform: uppercase;" required>
+                                    value="{{ old('code', $color->code) }}" style="text-transform: uppercase;"
+                                    pattern="[A-Za-z]+"
+                                    title="Only alphabets allowed (no numbers or special characters)" required>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label>Hex Code <span class="text-danger">*</span></label>
                                 <input type="text" name="hex_code" class="form-control"
-                                    value="{{ old('hex_code', $color->hex_code) }}" placeholder="#FF0000" required>
+                                    value="{{ old('hex_code', $color->hex_code) }}" placeholder="#FF0000"
+                                    pattern="^#[0-9A-Fa-f]{6}$" title="Enter valid hex code like #FF0000" required>
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -115,3 +118,15 @@
     </div>
 </div>
 @endsection
+<script>
+    document.querySelector('input[name="hex_code"]').addEventListener('input', function() {
+    const val = this.value;
+    const preview = document.getElementById('colorPreview');
+
+    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        preview.style.backgroundColor = val;
+    } else {
+        preview.style.backgroundColor = 'transparent';
+    }
+});
+</script>

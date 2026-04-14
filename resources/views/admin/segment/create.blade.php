@@ -57,13 +57,13 @@
                                 <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                             </div>
 
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-11 mb-3">
                                 <label>Description</label>
                                 <textarea name="description" class="form-control"
                                     rows="3">{{ old('description') }}</textarea>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_active" value="0">

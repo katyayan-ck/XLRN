@@ -63,9 +63,9 @@
                                     value="{{ old('code', $person->code) }}" required>
                             </div>
 
-                            <div class="col-md-2 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Salutation</label>
-                                <select name="salutation" class="form-control">
+                                <select name="salutation" class="form-control form-select">
                                     <option value="">Select</option>
                                     <option value="Mr" {{ old('salutation', $person->salutation) == 'Mr' ? 'selected' :
                                         '' }}>Mr</option>
@@ -78,33 +78,33 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-7 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Display Name</label>
                                 <input type="text" name="display_name" class="form-control"
                                     value="{{ old('display_name', $person->display_name) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>First Name <span class="text-danger">*</span></label>
                                 <input type="text" name="first_name" class="form-control"
                                     value="{{ old('first_name', $person->first_name) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Middle Name</label>
                                 <input type="text" name="middle_name" class="form-control"
                                     value="{{ old('middle_name', $person->middle_name) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Last Name <span class="text-danger">*</span></label>
+                            <div class="col-md-3 mb-3">
+                                <label>Last Name </label>
                                 <input type="text" name="last_name" class="form-control"
                                     value="{{ old('last_name', $person->last_name) }}" required>
                             </div>
 
                             <div class="col-md-3 mb-3">
                                 <label>Gender</label>
-                                <select name="gender" class="form-control">
+                                <select name="gender" class="form-control form-select">
                                     <option value="">Select</option>
                                     <option value="male" {{ old('gender', $person->gender) == 'male' ? 'selected' : ''
                                         }}>Male</option>
@@ -123,22 +123,24 @@
                                     value="{{ old('dob', $person->dob?->format('Y-m-d')) }}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Occupation</label>
                                 <input type="text" name="occupation" class="form-control"
                                     value="{{ old('occupation', $person->occupation) }}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label>Email Primary</label>
-                                <input type="email" name="email_primary" class="form-control"
+                            <div class="col-md-4 mb-3">
+                                <label>Email Primary <span class="text-danger">*</span></label>
+                                <input type="email" name="email_primary" class="form-control" required
                                     value="{{ old('email_primary', $person->email_primary) }}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label>Mobile Primary</label>
-                                <input type="text" name="mobile_primary" class="form-control"
-                                    value="{{ old('mobile_primary', $person->mobile_primary) }}">
+                            <div class="col-md-4 mb-3">
+                                <label>Mobile Primary <span class="text-danger">*</span> <small class="text-muted">(10
+                                        digits only)</small></label>
+                                <input type="text" name="mobile_primary" class="form-control" required
+                                    value="{{ old('mobile_primary', $person->mobile_primary) }}" pattern="[0-9]{10}"
+                                    maxlength="10" title="Please enter exactly 10 digits">
                             </div>
                         </div>
 

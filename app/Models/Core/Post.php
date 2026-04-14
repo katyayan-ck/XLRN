@@ -6,14 +6,16 @@ use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Employee extends BaseModel
+
+class Post extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
-    protected $table = 'employees';
+    protected $table = 'posts';
 
     protected $fillable = [
         'code',
+        'title',
         'person_id',
         'designation_id',
         'primary_branch_id',

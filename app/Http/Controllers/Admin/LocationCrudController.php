@@ -31,12 +31,12 @@ class LocationCrudController extends CrudController
     {
         $this->crud->setListView('admin.location.list');
 
-        $locations = Location::with('branch')
+        $locations = Location::with('branch')   // relationship must work
             ->select([
                 'id',
                 'code',
                 'name',
-                'branch_id',
+                'branch_code',
                 'city',
                 'state',
                 'pincode',
@@ -48,7 +48,11 @@ class LocationCrudController extends CrudController
         $gridData = $locations->map(function ($loc, $index) {
             $mapped = $loc->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['branch'] = $loc->branch?->name ?? '—';
+            $mapped['is_active'] = $loc->is_active ? 'Active' : 'Inactive';
+
+
+            // Show Branch Name in List (Important)
+            $mapped['branch'] = $loc->branch?->name ?? $loc->branch_code ?? '—';
 
             $editUrl = backpack_url("location/{$loc->id}/edit");
 
@@ -81,7 +85,6 @@ class LocationCrudController extends CrudController
     public function create()
     {
         $this->crud->setCreateView('admin.location.create');
-
         return view('admin.location.create', [
             'title'    => 'Add New Location',
             'branches' => Branch::orderBy('name')->get(),
@@ -90,15 +93,17 @@ class LocationCrudController extends CrudController
 
     public function store(Request $request)
     {
+        // print_r($request->all()); // Debugging line, remove in production
+        // die();
         $validated = $request->validate([
-            'code'      => 'required|string|unique:locations,code',
-            'name'      => 'required|string|max:255',
-            'branch_id' => 'required|exists:branches,id',
-            'city'      => 'nullable|string',
-            'state'     => 'nullable|string',
-            'pincode'   => 'nullable|string',
-            'address'   => 'nullable|string',
-            'is_active' => 'boolean',
+            'code'        => 'required|string|unique:locations,code',
+            'name'        => 'required|string|max:255',
+            'branch_code' => 'required|exists:branches,code',   // ← Ye line important hai
+            'city'        => 'nullable|string',
+            'state'       => 'nullable|string',
+            'pincode'     => 'nullable|string',
+            'address'     => 'nullable|string',
+            'is_active'   => 'boolean',
         ]);
 
         Location::create($validated);
@@ -113,10 +118,14 @@ class LocationCrudController extends CrudController
 
         $location = Location::findOrFail($id);
 
+        $branches = Branch::orderBy('name')->get();   // ← Variable mein store kiya
+
+        // dd($branches);   // ← Debugging line (yeh data dikhaayega)
+
         return view('admin.location.edit', [
-            'title'    => 'Edit Location',
-            'location' => $location,
-            'branches' => Branch::orderBy('name')->get(),
+            'title'     => 'Edit Location - ' . $location->name,
+            'location'  => $location,
+            'branches'  => $branches,        // ← Yahan bhi same variable use kiya
         ]);
     }
 
@@ -125,14 +134,14 @@ class LocationCrudController extends CrudController
         $location = Location::findOrFail($id);
 
         $validated = $request->validate([
-            'code'      => 'required|string|unique:locations,code,' . $id,
-            'name'      => 'required|string|max:255',
-            'branch_id' => 'required|exists:branches,id',
-            'city'      => 'nullable|string',
-            'state'     => 'nullable|string',
-            'pincode'   => 'nullable|string',
-            'address'   => 'nullable|string',
-            'is_active' => 'boolean',
+            'code'        => 'required|string|unique:locations,code,' . $id,
+            'name'        => 'required|string|max:255',
+            'branch_code' => 'required|exists:branches,code',   // ← Important
+            'city'        => 'nullable|string',
+            'state'       => 'nullable|string',
+            'pincode'     => 'nullable|string',
+            'address'     => 'nullable|string',
+            'is_active'   => 'boolean',
         ]);
 
         $location->update($validated);

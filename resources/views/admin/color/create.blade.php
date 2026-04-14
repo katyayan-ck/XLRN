@@ -52,14 +52,14 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Color Code <span class="text-danger">*</span></label>
-                                <input type="text" name="code" class="form-control text-uppercase"
-                                    value="{{ old('code') }}" style="text-transform: uppercase;" required>
+                                <input type="text" name="code" class="form-control text-uppercase" pattern="[A-Za-z]+"
+                                    title="Only alphabets allowed" required>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label>Hex Code <span class="text-danger">*</span></label>
-                                <input type="text" name="hex_code" class="form-control" value="{{ old('hex_code') }}"
-                                    placeholder="#FF0000" required>
+                                <input type="text" name="hex_code" class="form-control" pattern="^#[0-9A-Fa-f]{6}$"
+                                    title="Enter valid hex code like #FF0000" placeholder="#FF0000" required>
                             </div>
 
                             <div class="col-md-6 mb-3">

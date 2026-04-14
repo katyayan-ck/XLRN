@@ -17,9 +17,9 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * UserCrudController
- * 
+ *
  * Manages user accounts with comprehensive RBAC, data scoping, and audit logging.
- * 
+ *
  * Features:
  * - Role-based access control (RBAC) for all operations
  * - User permission and scope assignment
@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Log;
  * - Account status management
  * - Audit logging of all user operations
  * - Data scoping based on user access levels
- * 
+ *
  * @category Admin Controllers
  * @package App\Http\Controllers\Admin
  * @author VDMS Development Team
@@ -43,7 +43,7 @@ class UserCrudController extends CrudController
 
     /**
      * Service dependencies injected via constructor
-     * 
+     *
      * @param RBACService $rbacService - Role-based access control service
      * @param AuthService $authService - Authentication service
      * @param DataScopeService $dataScopeService - Data scoping service
@@ -56,10 +56,10 @@ class UserCrudController extends CrudController
 
     /**
      * Setup CRUD panel configuration
-     * 
+     *
      * Configures the CRUD model, routes, and entity names for the User resource.
      * Sets up operations and basic configuration.
-     * 
+     *
      * @return void
      */
     public function setup(): void
@@ -78,12 +78,12 @@ class UserCrudController extends CrudController
 
     /**
      * Setup List Operation
-     * 
+     *
      * Displays all users with permission checks and data scoping.
      * Retrieves only users accessible to the current user based on their role/scope.
-     * 
+     *
      * Authorization: 'user.view' permission required
-     * 
+     *
      * @return void
      */
     protected function setupListOperation(): void
@@ -158,12 +158,12 @@ class UserCrudController extends CrudController
 
     /**
      * Setup Create Operation
-     * 
+     *
      * Configures fields and validation for creating a new user.
      * Requires 'user.create' permission and validates all input.
-     * 
+     *
      * Authorization: 'user.create' permission required
-     * 
+     *
      * @return void
      */
     protected function setupCreateOperation(): void
@@ -277,12 +277,12 @@ class UserCrudController extends CrudController
 
     /**
      * Setup Update Operation
-     * 
+     *
      * Configures fields and validation for updating an existing user.
      * Requires 'user.edit' permission. Allows password change (optional).
-     * 
+     *
      * Authorization: 'user.edit' permission required
-     * 
+     *
      * @return void
      */
     protected function setupUpdateOperation(): void
@@ -387,12 +387,12 @@ class UserCrudController extends CrudController
 
     /**
      * Handle storing a newly created user
-     * 
+     *
      * Overrides the default store operation to:
      * - Hash password before saving
      * - Log creation event
      * - Assign default roles
-     * 
+     *
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -427,12 +427,12 @@ class UserCrudController extends CrudController
 
     /**
      * Handle updating an existing user
-     * 
+     *
      * Overrides the default update operation to:
      * - Hash password only if provided
      * - Log update event
      * - Track what was changed
-     * 
+     *
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -469,12 +469,12 @@ class UserCrudController extends CrudController
 
     /**
      * Handle deleting a user
-     * 
+     *
      * Overrides the default delete operation to:
      * - Prevent deleting the last super admin
      * - Log deletion event
      * - Soft delete if available
-     * 
+     *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy()

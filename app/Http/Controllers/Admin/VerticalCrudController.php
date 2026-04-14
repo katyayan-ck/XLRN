@@ -41,6 +41,8 @@ class VerticalCrudController extends CrudController
         $gridData = $verticals->map(function ($vertical, $index) {
             $mapped = $vertical->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $vertical->is_active ? 'Active' : 'Inactive';
+
 
             $editUrl = backpack_url("vertical/{$vertical->id}/edit");
 

@@ -41,6 +41,7 @@ class UserTypeCrudController extends CrudController
         $gridData = $userTypes->map(function ($userType, $index) {
             $mapped = $userType->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $userType->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("user-type/{$userType->id}/edit");
 

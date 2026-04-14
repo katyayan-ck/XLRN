@@ -1,81 +1,16 @@
 @extends(backpack_view('blank'))
 
-@section('header')
-@endsection
-
-@section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div
-                class="card-header bg-gradient-primary d-flex justify-content-between align-items-center flex-nowrap flex-md-nowrap flex-wrap gap-3">
-                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
-                    {{ $title ?? 'All Post Assignments' }}
-                </h2>
-
-                <div class="d-flex align-items-center gap-3 flex-nowrap">
-                    <a href="{{ backpack_url('employee-post-assignment/create') }}"
-                        class="btn btn-blue btn-sm fw-bold shadow-sm">
-                        <i class="la la-plus me-1"></i> Add New Post Assignment
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-body p-0" style="background:#f8fafc">
-                <div
-                    class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
-                    <div class="d-flex align-items-center gap-2 flex-nowrap">
-                        <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
-                            style="width:360px; min-width:260px;" placeholder="Smart Search...">
-                        <button id="resetAll" class="btn btn-outline-danger btn-sm text-nowrap">Reset</button>
-                    </div>
-
-                    <div class="d-flex gap-2 flex-nowrap justify-content-center">
-                        <button id="btnDefaultHeaders" class="btn btn-secondary btn-sm text-nowrap">Default
-                            Headers</button>
-                        <div class="position-relative d-inline-block">
-                            <button id="btnCustomiseHeaders" class="btn btn-red btn-sm text-nowrap">Customise
-                                Headers</button>
-                            <div id="columnBubble"
-                                style="display:none; position:absolute; top:110%; left:0; width:320px; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:9999;">
-                                <div class="d-flex justify-content-between align-items-center px-2 py-1 border-bottom">
-                                    <strong style="font-size:13px;">Customise Headers</strong>
-                                    <button id="closeColumnBubble"
-                                        class="btn btn-sm btn-link text-danger p-0">✕</button>
-                                </div>
-                                <div style="max-height:260px; overflow:auto;">
-                                    <table class="table table-sm mb-0">
-                                        <tbody id="columnBubbleBody"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <button id="btnAllHeaders" class="btn btn-blue btn-sm text-nowrap">All Headers</button>
-                    </div>
-
-                    <div class="d-flex gap-2 flex-nowrap">
-                        <button id="exportCsv" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
-                            <img src="{{ asset('images/export-excel.png') }}" alt="Excel"
-                                style="height:30px; width:auto;">
-                        </button>
-                        <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
-                            <img src="{{ asset('images/export-pdf.png') }}" alt="PDF" style="height:30px; width:auto;">
-                        </button>
-                    </div>
-                </div>
-
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(93vh - 260px); width:100%;"></div>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
+@section('title', 'All Post Assignments')
 
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
 <style>
-    .ag-theme-quartz .center-header .ag-header-cell-label,
-    .ag-theme-quartz .ag-header-group-cell-label {
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .ag-theme-quartz .center-header .ag-header-cell-label {
         justify-content: center !important;
     }
 </style>
@@ -89,41 +24,45 @@
 
 <script>
     const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
+
+    function getCols(fields) {
+        return ALL_COLUMNS.filter(col => fields.includes(col.field));
+    }
+
     let gridApi;
 
+    // ==================== FLAT COLUMN DEFINITION ====================
     const columnDefs = [
-        {
-            headerName: 'Primary',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['serial_no', 'employee_name', 'post_name'].includes(col.field))
-        },
-        {
-            headerName: 'Period',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['from_date', 'to_date'].includes(col.field))
-        },
-        {
-            headerName: 'Details',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['assignment_order'].includes(col.field))
-        },
-        {
-            headerName: 'Status',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['is_current'].includes(col.field))
-        },
-        {
-            headerName: 'Actions',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['action'].includes(col.field)).map(col => {
-                col.pinned = 'right';
-                col.width = 140;
-                col.sortable = false;
-                col.filter = false;
-                col.cellRenderer = 'htmlRenderer';
-                return col;
-            })
-        }
+        ...getCols(['serial_no', 'employee_name', 'post_name']).map(col => {
+            if (col.field === 'serial_no') {
+                col.pinned = 'left';
+                col.width = 80;
+            }
+            return col;
+        }),
+
+        ...getCols(['from_date', 'to_date']),
+
+        ...getCols(['assignment_order']),
+
+        ...getCols(['is_current']).map(col => {
+            col.cellRenderer = params => {
+                if (params.value === 1 || params.value === true || params.value === 'Yes') {
+                    return `Current`;
+                }
+                return `Past`;
+            };
+            return col;
+        }),
+
+        ...getCols(['action']).map(col => {
+            col.pinned = 'right';
+            col.width = 140;
+            col.sortable = false;
+            col.filter = false;
+            col.cellRenderer = params => params.value || '';
+            return col;
+        })
     ];
 
     const gridOptions = {
@@ -145,23 +84,84 @@
         },
         onGridReady: params => {
             gridApi = params.api;
+
             const defaultFields = ['serial_no', 'employee_name', 'post_name', 'from_date', 'is_current', 'action'];
-            const allCols = [];
-            gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
+
+            const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
+
             gridApi.setColumnsVisible(allCols, false);
             gridApi.setColumnsVisible(defaultFields, true);
+
             setTimeout(() => gridApi.autoSizeAllColumns(), 300);
         }
     };
+
+    // ==================== CUSTOMISE HEADERS (Flat Version) ====================
+    function openColumnBubble() {
+        const bubble = document.getElementById('columnBubble');
+        const tbody = document.getElementById('columnBubbleBody');
+        if (!gridApi || !bubble || !tbody) return;
+
+        tbody.innerHTML = '';
+
+        const allFlatColumns = [
+            ...getCols(['serial_no', 'employee_name', 'post_name']),
+            ...getCols(['from_date', 'to_date']),
+            ...getCols(['assignment_order']),
+            ...getCols(['is_current']),
+            ...getCols(['action'])
+        ];
+
+        allFlatColumns.forEach(col => {
+            if (!col.field) return;
+
+            const tr = document.createElement('tr');
+
+            const tdCheck = document.createElement('td');
+            tdCheck.style.width = '40px';
+            tdCheck.className = 'text-center';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
+
+            // Disable Primary columns (always visible)
+            if (['serial_no', 'employee_name', 'post_name'].includes(col.field)) {
+                checkbox.disabled = true;
+            }
+
+            // Disable Action column
+            if (col.field === 'action') {
+                checkbox.disabled = true;
+            }
+
+            checkbox.addEventListener('change', () => {
+                gridApi.setColumnsVisible([col.field], checkbox.checked);
+            });
+
+            tdCheck.appendChild(checkbox);
+
+            const tdLabel = document.createElement('td');
+            tdLabel.innerText = col.headerName || col.field;
+
+            tr.appendChild(tdCheck);
+            tr.appendChild(tdLabel);
+            tbody.appendChild(tr);
+        });
+
+        bubble.style.display = 'block';
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
         agGrid.createGrid(gridDiv, gridOptions);
 
+        // Quick Filter
         document.getElementById('quickFilter').addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
 
+        // Reset All
         document.getElementById('resetAll').addEventListener('click', () => {
             gridApi.setFilterModel(null);
             document.getElementById('quickFilter').value = '';
@@ -169,81 +169,7 @@
             gridApi.setSortModel(null);
         });
 
-        function openColumnBubble() {
-            const bubble = document.getElementById('columnBubble');
-            const tbody = document.getElementById('columnBubbleBody');
-            if (!gridApi || !bubble || !tbody) return;
-
-            tbody.innerHTML = '';
-
-            columnDefs.forEach(group => {
-                const groupName = group.headerName;
-                const children = group.children || [];
-                if (groupName === 'Actions') return;
-
-                const groupTr = document.createElement('tr');
-                const groupCheckTd = document.createElement('td');
-                groupCheckTd.style.width = '30px';
-                const groupCheckbox = document.createElement('input');
-                groupCheckbox.type = 'checkbox';
-                const fields = children.map(c => c.field).filter(Boolean);
-
-                const anyVisible = fields.some(f => {
-                    const col = gridApi.getColumn(f);
-                    return col && col.isVisible();
-                });
-
-                groupCheckbox.checked = anyVisible;
-                if (groupName === 'Primary') {
-                    groupCheckbox.checked = true;
-                    groupCheckbox.disabled = true;
-                }
-
-                groupCheckbox.addEventListener('change', () => {
-                    gridApi.setColumnsVisible(fields, groupCheckbox.checked);
-                    tbody.querySelectorAll(`[data-group="${groupName}"] input`).forEach(cb => cb.checked = groupCheckbox.checked);
-                });
-
-                groupCheckTd.appendChild(groupCheckbox);
-                const groupLabelTd = document.createElement('td');
-                groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
-                groupTr.appendChild(groupCheckTd);
-                groupTr.appendChild(groupLabelTd);
-                tbody.appendChild(groupTr);
-
-                children.forEach(col => {
-                    if (!col.field) return;
-                    const tr = document.createElement('tr');
-                    tr.dataset.group = groupName;
-                    const tdCheck = document.createElement('td');
-                    tdCheck.style.paddingLeft = '25px';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    const column = gridApi.getColumn(col.field);
-                    checkbox.checked = column ? column.isVisible() : false;
-
-                    if (groupName === 'Primary') {
-                        checkbox.checked = true;
-                        checkbox.disabled = true;
-                    }
-
-                    checkbox.addEventListener('change', () => {
-                        gridApi.setColumnsVisible([col.field], checkbox.checked);
-                    });
-
-                    tdCheck.appendChild(checkbox);
-                    const tdLabel = document.createElement('td');
-                    tdLabel.innerText = col.headerName;
-
-                    tr.appendChild(tdCheck);
-                    tr.appendChild(tdLabel);
-                    tbody.appendChild(tr);
-                });
-            });
-
-            bubble.style.display = 'block';
-        }
-
+        // Customise Headers
         document.getElementById('btnCustomiseHeaders').addEventListener('click', e => {
             e.stopPropagation();
             openColumnBubble();
@@ -255,22 +181,23 @@
 
         document.getElementById('columnBubble').addEventListener('click', e => e.stopPropagation());
 
-        document.addEventListener('click', e => {
+        document.addEventListener('click', () => {
             const bubble = document.getElementById('columnBubble');
             if (bubble && bubble.style.display === 'block') bubble.style.display = 'none';
         });
 
+        // All Headers
         document.getElementById('btnAllHeaders').addEventListener('click', () => {
-            const allCols = [];
-            gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
+            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
             gridApi.setColumnsVisible(allCols, true);
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
         });
 
+        // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
             const defaultFields = ['serial_no', 'employee_name', 'post_name', 'from_date', 'is_current', 'action'];
-            const allCols = [];
-            gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
+            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
+
             gridApi.setColumnsVisible(allCols, false);
             gridApi.setColumnsVisible(defaultFields, true);
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
@@ -311,7 +238,9 @@
             const rows = [];
             gridApi.forEachNodeAfterFilterAndSort(node => {
                 const row = [];
-                visibleColumns.forEach(col => row.push(node.data[col.field] ?? ''));
+                visibleColumns.forEach(col => {
+                    row.push(node.data[col.field] ?? '');
+                });
                 rows.push(row);
             });
 
@@ -327,3 +256,76 @@
     });
 </script>
 @endpush
+
+@section('content')
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <!-- HEADER -->
+            <div
+                class="card-header bg-gradient-primary d-flex justify-content-between align-items-center flex-nowrap flex-md-nowrap flex-wrap gap-3">
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
+                    {{ $title ?? 'All Post Assignments' }}
+                </h2>
+
+                <div class="d-flex align-items-center gap-3 flex-nowrap">
+                    <a href="{{ backpack_url('employee-post-assignment/create') }}"
+                        class="btn btn-blue btn-sm fw-bold shadow-sm">
+                        <i class="la la-plus me-1"></i> Add New Post Assignment
+                    </a>
+                </div>
+            </div>
+
+            <!-- BODY -->
+            <div class="card-body p-0" style="background:#f8fafc">
+                <div
+                    class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
+                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
+                            style="width:360px; min-width:260px;" placeholder="Smart Search...">
+                        <button id="resetAll" class="btn btn-outline-danger btn-sm text-nowrap">Reset</button>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-nowrap justify-content-center">
+                        <button id="btnDefaultHeaders" class="btn btn-secondary btn-sm text-nowrap">Default
+                            Headers</button>
+
+                        <div class="position-relative d-inline-block">
+                            <button id="btnCustomiseHeaders" class="btn btn-red btn-sm text-nowrap">Customise
+                                Headers</button>
+                            <div id="columnBubble"
+                                style="display:none; position:absolute; top:110%; left:0; width:320px; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:9999;">
+                                <div class="d-flex justify-content-between align-items-center px-2 py-1 border-bottom">
+                                    <strong style="font-size:13px;">Customise Headers</strong>
+                                    <button id="closeColumnBubble"
+                                        class="btn btn-sm btn-link text-danger p-0">✕</button>
+                                </div>
+                                <div style="max-height:260px; overflow:auto;">
+                                    <table class="table table-sm mb-0">
+                                        <tbody id="columnBubbleBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="btnAllHeaders" class="btn btn-blue btn-sm text-nowrap">All Headers</button>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-nowrap">
+                        <button id="exportCsv" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+                            <img src="{{ asset('images/export-excel.png') }}" alt="Excel"
+                                style="height:30px; width:auto;">
+                        </button>
+                        <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+                            <img src="{{ asset('images/export-pdf.png') }}" alt="PDF" style="height:30px; width:auto;">
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AG Grid -->
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(93vh - 260px); width:100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection

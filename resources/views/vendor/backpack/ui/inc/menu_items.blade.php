@@ -174,10 +174,8 @@
         </x-backpack::menu-dropdown>
 
         <x-backpack::menu-dropdown title="Booking Stage" icon="la la-book-open" nested="true">
-            <x-backpack::menu-dropdown-item title="Int in Exchange"
-                :link="backpack_url('booking/exchange')" />
-            <x-backpack::menu-dropdown-item title="Int in Scrappage"
-                :link="backpack_url('booking/scrappage')" />
+            <x-backpack::menu-dropdown-item title="Int in Exchange" :link="backpack_url('booking/exchange')" />
+            <x-backpack::menu-dropdown-item title="Int in Scrappage" :link="backpack_url('booking/scrappage')" />
             <x-backpack::menu-dropdown-item title="Not Interested"
                 :link="backpack_url('booking/exchange/not-interested')" />
         </x-backpack::menu-dropdown>
@@ -194,8 +192,7 @@
         </x-backpack::menu-dropdown>
 
         <x-backpack::menu-dropdown title="Booking Stage" icon="la la-book-open" nested="true">
-            <x-backpack::menu-dropdown-item title="Int in Finance"
-                :link="backpack_url('booking/finance')" />
+            <x-backpack::menu-dropdown-item title="Int in Finance" :link="backpack_url('booking/finance')" />
             <x-backpack::menu-dropdown-item title="Not Interested"
                 :link="backpack_url('booking/finance/not-interested')" />
             <x-backpack::menu-dropdown-item title="Retail" :link="backpack_url('booking/finance/retail')" />
@@ -274,3 +271,17 @@
 
 
 </x-backpack::menu-dropdown>
+
+{{-- SPARES DROPDOWN --}}
+{{-- <x-backpack::menu-dropdown title="Spares" icon="fas fa-tools text-success">
+    <x-backpack::menu-separator title="Data Import" />
+
+    <x-backpack::menu-dropdown-item title="Daily Import" icon="fas fa-calendar-day text-primary"
+        :link="route('data.manager', ['type' => 'Spare', 'freq' => 'Daily'])" />
+
+    <x-backpack::menu-dropdown-item title="Monthly Import" icon="fas fa-calendar-alt text-warning"
+        :link="route('data.manager', ['type' => 'Spare', 'freq' => 'Monthly'])" />
+
+    <x-backpack::menu-dropdown-item title="Random Import" icon="fas fa-cloud-download-alt text-info"
+        :link="route('data.manager', ['type' => 'Spare', 'freq' => 'Random'])" />
+</x-backpack::menu-dropdown> --}}

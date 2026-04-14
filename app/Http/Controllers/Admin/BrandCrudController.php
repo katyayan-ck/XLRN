@@ -40,6 +40,7 @@ class BrandCrudController extends CrudController
         $gridData = $brands->map(function ($brand, $index) {
             $mapped = $brand->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $brand->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("brand/{$brand->id}/edit");
 

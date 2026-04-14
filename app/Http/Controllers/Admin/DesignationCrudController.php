@@ -41,6 +41,7 @@ class DesignationCrudController extends CrudController
         $gridData = $designations->map(function ($desig, $index) {
             $mapped = $desig->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $desig->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("designation/{$desig->id}/edit");
 

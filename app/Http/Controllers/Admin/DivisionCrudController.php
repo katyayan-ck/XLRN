@@ -46,6 +46,8 @@ class DivisionCrudController extends CrudController
         $gridData = $divisions->map(function ($division, $index) {
             $mapped = $division->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $division->is_active ? 'Active' : 'Inactive';
+
             $mapped['department'] = $division->department?->name ?? '—';
 
             $editUrl = backpack_url("division/{$division->id}/edit");

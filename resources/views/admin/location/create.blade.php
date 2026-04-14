@@ -59,11 +59,11 @@
                             <!-- Branch -->
                             <div class="col-md-4 mb-3">
                                 <label>Branch <span class="text-danger">*</span></label>
-                                <select name="branch_id" class="form-control form-select" required>
+                                <select name="branch_code" class="form-control form-select" required>
                                     <option value="">Select Branch</option>
-                                    @foreach(\App\Models\Core\Branch::all() as $branch)
-                                    <option value="{{ $branch->id }}" {{ old('branch_id')==$branch->id ? 'selected' : ''
-                                        }}>
+                                    @foreach($branches as $branch)
+                                    <option value="{{ $branch->code }}" {{ old('branch_code')==$branch->code ?
+                                        'selected' : '' }}>
                                         {{ $branch->name }}
                                     </option>
                                     @endforeach

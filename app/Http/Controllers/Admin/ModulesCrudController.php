@@ -54,7 +54,7 @@ class ModulesCrudController extends CrudController
             ';
 
             // Boolean ko readable banao
-            $mapped['is_active'] = $module->is_active ? 'Yes' : 'No';
+            $mapped['is_active'] = $module->is_active ? 'Active' : 'Inactive';
 
             return $mapped;
         })->values();

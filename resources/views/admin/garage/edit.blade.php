@@ -77,9 +77,9 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Type</label>
+                                <label>Type <span class="text-danger">*</span></label>
                                 <input type="text" name="type" class="form-control"
-                                    value="{{ old('type', $garage->type) }}">
+                                    value="{{ old('type', $garage->type) }}" required>
                             </div>
 
                             <div class="col-md-4 mb-3">
@@ -89,27 +89,31 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>City</label>
+                                <label>City <span class="text-danger">*</span></label>
                                 <input type="text" name="city" class="form-control"
-                                    value="{{ old('city', $garage->city) }}">
+                                    value="{{ old('city', $garage->city) }}" required>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>State</label>
+                                <label>State <span class="text-danger">*</span></label>
                                 <input type="text" name="state" class="form-control"
-                                    value="{{ old('state', $garage->state) }}">
+                                    value="{{ old('state', $garage->state) }}" required>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Pincode</label>
+                                <label>Pincode <span class="text-danger">*</span> <small class="text-muted">(6 digits
+                                        only)</small></label>
                                 <input type="text" name="pincode" class="form-control"
-                                    value="{{ old('pincode', $garage->pincode) }}">
+                                    value="{{ old('pincode', $garage->pincode) }}" required maxlength="6"
+                                    pattern="[0-9]{6}" title="Pincode must be exactly 6 digits">
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Mobile</label>
+                                <label>Mobile <span class="text-danger">*</span> <small class="text-muted">(10 digits
+                                        only)</small></label>
                                 <input type="text" name="mobile" class="form-control"
-                                    value="{{ old('mobile', $garage->mobile) }}">
+                                    value="{{ old('mobile', $garage->mobile) }}" required maxlength="10"
+                                    pattern="[0-9]{10}" title="Mobile number must be exactly 10 digits">
                             </div>
 
                             <div class="col-md-4 mb-3">
