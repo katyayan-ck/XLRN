@@ -6,7 +6,7 @@
             <i class="la la-exclamation-triangle fs-3"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger px-1.5 py-px fs-10 fw-bold text-white">6</span>
         </a>
-        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 rounded-3" style="width: 250px;">
+        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 rounded-3" style="width: 340px;">
             <div class="d-flex align-items-center justify-content-between px-3 py-2 bg-danger text-white fs-6">
                 <div class="d-flex align-items-center">
                     <i class="la la-exclamation-triangle me-2"></i>
@@ -76,7 +76,7 @@
             <i class="la la-bell fs-3"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning px-1.5 py-px fs-10 fw-bold">5</span>
         </a>
-        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 rounded-3" style="width: 250px;">
+        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 rounded-3" style="width: 340px;">
             <div class="d-flex align-items-center justify-content-between px-3 py-2 bg-warning text-white fs-6">
                 <div class="d-flex align-items-center">
                     <i class="la la-bell me-2"></i>
@@ -138,7 +138,7 @@
             <i class="la la-envelope fs-3"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success px-1.5 py-px fs-10 fw-bold text-white">6</span>
         </a>
-        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 rounded-3" style="width: 250px;">
+        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 rounded-3" style="width: 340px;">
             <div class="d-flex align-items-center justify-content-between px-3 py-2 bg-success text-white fs-6">
                 <div class="d-flex align-items-center">
                     <i class="la la-envelope me-2"></i>
@@ -206,7 +206,14 @@
 
 <style>
     @media (max-width: 991.98px) {
-        .dropdown-menu { width: 92vw !important; max-width: 340px !important; left: 50% !important; transform: translateX(-50%) !important; }
+        .dropdown-menu {
+            width: 92vw !important;
+            max-width: 340px !important;
+            left: 50% !important;
+            right: auto !important;
+            transform: translateX(-50%) !important;
+            margin-top: 8px !important;
+        }
     }
     .hover-bg-light:hover { background: #f8f9fa !important; }
     .mark-all-read { font-size: 12px; line-height: 1; }
