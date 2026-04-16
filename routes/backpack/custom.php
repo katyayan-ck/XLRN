@@ -60,6 +60,28 @@ Route::group([
     Route::crud('vehicle-model', 'VehicleModelCrudController');
     Route::crud('vertical', 'VerticalCrudController');
     Route::crud('user', 'UserCrudController');
+
+
+
+    Route::crud('spare-request', 'SpareRequestCrudController');
+
+    Route::get('get-variants/{model}', 'SpareImportController@getVariants')
+        ->name('get.variants');
+
+    Route::get('check-ro-number/{rn}', 'SpareImportController@checkRoNumber')
+        ->name('check-ro-number');
+
+    Route::get('spare/consumption', 'SpareImportController@spareConsumptionReport')
+        ->name('spare.consumption');
+
+    Route::get('spare/partwise-requirement', 'SpareImportController@partwise')
+        ->name('spare.partwise');
+
+    Route::get('spare/ro-closure', 'SpareTechnicianController@closure')
+        ->name('spare.ro-closure');
+
+    Route::get('spare/orderingreport', 'SpareOrderingreportController@orderingreport')
+        ->name('spare.orderingreport');
 }); // this should be the absolute last line of this file
 
 /**

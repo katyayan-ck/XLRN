@@ -272,16 +272,31 @@
 
 </x-backpack::menu-dropdown>
 
-{{-- SPARES DROPDOWN --}}
-{{-- <x-backpack::menu-dropdown title="Spares" icon="fas fa-tools text-success">
-    <x-backpack::menu-separator title="Data Import" />
+{{-- ====================== SPARES MODULE ====================== --}}
+<x-backpack::menu-dropdown title="Spares" icon="fas fa-tools text-success">
 
-    <x-backpack::menu-dropdown-item title="Daily Import" icon="fas fa-calendar-day text-primary"
-        :link="route('data.manager', ['type' => 'Spare', 'freq' => 'Daily'])" />
+    {{-- Spare Operations --}}
+    <x-backpack::menu-separator title="Spare Operations" />
 
-    <x-backpack::menu-dropdown-item title="Monthly Import" icon="fas fa-calendar-alt text-warning"
-        :link="route('data.manager', ['type' => 'Spare', 'freq' => 'Monthly'])" />
+    <x-backpack::menu-dropdown-item title="Add New Order Request" icon="fas fa-plus-circle text-success"
+        :link="backpack_url('spare-request/create')" />
 
-    <x-backpack::menu-dropdown-item title="Random Import" icon="fas fa-cloud-download-alt text-info"
-        :link="route('data.manager', ['type' => 'Spare', 'freq' => 'Random'])" />
-</x-backpack::menu-dropdown> --}}
+    <x-backpack::menu-dropdown-item title="Spare Order List" icon="fas fa-list text-primary"
+        :link="backpack_url('spare-request')" />
+
+    <x-backpack::menu-dropdown-item title="Partwise Requirement" icon="fas fa-list-alt text-info"
+        :link="backpack_url('spare/partwise-requirement')" />
+
+    <x-backpack::menu-dropdown-item title="RO Closure" icon="fas fa-lock text-warning"
+        :link="backpack_url('spare/ro-closure')" />
+
+    {{-- Reports --}}
+    <x-backpack::menu-separator title="Reports" />
+
+    <x-backpack::menu-dropdown-item title="Parts Ordering Report" icon="fas fa-chart-bar text-danger"
+        :link="backpack_url('spare/orderingreport')" />
+
+    <x-backpack::menu-dropdown-item title="Consumption Report" icon="fas fa-chart-line text-primary"
+        :link="backpack_url('spare/consumption')" />
+
+</x-backpack::menu-dropdown>
