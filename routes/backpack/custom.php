@@ -71,11 +71,17 @@ Route::group([
     Route::get('check-ro-number/{rn}', 'SpareImportController@checkRoNumber')
         ->name('check-ro-number');
 
+    Route::get('fetch-parts', [App\Http\Controllers\Admin\SpareRequestCrudController::class, 'fetchParts'])
+        ->name('fetch.parts');
+
     Route::get('spare/consumption', 'SpareImportController@spareConsumptionReport')
         ->name('spare.consumption');
 
-    Route::get('spare/partwise-requirement', 'SpareImportController@partwise')
+    Route::get('spare/partwise-requirement', [App\Http\Controllers\Admin\SparePartwiseController::class, 'index'])
         ->name('spare.partwise');
+
+    Route::get('spare/partwise-requirement/data', [App\Http\Controllers\Admin\SparePartwiseController::class, 'data'])
+        ->name('spare.partwise.data');
 
     Route::get('spare/ro-closure', 'SpareTechnicianController@closure')
         ->name('spare.ro-closure');

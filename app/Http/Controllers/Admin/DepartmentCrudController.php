@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Branch;
-use App\Models\Core\Department;
+use App\Models\Admin\Branch;
+use App\Models\Admin\Department;
 
 class DepartmentCrudController extends CrudController
 {
