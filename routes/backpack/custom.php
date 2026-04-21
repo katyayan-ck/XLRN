@@ -86,8 +86,15 @@ Route::group([
     Route::get('spare/ro-closure', 'SpareTechnicianController@closure')
         ->name('spare.ro-closure');
 
-    Route::get('spare/orderingreport', 'SpareOrderingreportController@orderingreport')
+    Route::get('spare/orderingreport', [App\Http\Controllers\Admin\SpareOrderingreportController::class, 'index'])
         ->name('spare.orderingreport');
+
+    Route::get('spare/orderingreport/data', [App\Http\Controllers\Admin\SpareOrderingreportController::class, 'data'])
+        ->name('spare.orderingreport.data');
+
+    // Spare Request List Data (AG Grid)
+    Route::get('spare-request/data', [App\Http\Controllers\Admin\SpareRequestCrudController::class, 'data'])
+        ->name('spare-request.data');
 }); // this should be the absolute last line of this file
 
 /**

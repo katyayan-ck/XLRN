@@ -5,6 +5,12 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
+use \App\Models\Vehicle\Variant;
+use \App\Models\Admin\Brand;
+use \App\Models\Admin\Segment;
+use \App\Models\Admin\VehicleModel;
+use \App\Models\Admin\SubSegment;
+
 
 class VariantCrudController extends CrudController
 {
@@ -15,7 +21,7 @@ class VariantCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Variant::class);
+        CRUD::setModel(Variant::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/variant');
         CRUD::setEntityNameStrings('variant', 'variants');
     }
@@ -81,7 +87,7 @@ class VariantCrudController extends CrudController
     {
         $this->crud->setListView('admin.variant.list');
 
-        $variants = \App\Models\Core\Variant::with(['brand', 'segment', 'subSegment', 'vehicleModel'])
+        $variants = Variant::with(['brand', 'segment', 'subSegment', 'vehicleModel'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -144,21 +150,21 @@ class VariantCrudController extends CrudController
     {
         $this->crud->setEditView('admin.variant.edit');
 
-        $variant = \App\Models\Core\Variant::with(['brand', 'segment', 'subSegment', 'vehicleModel'])->findOrFail($id);
+        $variant = Variant::with(['brand', 'segment', 'subSegment', 'vehicleModel'])->findOrFail($id);
 
         return view('admin.variant.edit', [
             'title'         => 'Edit Variant - ' . $variant->name,
             'variant'       => $variant,
-            'brands'        => \App\Models\Core\Brand::orderBy('name')->get(),
-            'segments'      => \App\Models\Core\Segment::orderBy('name')->get(),
-            'vehiclemodels' => \App\Models\Core\VehicleModel::orderBy('name')->get(),
-            'subsegments'   => \App\Models\Core\SubSegment::orderBy('name')->get(),
+            'brands'        => Brand::orderBy('name')->get(),
+            'segments'      => Segment::orderBy('name')->get(),
+            'vehiclemodels' => VehicleModel::orderBy('name')->get(),
+            'subsegments'   => SubSegment::orderBy('name')->get(),
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $variant = \App\Models\Core\Variant::findOrFail($id);
+        $variant = Variant::findOrFail($id);
 
         $validated = $request->validate([
             'brand_id'         => 'required|exists:brands,id',
@@ -191,10 +197,10 @@ class VariantCrudController extends CrudController
 
         return view('admin.variant.create', [
             'title'         => 'Add New Variant',
-            'brands'        => \App\Models\Core\Brand::orderBy('name')->get(),
-            'segments'      => \App\Models\Core\Segment::orderBy('name')->get(),
-            'vehiclemodels' => \App\Models\Core\VehicleModel::orderBy('name')->get(),
-            'subsegments'   => \App\Models\Core\SubSegment::orderBy('name')->get(),
+            'brands'        => Brand::orderBy('name')->get(),
+            'segments'      => Segment::orderBy('name')->get(),
+            'vehiclemodels' => VehicleModel::orderBy('name')->get(),
+            'subsegments'   => SubSegment::orderBy('name')->get(),
         ]);
     }
 }

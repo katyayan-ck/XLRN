@@ -1,6 +1,7 @@
+
 @extends(backpack_view('blank'))
 
-@section('title', 'Spare Orders')
+@section('title', 'Parts Ordering Report')
 
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
@@ -26,12 +27,12 @@
                 <div
                     class="card-header bg-gradient-primary d-flex justify-content-between align-items-center flex-nowrap flex-md-nowrap flex-wrap gap-3">
                     <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
-                        Spare Orders
+                        Parts Ordering Report
                     </h2>
-                    <div class="d-flex align-items-center gap-3">
-                        <a href="{{ backpack_url('spare-request/create') }}"
-                            class="btn btn-success btn-sm fw-bold shadow-sm">
-                            <i class="fa fa-plus"></i> Add New Request
+                    <div class="d-flex align-items-center gap-3 flex-nowrap">
+                        <a href="{{ backpack_url('spare/partwise-requirement') }}"
+                            class="btn btn-secondary btn-sm fw-bold shadow-sm">
+                            ← Back to Partwise Requirement
                         </a>
                     </div>
                 </div>
@@ -75,36 +76,34 @@
     let gridApi;
 
     const columnDefs = [
-        { field: 'serial_no',           headerName: 'S.No.',              width: 80, pinned: 'left' },
-        { field: 'posting_date',        headerName: 'Posting Date',       width: 120, filter: true },
-        { field: 'req_no',              headerName: 'Xceler8 Req No',     width: 140, filter: true, pinned: 'left' },
-        { field: 'branch_name',         headerName: 'Service Branch',     width: 150, filter: true },
-        { field: 'service_category',    headerName: 'Service Category',   width: 140, filter: true },
-        { field: 'workshop_type',       headerName: 'Workshop Type',      width: 130, filter: true },
-        { field: 'model',               headerName: 'Model',              width: 120, filter: true },
-        { field: 'variant',             headerName: 'Variant',            width: 130, filter: true },
-        { field: 'cust_name',           headerName: 'Customer Name',      minWidth: 180, filter: true },
-        { field: 'cust_mobile',         headerName: 'Contact No',         width: 130, filter: true },
-        { field: 'regn_no',             headerName: 'Vehicle Reg. No',    width: 140, filter: true },
-        { field: 'ro_number',           headerName: 'RO Number',          width: 130, filter: true },
-        { field: 'ro_date',             headerName: 'RO Date',            width: 120, filter: true },
-        { field: 'ro_age',              headerName: 'RO Age',             width: 100, filter: true },
-        { field: 'parts_count',         headerName: 'Parts (SKU) Count',  width: 140, type: 'numericColumn' },
-        { field: 'parts_qty',           headerName: 'Parts (SKU) Qty',    width: 140, type: 'numericColumn' },
-        { field: 'remark',              headerName: 'Remarks',            minWidth: 200, filter: true },
+        { field: 'serial_no',           headerName: 'S.No',           width: 80, pinned: 'left' },
+        { field: 'part_number',         headerName: 'Part Number',    pinned: 'left', filter: true, width: 140 },
+        { field: 'part_description',    headerName: 'Description',    minWidth: 280, filter: true },
+        { field: 'mrp',                 headerName: 'MRP',            width: 110 },
+        { field: 'ndp',                 headerName: 'NDP',            width: 110 },
+        { field: 'total_consumption',   headerName: 'Consumption',    width: 130, type: 'numericColumn' },
+        { field: 'total_required_qty',  headerName: 'Total Req Qty',  width: 130, type: 'numericColumn' },
+        { field: 'physical_stock_qty',  headerName: 'Physical Stock', width: 130, type: 'numericColumn' },
+        { field: 'mat_in_transit_qty',  headerName: 'In Transit',     width: 110, type: 'numericColumn' },
+        { field: 'back_order_qty',      headerName: 'Back Order',     width: 110, type: 'numericColumn' },
+        { field: 'total_stock_qty',     headerName: 'Total Stock',    width: 120, type: 'numericColumn' },
+        { field: 'net_requirement',     headerName: 'Net Req',        width: 120, type: 'numericColumn' },
+        { field: 'to_order_suggested',  headerName: 'To Order',       width: 120, type: 'numericColumn' },
+        { field: 'order_value',         headerName: 'Order Value',    width: 140, type: 'numericColumn' },
+        {
+            field: 'status',
+            headerName: 'Status',
+            width: 130,
+            cellRenderer: params => params.value || '<span class="badge bg-secondary">N/A</span>'
+        },
         {
             field: 'action',
             headerName: 'Action',
             pinned: 'right',
-            width: 160,
+            width: 140,
             sortable: false,
             filter: false,
-            cellRenderer: params => `
-                <div class="d-flex gap-2">
-                    <a href="${backpack_url('spare-request/' + params.data.id)}" class="btn btn-sm btn-info py-1 px-2">View</a>
-                    <a href="${backpack_url('spare-request/' + params.data.id + '/edit')}" class="btn btn-sm btn-primary py-1 px-2">Edit</a>
-                </div>
-            `
+            cellRenderer: params => params.value
         }
     ];
 
@@ -113,7 +112,7 @@
         rowData: [],
         pagination: true,
         paginationPageSize: 50,
-        rowHeight: 42,
+        rowHeight: 28,
         animateRows: true,
         defaultColDef: {
             sortable: true,
@@ -124,20 +123,20 @@
         },
         onGridReady: (params) => {
             gridApi = params.api;
-            loadSpareList();
+            loadOrderingData();
         }
     };
 
-    function loadSpareList() {
-        fetch('{{ route("spare-request.data") }}')   // We'll add this route
+    function loadOrderingData() {
+        fetch('{{ route("spare.orderingreport.data") }}')
             .then(response => response.json())
             .then(result => {
                 gridApi.setGridOption('rowData', result);
                 setTimeout(() => gridApi.autoSizeAllColumns(), 300);
             })
             .catch(error => {
-                console.error(error);
-                alert('Failed to load data');
+                console.error('Error loading data:', error);
+                alert('Failed to load ordering report data. Please try again.');
             });
     }
 
@@ -145,6 +144,7 @@
         const gridDiv = document.querySelector('#myGrid');
         agGrid.createGrid(gridDiv, gridOptions);
 
+        // Quick Filter
         document.getElementById('quickFilter').addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
@@ -156,13 +156,19 @@
             gridApi.setSortModel(null);
         });
 
+        // Export CSV
         document.getElementById('exportCsv').addEventListener('click', () => {
             const rows = [];
             gridApi.forEachNodeAfterFilterAndSort(node => rows.push(node.data));
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(rows);
-            XLSX.utils.book_append_sheet(wb, ws, "Spare Orders");
-            XLSX.writeFile(wb, `spare-orders-${new Date().toISOString().slice(0,10)}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "Ordering Report");
+            XLSX.writeFile(wb, `parts-ordering-report-${new Date().toISOString().slice(0,10)}.xlsx`);
+        });
+
+        // Export PDF (placeholder)
+        document.getElementById('exportPdf').addEventListener('click', () => {
+            alert("PDF Export feature coming soon...");
         });
     });
 </script>

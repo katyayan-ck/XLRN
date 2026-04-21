@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Employee;
-use App\Models\Core\Location;
-use App\Models\Core\Branch;
+use App\Models\Admin\Employee;
+use App\Models\Admin\Location;
+use App\Models\Admin\Branch;
 
 class EmployeeLocationAssignmentCrudController extends CrudController
 {
@@ -18,7 +18,7 @@ class EmployeeLocationAssignmentCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\EmployeeLocationAssignment::class);
+        CRUD::setModel(\App\Models\Admin\EmployeeLocationAssignment::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/employee-location-assignment');
         CRUD::setEntityNameStrings('location assignment', 'location assignments');
     }
@@ -32,7 +32,7 @@ class EmployeeLocationAssignmentCrudController extends CrudController
     {
         $this->crud->setListView('admin.employee-location-assignment.list');
 
-        $assignments = \App\Models\Core\EmployeeLocationAssignment::with(['employee.person', 'location', 'branch'])
+        $assignments = \App\Models\Admin\EmployeeLocationAssignment::with(['employee.person', 'location', 'branch'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -94,7 +94,7 @@ class EmployeeLocationAssignmentCrudController extends CrudController
 
     public function edit($id)
     {
-        $assignment = \App\Models\Core\EmployeeLocationAssignment::with(['employee.person', 'location', 'branch'])
+        $assignment = \App\Models\Admin\EmployeeLocationAssignment::with(['employee.person', 'location', 'branch'])
             ->findOrFail($id);
 
         return view('admin.employee-location-assignment.edit', [
@@ -105,7 +105,7 @@ class EmployeeLocationAssignmentCrudController extends CrudController
 
     public function update(Request $request, $id)
     {
-        $assignment = \App\Models\Core\EmployeeLocationAssignment::findOrFail($id);
+        $assignment = \App\Models\Admin\EmployeeLocationAssignment::findOrFail($id);
 
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',

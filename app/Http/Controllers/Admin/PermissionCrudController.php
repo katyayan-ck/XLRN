@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Permission;
+use App\Models\IAM\Permission;
 
 class PermissionCrudController extends CrudController
 {

@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Employee;
-use App\Models\Core\Branch;
+use App\Models\Admin\Employee;
+use App\Models\Admin\Branch;
 
 class EmployeeBranchAssignmentCrudController extends CrudController
 {
@@ -17,7 +17,7 @@ class EmployeeBranchAssignmentCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\EmployeeBranchAssignment::class);
+        CRUD::setModel(\App\Models\Admin\EmployeeBranchAssignment::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/employee-branch-assignment');
         CRUD::setEntityNameStrings('branch assignment', 'branch assignments');
     }
@@ -31,7 +31,7 @@ class EmployeeBranchAssignmentCrudController extends CrudController
     {
         $this->crud->setListView('admin.employee-branch-assignment.list');
 
-        $assignments = \App\Models\Core\EmployeeBranchAssignment::with(['employee.person', 'branch'])
+        $assignments = \App\Models\Admin\EmployeeBranchAssignment::with(['employee.person', 'branch'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -93,7 +93,7 @@ class EmployeeBranchAssignmentCrudController extends CrudController
 
     public function edit($id)
     {
-        $assignment = \App\Models\Core\EmployeeBranchAssignment::with(['employee.person', 'branch'])->findOrFail($id);
+        $assignment = \App\Models\Admin\EmployeeBranchAssignment::with(['employee.person', 'branch'])->findOrFail($id);
 
         return view('admin.employee-branch-assignment.edit', [
             'title'       => 'Edit Branch Assignment',
@@ -103,7 +103,7 @@ class EmployeeBranchAssignmentCrudController extends CrudController
 
     public function update(Request $request, $id)
     {
-        $assignment = \App\Models\Core\EmployeeBranchAssignment::findOrFail($id);
+        $assignment = \App\Models\Admin\EmployeeBranchAssignment::findOrFail($id);
 
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',

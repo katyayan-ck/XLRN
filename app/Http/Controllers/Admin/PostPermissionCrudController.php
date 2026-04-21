@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\PostPermission;
+use App\Models\IAM\PostPermission;
 
 class PostPermissionCrudController extends CrudController
 {
@@ -77,8 +77,8 @@ class PostPermissionCrudController extends CrudController
 
         return view('admin.post-permission.create', [
             'title'       => 'Add New Post Permission',
-            'posts'       => \App\Models\Core\Post::orderBy('id')->get(),           // Changed to 'id'
-            'permissions' => \App\Models\Core\Permission::orderBy('name')->get(),
+            'posts'       => \App\Models\IAM\Post::orderBy('id')->get(),           // Changed to 'id'
+            'permissions' => \App\Models\IAM\Permission::orderBy('name')->get(),
         ]);
     }
 
@@ -106,8 +106,8 @@ class PostPermissionCrudController extends CrudController
         return view('admin.post-permission.edit', [
             'title'          => 'Edit Post Permission',
             'postPermission' => $postPermission,
-            'posts'          => \App\Models\Core\Post::orderBy('id')->get(),      // Changed to 'id'
-            'permissions'    => \App\Models\Core\Permission::orderBy('name')->get(),
+            'posts'          => \App\Models\IAM\Post::orderBy('id')->get(),      // Changed to 'id'
+            'permissions'    => \App\Models\IAM\Permission::orderBy('name')->get(),
         ]);
     }
 

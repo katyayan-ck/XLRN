@@ -58,9 +58,22 @@ class SparePartwiseController extends Controller
                 'details.part_id',
                 'details.part_no',
                 'details.part_name',
+
                 DB::raw('SUM(details.req_quan) as total_required_qty'),
-                DB::raw('MIN(details.created_at) as earliest_ro_date'),
                 DB::raw('COUNT(DISTINCT details.spare_req_id) as total_ro_count'),
+                DB::raw('MIN(details.created_at) as earliest_ro_date'),
+
+                // Workshop Breakup
+                DB::raw('SUM(CASE WHEN req.workshop_type_id = 1 THEN details.req_quan ELSE 0 END) as workshop_req_qty'),
+                DB::raw('COUNT(DISTINCT CASE WHEN req.workshop_type_id = 1 THEN details.spare_req_id END) as workshop_ro_count'),
+
+                // Bodyshop Breakup
+                DB::raw('SUM(CASE WHEN req.workshop_type_id = 2 THEN details.req_quan ELSE 0 END) as bodyshop_req_qty'),
+                DB::raw('COUNT(DISTINCT CASE WHEN req.workshop_type_id = 2 THEN details.spare_req_id END) as bodyshop_ro_count'),
+
+                // CS Count (agar alag ho to adjust kar sakte hain)
+                DB::raw('COUNT(DISTINCT CASE WHEN req.workshop_type_id NOT IN (1,2) THEN details.spare_req_id END) as total_cs_count'),
+
                 DB::raw('COALESCE(stock.total_cls_qnty, 0) as physical_stock_qty'),
                 DB::raw('COALESCE(transit.total_quantity, 0) as mat_in_transit_qty'),
                 DB::raw('COALESCE(order_tbl.total_confirm_quan, 0) as back_order_qty'),
@@ -71,33 +84,9 @@ class SparePartwiseController extends Controller
                 DB::raw('COALESCE(stock.total_cls_qnty, 0) - COALESCE(master.allot_qnty, 0) as balance_qty')
             ])
             ->leftJoin('xcelr8_spare_request as req', 'details.spare_req_id', '=', 'req.id')
-            ->leftJoinSub(
-                DB::table('xcelr8_spare_stock')
-                    ->select('part_id', DB::raw('SUM(cls_qnty) as total_cls_qnty'))
-                    ->groupBy('part_id'),
-                'stock',
-                'details.part_id',
-                '=',
-                'stock.part_id'
-            )
-            ->leftJoinSub(
-                DB::table('xcelr8_spare_transit')
-                    ->select('part_id', DB::raw('SUM(quantity) as total_quantity'))
-                    ->groupBy('part_id'),
-                'transit',
-                'details.part_id',
-                '=',
-                'transit.part_id'
-            )
-            ->leftJoinSub(
-                DB::table('xcelr8_spare_order')
-                    ->select('part_id', DB::raw('SUM(confirm_quan) as total_confirm_quan'))
-                    ->groupBy('part_id'),
-                'order_tbl',
-                'details.part_id',
-                '=',
-                'order_tbl.part_id'
-            )
+            ->leftJoinSub(DB::table('xcelr8_spare_stock')->select('part_id', DB::raw('SUM(cls_qnty) as total_cls_qnty'))->groupBy('part_id'), 'stock', 'details.part_id', '=', 'stock.part_id')
+            ->leftJoinSub(DB::table('xcelr8_spare_transit')->select('part_id', DB::raw('SUM(quantity) as total_quantity'))->groupBy('part_id'), 'transit', 'details.part_id', '=', 'transit.part_id')
+            ->leftJoinSub(DB::table('xcelr8_spare_order')->select('part_id', DB::raw('SUM(confirm_quan) as total_confirm_quan'))->groupBy('part_id'), 'order_tbl', 'details.part_id', '=', 'order_tbl.part_id')
             ->leftJoin('xcelr8_spare_master as master', 'details.part_id', '=', 'master.id')
             ->whereNull('details.deleted_at')
             ->where('req.status', '!=', 2)
