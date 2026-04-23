@@ -94,9 +94,9 @@ class SubSegmentCrudController extends CrudController
         $subsegment = SubSegment::findOrFail($id);
 
         $validated = $request->validate([
-            'segment_id'  => 'required|exists:segments,id',
+            'segment_id'  => 'required|exists:xlr8_vehicle_segment,id',
             'name'        => 'required|string|max:255',
-            'code'        => 'required|string|size:5|unique:sub_segments,code,' . $id . ',id,segment_id,' . $request->segment_id,
+            'code'        => 'required|string|size:5|unique:xlr8_vehicle_subsegment,code,' . $id . ',id,segment_id,' . $request->segment_id,
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);

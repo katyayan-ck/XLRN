@@ -41,7 +41,7 @@ class UserTypeCrudController extends CrudController
         $gridData = $userTypes->map(function ($userType, $index) {
             $mapped = $userType->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['is_active'] = $userType->is_active ? 'Active' : 'Inactive';
+            $mapped['is_active'] = $userType->is_active;
 
             $editUrl = backpack_url("user-type/{$userType->id}/edit");
 
@@ -85,7 +85,7 @@ class UserTypeCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'         => 'required|string|max:5|unique:user_types,code',
+            'code'         => 'required|string|max:5|unique:xlr8_iam_user_type,code',
             'display_name' => 'required|string|max:100',
             'description'  => 'nullable|string',
             'is_active'    => 'boolean',
@@ -107,6 +107,8 @@ class UserTypeCrudController extends CrudController
         return view('admin.user-type.edit', [
             'title'     => 'Edit User Type - ' . $userType->display_name,
             'userType'  => $userType,
+            'is_active'    => 'boolean',
+
         ]);
     }
 
@@ -115,7 +117,7 @@ class UserTypeCrudController extends CrudController
         $userType = UserType::findOrFail($id);
 
         $validated = $request->validate([
-            'code'         => 'required|string|max:5|unique:user_types,code,' . $id,
+            'code'         => 'required|string|max:5|unique:xlr8_iam_user_type,code,' . $id,
             'display_name' => 'required|string|max:100',
             'description'  => 'nullable|string',
             'is_active'    => 'boolean',

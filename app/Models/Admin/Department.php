@@ -17,7 +17,7 @@ class Department extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
-    protected $table = 'xcore_user_departments';
+    protected $table = 'xlr8_admin_department';
     protected string $scopeType = 'department';
     protected $fillable = [
         'code',

@@ -60,7 +60,7 @@ class SpareOrderingreportController extends Controller
 
     private function getOrderingReportData()
     {
-        return DB::table('xcelr8_spare_master as master')
+        return DB::table('xlr8_spare_master as master')
             ->select([
                 'master.id as part_id',
                 'master.part_no',
@@ -76,7 +76,7 @@ class SpareOrderingreportController extends Controller
                 DB::raw('COALESCE(order_tbl.total_confirm_quan, 0) as back_order_qty'),
             ])
             ->leftJoinSub(
-                DB::table('xcelr8_spare_consumption')
+                DB::table('xlr8_spare_consumption')
                     ->select('part_id', DB::raw('SUM(iss_quan) as total_consumption'))
                     ->groupBy('part_id'),
                 'consumption',
@@ -85,8 +85,8 @@ class SpareOrderingreportController extends Controller
                 'consumption.part_id'
             )
             ->leftJoinSub(
-                DB::table('xcelr8_spare_req_details as details')
-                    ->join('xcelr8_spare_request as req', 'details.spare_req_id', '=', 'req.id')
+                DB::table('xlr8_spare_req_details as details')
+                    ->join('xlr8_spare_request as req', 'details.spare_req_id', '=', 'req.id')
                     ->select('details.part_id', DB::raw('SUM(details.req_quan) as total_required_qty'))
                     ->whereNull('details.deleted_at')
                     ->where('req.status', '!=', 2)
@@ -98,7 +98,7 @@ class SpareOrderingreportController extends Controller
                 'req.part_id'
             )
             ->leftJoinSub(
-                DB::table('xcelr8_spare_stock')
+                DB::table('xlr8_spare_stock')
                     ->select('part_id', DB::raw('SUM(cls_qnty) as total_cls_qnty'))
                     ->groupBy('part_id'),
                 'stock',
@@ -107,7 +107,7 @@ class SpareOrderingreportController extends Controller
                 'stock.part_id'
             )
             ->leftJoinSub(
-                DB::table('xcelr8_spare_transit')
+                DB::table('xlr8_spare_transit')
                     ->select('part_id', DB::raw('SUM(quantity) as total_quantity'))
                     ->groupBy('part_id'),
                 'transit',
@@ -116,7 +116,7 @@ class SpareOrderingreportController extends Controller
                 'transit.part_id'
             )
             ->leftJoinSub(
-                DB::table('xcelr8_spare_order')
+                DB::table('xlr8_spare_order')
                     ->select('part_id', DB::raw('SUM(confirm_quan) as total_confirm_quan'))
                     ->groupBy('part_id'),
                 'order_tbl',

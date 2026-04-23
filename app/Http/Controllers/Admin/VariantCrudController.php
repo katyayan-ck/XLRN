@@ -6,10 +6,10 @@ use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use \App\Models\Vehicle\Variant;
-use \App\Models\Admin\Brand;
-use \App\Models\Admin\Segment;
-use \App\Models\Admin\VehicleModel;
-use \App\Models\Admin\SubSegment;
+use \App\Models\Vehicle\Brand;
+use \App\Models\Vehicle\Segment;
+use \App\Models\Vehicle\VehicleModel;
+use \App\Models\Vehicle\SubSegment;
 
 
 class VariantCrudController extends CrudController
@@ -167,13 +167,13 @@ class VariantCrudController extends CrudController
         $variant = Variant::findOrFail($id);
 
         $validated = $request->validate([
-            'brand_id'         => 'required|exists:brands,id',
-            'segment_id'       => 'required|exists:segments,id',
-            'vehicle_model_id' => 'required|exists:vehicle_models,id',
-            'sub_segment_id'   => 'nullable|exists:sub_segments,id',
+            'brand_id'         => 'required|exists:xlr8_vehicle_brand,id',
+            'segment_id'       => 'required|exists:xlr8_vehicle_segment,id',
+            'vehicle_model_id' => 'required|exists:xlr8_vehicle_model,id',
+            'sub_segment_id'   => 'nullable|exists:xlr8_vehicle_subsegment,id',
             'name'             => 'required|string|max:255',
             'custom_name'      => 'nullable|string|max:255',
-            'oem_code'         => 'nullable|string|max:255|unique:variants,oem_code,' . $id,
+            'oem_code'         => 'nullable|string|max:255|unique:xlr8_vehicle_variant,oem_code,' . $id,
             'description'      => 'nullable|string',
             'seating_capacity' => 'nullable|integer|min:1',
             'wheels'           => 'nullable|integer|min:2',

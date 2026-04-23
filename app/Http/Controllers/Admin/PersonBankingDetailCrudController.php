@@ -51,8 +51,8 @@ class PersonBankingDetailCrudController extends CrudController
         $gridData = $bankings->map(function ($banking, $index) {
             $mapped = $banking->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['is_primary'] = $banking->is_primary ? 'Primary' : 'Secondary';
-            $mapped['is_verified'] = $banking->is_verified ? 'Verified' : 'Not Verified';
+            $mapped['is_primary'] = $banking->is_primary;
+            $mapped['is_verified'] = $banking->is_verified;
             $mapped['person_name'] = $banking->person
                 ? $banking->person->first_name . ' ' . $banking->person->last_name
                 : '—';
@@ -104,7 +104,7 @@ class PersonBankingDetailCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'person_id'           => 'required|exists:persons,id',
+            'person_id'           => 'required|exists:xlr8_admin_person,id',
             'bank_name'           => 'required|string|max:255',
             'account_holder_name' => 'required|string|max:255|regex:/^[a-zA-Z\s.]+$/u', // Letters, space, dot only
             'account_number'      => 'required|numeric|digits_between:8,20',           // Only numbers, 8-20 digits
@@ -142,7 +142,7 @@ class PersonBankingDetailCrudController extends CrudController
         $banking = PersonBankingDetail::findOrFail($id);
 
         $validated = $request->validate([
-            'person_id'           => 'required|exists:persons,id',
+            'person_id'           => 'required|exists:xlr8_admin_person,id',
             'bank_name'           => 'required|string|max:255',
             'account_holder_name' => 'required|string|max:255|regex:/^[a-zA-Z\s.]+$/u',
             'account_number'      => 'required|numeric|digits_between:8,20',

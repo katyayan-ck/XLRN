@@ -86,7 +86,7 @@ class VerticalCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'        => 'required|string|max:5|unique:verticals,code',
+            'code'        => 'required|string|max:5|unique:xlr8_admin_vertical,code',
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
@@ -116,7 +116,7 @@ class VerticalCrudController extends CrudController
         $vertical = Vertical::findOrFail($id);
 
         $validated = $request->validate([
-            'code'        => 'required|string|max:5|unique:verticals,code,' . $id,
+            'code'        => 'required|string|max:5|unique:xlr8_admin_vertical,code,' . $id,
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',

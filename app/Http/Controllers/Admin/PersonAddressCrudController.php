@@ -50,7 +50,7 @@ class PersonAddressCrudController extends CrudController
         $gridData = $addresses->map(function ($address, $index) {
             $mapped = $address->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['is_primary'] = $address->is_primary ? 'Primary' : 'Secondary';
+            $mapped['is_primary'] = $address->is_primary;
             $mapped['person_name'] = $address->person
                 ? $address->person->first_name . ' ' . $address->person->last_name
                 : '—';
@@ -100,7 +100,7 @@ class PersonAddressCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'person_id'      => 'required|exists:persons,id',
+            'person_id'      => 'required|exists:xlr8_admin_person,id',
             'type'           => 'required|in:residential,official,other',
             'address_line_1' => 'required|string|max:255',
             'address_line_2' => 'nullable|string|max:255',
@@ -137,7 +137,7 @@ class PersonAddressCrudController extends CrudController
         $address = PersonAddress::findOrFail($id);
 
         $validated = $request->validate([
-            'person_id'      => 'required|exists:persons,id',
+            'person_id'      => 'required|exists:xlr8_admin_person,id',
             'type'           => 'required|in:residential,official,other',
             'address_line_1' => 'required|string|max:255',
             'address_line_2' => 'nullable|string|max:255',

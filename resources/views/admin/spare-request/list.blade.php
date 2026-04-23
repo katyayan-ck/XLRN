@@ -30,7 +30,7 @@
                     </h2>
                     <div class="d-flex align-items-center gap-3">
                         <a href="{{ backpack_url('spare-request/create') }}"
-                            class="btn btn-success btn-sm fw-bold shadow-sm">
+                            class="btn btn-primary btn-sm fw-bold shadow-sm">
                             <i class="fa fa-plus"></i> Add New Request
                         </a>
                     </div>

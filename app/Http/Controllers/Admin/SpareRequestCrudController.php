@@ -49,7 +49,7 @@ class SpareRequestCrudController extends CrudController
             return response()->json([]);
         }
 
-        $parts = DB::table('xcelr8_spare_master')
+        $parts = DB::table('xlr8_spare_master')
             ->where($type, 'LIKE', "%{$query}%")
             ->where('status', 1)
             ->whereNull('deleted_at')
@@ -62,11 +62,10 @@ class SpareRequestCrudController extends CrudController
     // Add this method in SpareRequestCrudController
     public function data()
     {
-        $records = DB::table('xcelr8_spare_request as req')
+        $records = DB::table('xlr8_spare_request as req')
             ->select([
                 'req.id',
                 'req.created_at as posting_date',
-                'req.id as req_no',                    // Xceler8 Requirement No
                 'branch.name as branch_name',
                 'req.srv_vh_cat_id as service_category',
                 'req.workshop_type_id as workshop_type',
@@ -82,13 +81,14 @@ class SpareRequestCrudController extends CrudController
                 DB::raw('SUM(details.req_quan) as parts_qty'),
                 'req.remark'
             ])
-            ->leftJoin('xcelr8_spare_req_details as details', 'req.id', '=', 'details.spare_req_id')
-            ->leftJoin('branches as branch', 'req.srv_brnch_id', '=', 'branch.id') // adjust table name if needed
-            ->whereNull('req.deleted_at')
+            ->leftJoin('xlr8_spare_req_details as details', 'req.id', '=', 'details.spare_req_id')
+            ->leftJoin('branches as branch', 'req.srv_brnch_id', '=', 'branch.id')
+            // ❌ REMOVE THIS if column not exists
+            // ->whereNull('req.deleted_at')
             ->groupBy(
                 'req.id',
                 'req.created_at',
-                'req.srv_brnch_id',
+                'branch.name',
                 'req.srv_vh_cat_id',
                 'req.workshop_type_id',
                 'req.model',

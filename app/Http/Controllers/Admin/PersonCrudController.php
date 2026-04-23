@@ -93,7 +93,7 @@ class PersonCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'            => 'required|string|unique:persons,code',
+            'code'            => 'required|string|unique:xlr8_admin_person,code',
             'salutation'      => 'nullable|in:Mr,Mrs,Ms,Dr',
             'first_name'      => 'required|string|max:100',
             'middle_name'     => 'nullable|string|max:100',
@@ -135,7 +135,7 @@ class PersonCrudController extends CrudController
         $person = Person::findOrFail($id);
 
         $validated = $request->validate([
-            'code'            => 'required|string|unique:persons,code,' . $id,
+            'code'            => 'required|string|unique:xlr8_admin_person,code,' . $id,
             'salutation'      => 'nullable|in:Mr,Mrs,Ms,Dr',
             'first_name'      => 'required|string|max:100',
             'middle_name'     => 'nullable|string|max:100',

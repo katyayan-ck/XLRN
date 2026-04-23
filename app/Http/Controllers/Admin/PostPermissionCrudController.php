@@ -6,6 +6,7 @@ use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use App\Models\IAM\PostPermission;
+use App\Models\IAM\Permission;
 
 class PostPermissionCrudController extends CrudController
 {
@@ -77,7 +78,7 @@ class PostPermissionCrudController extends CrudController
 
         return view('admin.post-permission.create', [
             'title'       => 'Add New Post Permission',
-            'posts'       => \App\Models\IAM\Post::orderBy('id')->get(),           // Changed to 'id'
+            'posts' => \App\Models\IAM\Post::withoutGlobalScopes()->orderBy('id')->get(),          // Changed to 'id'
             'permissions' => \App\Models\IAM\Permission::orderBy('name')->get(),
         ]);
     }
@@ -85,8 +86,8 @@ class PostPermissionCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'post_id'       => 'required|exists:posts,id',
-            'permission_id' => 'required|exists:permissions,id',
+            'post_id'       => 'required|exists:xlr8_iam_post,id',
+            'permission_id' => 'required|exists:xlr8_iam_permissions,id',
         ]);
 
         PostPermission::create($validated);
@@ -116,8 +117,8 @@ class PostPermissionCrudController extends CrudController
         $postPermission = PostPermission::withoutGlobalScopes()->findOrFail($id);
 
         $validated = $request->validate([
-            'post_id'       => 'required|exists:posts,id',
-            'permission_id' => 'required|exists:permissions,id',
+            'post_id'       => 'required|exists:xlr8_iam_post,id',
+            'permission_id' => 'required|exists:xlr8_iam_permissions,id',
         ]);
 
         $postPermission->update($validated);

@@ -92,7 +92,7 @@ class BrandCrudController extends CrudController
 
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
-            'code'        => 'required|string|size:5|unique:brands,code,' . $id,
+            'code'        => 'required|string|size:5|unique:xlr8_vehicle_brand,code,' . $id,
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);

@@ -53,7 +53,7 @@ class SparePartwiseController extends Controller
 
     private function getSparePartsData()
     {
-        return DB::table('xcelr8_spare_req_details as details')
+        return DB::table('xlr8_spare_req_details as details')
             ->select([
                 'details.part_id',
                 'details.part_no',
@@ -83,11 +83,11 @@ class SparePartwiseController extends Controller
                 DB::raw('COALESCE(master.return_qnty, 0) as returned_qty'),
                 DB::raw('COALESCE(stock.total_cls_qnty, 0) - COALESCE(master.allot_qnty, 0) as balance_qty')
             ])
-            ->leftJoin('xcelr8_spare_request as req', 'details.spare_req_id', '=', 'req.id')
-            ->leftJoinSub(DB::table('xcelr8_spare_stock')->select('part_id', DB::raw('SUM(cls_qnty) as total_cls_qnty'))->groupBy('part_id'), 'stock', 'details.part_id', '=', 'stock.part_id')
-            ->leftJoinSub(DB::table('xcelr8_spare_transit')->select('part_id', DB::raw('SUM(quantity) as total_quantity'))->groupBy('part_id'), 'transit', 'details.part_id', '=', 'transit.part_id')
-            ->leftJoinSub(DB::table('xcelr8_spare_order')->select('part_id', DB::raw('SUM(confirm_quan) as total_confirm_quan'))->groupBy('part_id'), 'order_tbl', 'details.part_id', '=', 'order_tbl.part_id')
-            ->leftJoin('xcelr8_spare_master as master', 'details.part_id', '=', 'master.id')
+            ->leftJoin('xlr8_spare_request as req', 'details.spare_req_id', '=', 'req.id')
+            ->leftJoinSub(DB::table('xlr8_spare_stock')->select('part_id', DB::raw('SUM(cls_qnty) as total_cls_qnty'))->groupBy('part_id'), 'stock', 'details.part_id', '=', 'stock.part_id')
+            ->leftJoinSub(DB::table('xlr8_spare_transit')->select('part_id', DB::raw('SUM(quantity) as total_quantity'))->groupBy('part_id'), 'transit', 'details.part_id', '=', 'transit.part_id')
+            ->leftJoinSub(DB::table('xlr8_spare_order')->select('part_id', DB::raw('SUM(confirm_quan) as total_confirm_quan'))->groupBy('part_id'), 'order_tbl', 'details.part_id', '=', 'order_tbl.part_id')
+            ->leftJoin('xlr8_spare_master as master', 'details.part_id', '=', 'master.id')
             ->whereNull('details.deleted_at')
             ->where('req.status', '!=', 2)
             ->where('details.status', '!=', 2)

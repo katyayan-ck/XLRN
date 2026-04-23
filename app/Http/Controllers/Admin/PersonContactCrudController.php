@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Person;
+use App\Models\Admin\Person;
 use App\Models\Admin\PersonContact;
 
 class PersonContactCrudController extends CrudController
@@ -49,7 +49,7 @@ class PersonContactCrudController extends CrudController
         $gridData = $contacts->map(function ($contact, $index) {
             $mapped = $contact->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['is_primary'] = $contact->is_primary ? 'Primary' : 'Secondary';
+            $mapped['is_primary'] = $contact->is_primary;
             $mapped['person_name'] = $contact->person ? $contact->person->first_name . ' ' . $contact->person->last_name : '—';
 
             $editUrl = backpack_url("person-contact/{$contact->id}/edit");
@@ -96,7 +96,7 @@ class PersonContactCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'person_id'    => 'required|exists:persons,id',
+            'person_id'    => 'required|exists:xlr8_admin_person,id',
             'type'         => 'required|in:email,mobile',
             'name'         => 'required|string|max:100',
             'mobile'       => 'required_if:type,mobile|digits:10',           // ← 10 digits + conditional
@@ -132,7 +132,7 @@ class PersonContactCrudController extends CrudController
         $contact = PersonContact::findOrFail($id);
 
         $validated = $request->validate([
-            'person_id'    => 'required|exists:persons,id',
+            'person_id'    => 'required|exists:xlr8_admin_person,id',
             'type'         => 'required|in:email,mobile',
             'name'         => 'required|string|max:100',
             'mobile'       => 'required_if:type,mobile|digits:10',

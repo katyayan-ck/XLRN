@@ -101,12 +101,12 @@ class VehicleModelCrudController extends CrudController
         $vehiclemodel = VehicleModel::findOrFail($id);
 
         $validated = $request->validate([
-            'brand_id'       => 'required|exists:brands,id',
-            'segment_id'     => 'required|exists:segments,id',
-            'sub_segment_id' => 'nullable|exists:sub_segments,id',
+            'brand_id'       => 'required|exists:xlr8_vehicle_brand,id',
+            'segment_id'     => 'required|exists:xlr8_vehicle_segment,id',
+            'sub_segment_id' => 'nullable|exists:xlr8_vehicle_subsegment,id',
             'name'           => 'required|string|max:255',
             'custom_name'    => 'nullable|string|max:255',
-            'oem_code'       => 'nullable|string|max:255|unique:vehicle_models,oem_code,' . $id,
+            'oem_code'       => 'nullable|string|max:255|unique:xlr8_vehicle_model,oem_code,' . $id,
             'description'    => 'nullable|string',
             'is_active'      => 'boolean',
         ]);

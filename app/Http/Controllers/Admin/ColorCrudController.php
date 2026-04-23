@@ -92,7 +92,7 @@ class ColorCrudController extends CrudController
         $color = Color::findOrFail($id);
 
         $validated = $request->validate([
-            'brand_id' => 'required|exists:brands,id',
+            'brand_id' => 'required|exists:xlr8_vehicle_brand,id',
 
             'name' => 'required|string|max:255',
 
@@ -102,7 +102,7 @@ class ColorCrudController extends CrudController
                 'string',
                 'max:50',
                 'regex:/^[A-Za-z]+$/', // 🔥 only text allowed
-                'unique:colors,code,' . $id
+                'unique:xlr8_vehicle_color,code,' . $id
             ],
 
             // ✅ Must start with # and exactly 7 chars (# + 6 hex digits)

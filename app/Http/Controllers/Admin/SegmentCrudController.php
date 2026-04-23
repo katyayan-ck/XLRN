@@ -93,9 +93,9 @@ class SegmentCrudController extends CrudController
         $segment = Segment::findOrFail($id);
 
         $validated = $request->validate([
-            'brand_id'    => 'required|exists:brands,id',
+            'brand_id'    => 'required|exists:xlr8_vehicle_brand,id',
             'name'        => 'required|string|max:255',
-            'code'        => 'required|string|size:5|unique:segments,code,' . $id . ',id,brand_id,' . $request->brand_id,
+            'code'        => 'required|string|size:5|unique:xlr8_vehicle_segment,code,' . $id . ',id,brand_id,' . $request->brand_id,
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);

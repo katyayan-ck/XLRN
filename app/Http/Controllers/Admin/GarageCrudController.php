@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Person;
+use App\Models\Admin\Person;
 use App\Models\Core\Garage;
 
 class GarageCrudController extends CrudController
@@ -50,7 +50,7 @@ class GarageCrudController extends CrudController
         $gridData = $garages->map(function ($garage, $index) {
             $mapped = $garage->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['is_active'] = $garage->is_active ? 'Active' : 'Inactive';
+            $mapped['is_active'] = $garage->is_active;
             $mapped['person_name'] = $garage->person
                 ? $garage->person->first_name . ' ' . $garage->person->last_name
                 : '—';
@@ -101,7 +101,7 @@ class GarageCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'person_id' => 'nullable|exists:persons,id',
+            'person_id' => 'nullable|exists:xlr8_admin_person,id',
             'name'      => 'required|string|max:255',
             'type'      => 'required|string|max:100',           // ← Required
             'address'   => 'required|string|max:255',           // ← Required
@@ -138,7 +138,7 @@ class GarageCrudController extends CrudController
         $garage = Garage::findOrFail($id);
 
         $validated = $request->validate([
-            'person_id' => 'nullable|exists:persons,id',
+            'person_id' => 'nullable|exists:xlr8_admin_person,id',
             'name'      => 'required|string|max:255',
             'type'      => 'required|string|max:100',
             'address'   => 'required|string|max:255',

@@ -5,7 +5,8 @@ namespace App\Models\Admin;
 use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\User; 
+use App\Models\User;
+use App\Models\Core\Garage;
 
 class Person extends BaseModel
 {

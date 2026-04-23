@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Branch;
-use App\Models\Core\Department;
-use App\Models\Core\Designation;
-use App\Models\Core\Post;
+use App\Models\Admin\Branch;
+use App\Models\Admin\Department;
+use App\Models\Admin\Designation;
+use App\Models\IAM\Post;
 
 
 class PostCrudController extends CrudController
@@ -108,11 +108,11 @@ class PostCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'           => 'required|string|unique:posts,code',
+            'code'           => 'required|string|unique:xlr8_iam_post,code',
             'title'          => 'required|string|max:255',
-            'branch_id'      => 'required|exists:branches,id',
-            'department_id'  => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
+            'branch_id'      => 'required|exists:xlr8_admin_branch,id',
+            'department_id'  => 'required|exists:xlr8_admin_department,id',
+            'designation_id' => 'required|exists:xlr8_admin_designation,id',
             'description'    => 'nullable|string',
             'max_assignees'  => 'required|integer|min:1',
             'is_active'      => 'boolean',
@@ -146,11 +146,11 @@ class PostCrudController extends CrudController
         $post = Post::findOrFail($id);
 
         $validated = $request->validate([
-            'code'           => 'required|string|unique:posts,code,' . $id,
+            'code'           => 'required|string|unique:xlr8_iam_post,code,' . $id,
             'title'          => 'required|string|max:255',
-            'branch_id'      => 'required|exists:branches,id',
-            'department_id'  => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
+            'branch_id'      => 'required|exists:xlr8_admin_branch,id',
+            'department_id'  => 'required|exists:xlr8_admin_department,id',
+            'designation_id' => 'required|exists:xlr8_admin_designation,id',
             'description'    => 'nullable|string',
             'max_assignees'  => 'required|integer|min:1',
             'is_active'      => 'boolean',
