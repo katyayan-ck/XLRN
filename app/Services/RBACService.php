@@ -246,11 +246,11 @@ class RBACService
     private function getModelClassForResourceType(string $resourceType): string
     {
         $mapping = [
-            'branch' => \App\Models\Core\Branch::class,
+            'branch' => \App\Models\Admin\Branch::class,
             'location' => \App\Models\Core\Location::class,
             'department' => \App\Models\Core\Department::class,
-            'division' => \App\Models\Core\Division::class,
-            'designation' => \App\Models\Core\Designation::class,
+            'division' => \App\Models\Admin\Division::class,
+            'designation' => \App\Models\Admin\Designation::class,
             'vertical' => \App\Models\Core\Vertical::class,
             'brand' => \App\Models\Core\Brand::class,
             'segment' => \App\Models\Core\Segment::class,

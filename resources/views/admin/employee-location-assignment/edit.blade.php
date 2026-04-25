@@ -86,7 +86,7 @@
                                 <label>Branch (Optional)</label>
                                 <select name="branch_id" class="form-control form-select">
                                     <option value="">— No Branch —</option>
-                                    @foreach(App\Models\Core\Branch::orderBy('name')->get() as $branch)
+                                    @foreach(App\Models\Admin\Branch::orderBy('name')->get() as $branch)
                                     <option value="{{ $branch->id }}" {{ $branch->id == $assignment->branch_id ?
                                         'selected' : '' }}>
                                         {{ $branch->name }}

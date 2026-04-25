@@ -93,7 +93,7 @@ class BranchCrudController extends CrudController
     {
         $this->crud->setEditView('admin.branch.edit');
 
-        $branch = \App\Models\Core\Branch::findOrFail($id);
+        $branch = \App\Models\Admin\Branch::findOrFail($id);
 
         return view('admin.branch.edit', [
             'title'  => 'Edit Branch - ' . $branch->name,
@@ -103,7 +103,7 @@ class BranchCrudController extends CrudController
 
     public function update(Request $request, $id)
     {
-        $branch = \App\Models\Core\Branch::findOrFail($id);
+        $branch = \App\Models\Admin\Branch::findOrFail($id);
 
         $validated = $request->validate([
             'code'           => 'required|string|unique:branches,code,' . $id,

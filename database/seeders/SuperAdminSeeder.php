@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use App\Models\Core\Person;
+use App\Models\Admin\Person;
 use App\Models\Core\UserType;
 use App\Models\Core\GraphNode;
 use Spatie\Permission\Models\Role;

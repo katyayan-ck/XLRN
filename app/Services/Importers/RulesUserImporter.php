@@ -3,16 +3,16 @@
 namespace App\Services\Importers;
 
 use Illuminate\Support\Facades\DB;
-use App\Models\Core\Branch;
+use App\Models\Admin\Branch;
 use App\Models\Core\Location;
 use App\Models\Core\Department;
-use App\Models\Core\Division;
+use App\Models\Admin\Division;
 use App\Models\Core\Vertical;
 use App\Models\Core\Segment;
 use App\Models\Core\SubSegment;
 use App\Models\Core\VehicleModel;
-use App\Models\Core\Designation;
-use App\Models\Core\Person;
+use App\Models\Admin\Designation;
+use App\Models\Admin\Person;
 use App\Models\Core\Employee;
 use App\Models\User;
 use App\Models\UserDataScope;
