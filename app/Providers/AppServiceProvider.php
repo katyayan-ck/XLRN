@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
 
 use App\Services\RBACService;
 use App\Services\DataScopeService;
@@ -52,17 +53,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $files = glob(base_path('routes/backpack/*.php'));
-
-        foreach ($files as $file) {
-            Route::middleware(
-                array_merge(
-                    (array) config('backpack.base.web_middleware', 'web'),
-                    (array) config('backpack.base.middleware_key', 'admin')
-                )
-            )->prefix(config('backpack.base.route_prefix', 'admin'))
-                ->namespace('App\Http\Controllers\Admin')
-                ->group($file);
+        foreach (glob(base_path('routes/backpack/*.php')) as $file) {
+            require $file;
         }
     }
 }

@@ -49,7 +49,11 @@ class SpareRequestCrudController extends CrudController
             return response()->json([]);
         }
 
+<<<<<<< HEAD
         $parts = DB::table('xlr8_spare_master')
+=======
+        $parts = DB::table('xcelr8_spare_master')
+>>>>>>> origin/backend
             ->where($type, 'LIKE', "%{$query}%")
             ->where('status', 1)
             ->whereNull('deleted_at')
