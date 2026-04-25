@@ -47,55 +47,58 @@
 
                         <div class="row">
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Branch Code <span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control" value="{{ old('code') }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Branch Name <span class="text-danger">*</span></label>
-                                <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
+                                <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}"
+                                    required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Short Name <span class="text-danger">*</span></label>
-                                <input type="text" name="short_name" class="form-control"
+                                <input type="text" name="short_name" id="short_name" class="form-control"
                                     value="{{ old('short_name') }}" required>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label>Phone</label>
-                                <input type="text" name="phone" class="form-control" value="{{ old('phone') }}">
+                            <div class="col-md-3 mb-3">
+                                <label>Phone <small class="text-muted">(10 digits)</small></label>
+                                <input type="text" name="phone" class="form-control" value="{{ old('phone') }}"
+                                    maxlength="10" pattern="[0-9]{10}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Email</label>
                                 <input type="email" name="email" class="form-control" value="{{ old('email') }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>City <span class="text-danger">*</span></label>
                                 <input type="text" name="city" class="form-control" value="{{ old('city') }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>State <span class="text-danger">*</span></label>
                                 <input type="text" name="state" class="form-control" value="{{ old('state') }}"
                                     required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Pincode <span class="text-danger">*</span></label>
+                            <div class="col-md-3 mb-3">
+                                <label>Pincode <span class="text-danger">*</span> <small class="text-muted">(6
+                                        digits)</small></label>
                                 <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}"
-                                    required>
+                                    required maxlength="6" pattern="[0-9]{6}">
                             </div>
 
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label>Address</label>
                                 <textarea name="address" class="form-control" rows="3">{{ old('address') }}</textarea>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Head Office?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_head_office" value="0">
@@ -104,7 +107,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_active" value="0">
@@ -128,3 +131,17 @@
     </div>
 </div>
 @endsection
+@push('after_scripts')
+<script>
+    // Auto generate Short Name from first word of Branch Name
+    document.getElementById('name').addEventListener('input', function() {
+        let name = this.value.trim();
+        let shortNameField = document.getElementById('short_name');
+
+        if (name) {
+            let firstWord = name.split(' ')[0].toUpperCase();
+            shortNameField.value = firstWord;
+        }
+    });
+</script>
+@endpush

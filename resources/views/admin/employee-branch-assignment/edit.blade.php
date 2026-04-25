@@ -46,7 +46,8 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="fw-bold">Created At</label>
-                                        <div class="readonly-value">{{ $assignment->created_at?->format('d-m-Y H:i') }}
+                                        <div class="readonly-value">
+                                            {{ $assignment->created_at?->format('d-m-Y H:i') }}
                                         </div>
                                     </div>
                                 </div>
@@ -77,13 +78,13 @@
                             <div class="col-md-4 mb-3">
                                 <label>From Date <span class="text-danger">*</span></label>
                                 <input type="date" name="from_date" class="form-control"
-                                    value="{{ old('from_date', $assignment->from_date) }}" required>
+                                    value="{{ old('from_date', $assignment->from_date?->format('Y-m-d')) }}" required>
                             </div>
 
                             <div class="col-md-4 mb-3">
                                 <label>To Date</label>
                                 <input type="date" name="to_date" class="form-control"
-                                    value="{{ old('to_date', $assignment->to_date) }}">
+                                    value="{{ old('to_date', $assignment->to_date?->format('Y-m-d')) }}">
                             </div>
 
                             <div class="col-md-4 mb-3">

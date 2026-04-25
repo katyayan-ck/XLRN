@@ -10,7 +10,7 @@ use OpenApi\Attributes as OA;
 #[OA\Schema(title: 'Department')]
 /**
  * Department Model
- * 
+ *
  * Represents organizational departments (Sales, HR, Finance, etc.)
  */
 class Department extends BaseModel

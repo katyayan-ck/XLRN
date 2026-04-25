@@ -5,6 +5,7 @@ namespace App\Models\Core;
 use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Admin\Person;
 
 class Garage extends BaseModel
 {

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
+use App\Models\Vehicle\Brand;
+
 
 class BrandCrudController extends CrudController
 {
@@ -40,6 +42,7 @@ class BrandCrudController extends CrudController
         $gridData = $brands->map(function ($brand, $index) {
             $mapped = $brand->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $brand->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("brand/{$brand->id}/edit");
 
@@ -75,7 +78,7 @@ class BrandCrudController extends CrudController
     {
         $this->crud->setEditView('admin.brand.edit');
 
-        $brand = \App\Models\Core\Brand::findOrFail($id);
+        $brand = Brand::findOrFail($id);
 
         return view('admin.brand.edit', [
             'title' => 'Edit Brand - ' . $brand->name,
@@ -85,11 +88,11 @@ class BrandCrudController extends CrudController
 
     public function update(Request $request, $id)
     {
-        $brand = \App\Models\Core\Brand::findOrFail($id);
+        $brand = Brand::findOrFail($id);
 
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
-            'code'        => 'required|string|size:5|unique:brands,code,' . $id,
+            'code'        => 'required|string|size:5|unique:xlr8_vehicle_brand,code,' . $id,
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);

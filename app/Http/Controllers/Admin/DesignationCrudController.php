@@ -41,6 +41,7 @@ class DesignationCrudController extends CrudController
         $gridData = $designations->map(function ($desig, $index) {
             $mapped = $desig->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $desig->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("designation/{$desig->id}/edit");
 
@@ -84,7 +85,7 @@ class DesignationCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'        => 'required|string|unique:designations,code',
+            'code'        => 'required|string|unique:xlr8_admin_designation,code',
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
@@ -114,7 +115,7 @@ class DesignationCrudController extends CrudController
         $designation = Designation::findOrFail($id);
 
         $validated = $request->validate([
-            'code'        => 'required|string|unique:designations,code,' . $id,
+            'code'        => 'required|string|unique:xlr8_admin_designation,code,' . $id,
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',

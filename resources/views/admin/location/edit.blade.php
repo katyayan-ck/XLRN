@@ -76,7 +76,6 @@
                                     value="{{ old('name', $location->name) }}" required>
                             </div>
 
-                            <!-- 🔹 BRANCH DROPDOWN -->
                             <div class="col-md-4 mb-3">
                                 <label>Branch <span class="text-danger">*</span></label>
                                 <select name="branch_id" class="form-control form-select" required>

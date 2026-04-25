@@ -57,7 +57,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Person</label>
                                 <select name="person_id" class="form-control form-select" required>
                                     @foreach($persons as $p)
@@ -69,31 +69,31 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Bank Name <span class="text-danger">*</span></label>
                                 <input type="text" name="bank_name" class="form-control"
                                     value="{{ old('bank_name', $banking->bank_name) }}" required>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Account Holder Name <span class="text-danger">*</span></label>
                                 <input type="text" name="account_holder_name" class="form-control"
                                     value="{{ old('account_holder_name', $banking->account_holder_name) }}" required>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Account Number <span class="text-danger">*</span></label>
                                 <input type="text" name="account_number" class="form-control"
                                     value="{{ old('account_number', $banking->account_number) }}" required>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>IFSC Code <span class="text-danger">*</span></label>
                                 <input type="text" name="ifsc_code" class="form-control"
                                     value="{{ old('ifsc_code', $banking->ifsc_code) }}" required>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Account Type <span class="text-danger">*</span></label>
                                 <select name="account_type" class="form-control form-select" required>
                                     <option value="savings" {{ old('account_type', $banking->account_type) == 'savings'
@@ -109,19 +109,19 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Branch Name</label>
                                 <input type="text" name="branch_name" class="form-control"
                                     value="{{ old('branch_name', $banking->branch_name) }}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Swift Code</label>
                                 <input type="text" name="swift_code" class="form-control"
                                     value="{{ old('swift_code', $banking->swift_code) }}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Primary?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_primary" value="0">
@@ -130,7 +130,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Verified?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_verified" value="0">

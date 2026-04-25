@@ -174,10 +174,8 @@
         </x-backpack::menu-dropdown>
 
         <x-backpack::menu-dropdown title="Booking Stage" icon="la la-book-open" nested="true">
-            <x-backpack::menu-dropdown-item title="Int in Exchange"
-                :link="backpack_url('booking/exchange')" />
-            <x-backpack::menu-dropdown-item title="Int in Scrappage"
-                :link="backpack_url('booking/scrappage')" />
+            <x-backpack::menu-dropdown-item title="Int in Exchange" :link="backpack_url('booking/exchange')" />
+            <x-backpack::menu-dropdown-item title="Int in Scrappage" :link="backpack_url('booking/scrappage')" />
             <x-backpack::menu-dropdown-item title="Not Interested"
                 :link="backpack_url('booking/exchange/not-interested')" />
         </x-backpack::menu-dropdown>
@@ -194,8 +192,7 @@
         </x-backpack::menu-dropdown>
 
         <x-backpack::menu-dropdown title="Booking Stage" icon="la la-book-open" nested="true">
-            <x-backpack::menu-dropdown-item title="Int in Finance"
-                :link="backpack_url('booking/finance')" />
+            <x-backpack::menu-dropdown-item title="Int in Finance" :link="backpack_url('booking/finance')" />
             <x-backpack::menu-dropdown-item title="Not Interested"
                 :link="backpack_url('booking/finance/not-interested')" />
             <x-backpack::menu-dropdown-item title="Retail" :link="backpack_url('booking/finance/retail')" />
@@ -272,5 +269,26 @@
         <!-- Add more report sections as needed -->
     </x-backpack::menu-dropdown>
 
+
+</x-backpack::menu-dropdown>
+
+{{-- ====================== SPARES MODULE ====================== --}}
+{{-- ====================== SPARES MODULE ====================== --}}
+<x-backpack::menu-dropdown title="Spares" icon="la la-tools">
+
+    <x-backpack::menu-separator title="Spare Operations" />
+
+    <x-backpack::menu-dropdown-item title="Add New" icon="la la-plus-circle"
+        :link="backpack_url('spare-request/create')" />
+
+    <x-backpack::menu-dropdown-item title="RO Wise List" icon="la la-list" :link="backpack_url('spare-request')" />
+
+    <x-backpack::menu-dropdown-item title="Partwise Requirement" icon="la la-list-alt"
+        :link="backpack_url('spare/partwise-requirement')" />
+
+    <x-backpack::menu-separator title="Reports" />
+
+    <x-backpack::menu-dropdown-item title="Parts Ordering Report" icon="la la-chart-bar"
+        :link="backpack_url('spare/orderingreport')" />
 
 </x-backpack::menu-dropdown>

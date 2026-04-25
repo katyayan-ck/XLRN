@@ -30,7 +30,7 @@
                         @csrf
 
                         <div class="row">
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Person <span class="text-danger">*</span></label>
                                 <select name="person_id" class="form-control form-select" required>
                                     <option value="">Select Person</option>
@@ -42,7 +42,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Address Type <span class="text-danger">*</span></label>
                                 <select name="type" class="form-control form-select" required>
                                     <option value="">Select Type</option>
@@ -54,13 +54,13 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Address Line 1 <span class="text-danger">*</span></label>
                                 <input type="text" name="address_line_1" class="form-control"
                                     value="{{ old('address_line_1') }}" required>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Address Line 2</label>
                                 <input type="text" name="address_line_2" class="form-control"
                                     value="{{ old('address_line_2') }}">
@@ -78,17 +78,19 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Pincode</label>
-                                <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}">
+                                <label>Pincode <small class="text-muted">(6 digits)</small></label>
+                                <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}"
+                                    maxlength="6" pattern="[0-9]{6}"
+                                    title="Please enter exactly 6 digit  Numberical Number">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Country</label>
                                 <input type="text" name="country" class="form-control"
                                     value="{{ old('country', 'India') }}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label class="form-label">Is Primary Address?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_primary" value="0">

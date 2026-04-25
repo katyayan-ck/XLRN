@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
 
 use App\Services\RBACService;
 use App\Services\DataScopeService;
@@ -50,8 +51,10 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot()
     {
-        //
+        foreach (glob(base_path('routes/backpack/*.php')) as $file) {
+            require $file;
+        }
     }
 }

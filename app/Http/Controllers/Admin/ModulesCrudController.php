@@ -54,7 +54,7 @@ class ModulesCrudController extends CrudController
             ';
 
             // Boolean ko readable banao
-            $mapped['is_active'] = $module->is_active ? 'Yes' : 'No';
+            $mapped['is_active'] = $module->is_active ? 'Active' : 'Inactive';
 
             return $mapped;
         })->values();
@@ -87,7 +87,7 @@ class ModulesCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'        => 'required|unique:modules,code|max:255',
+            'code'        => 'required|unique:xlr8_iam_module,code|max:255',
             'name'        => 'required|max:255',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
@@ -116,7 +116,7 @@ class ModulesCrudController extends CrudController
         $module = Module::findOrFail($id);
 
         $validated = $request->validate([
-            'code'        => 'required|unique:modules,code,' . $id . '|max:255',
+            'code'        => 'required|unique:xlr8_iam_module,code,' . $id . '|max:255',
             'name'        => 'required|max:255',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',

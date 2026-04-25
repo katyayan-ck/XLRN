@@ -84,7 +84,7 @@ class PermissionCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'        => 'required|unique:permissions,name|max:255',
+            'name'        => 'required|unique:xlr8_iam_permissions,name|max:255',
             'guard_name'  => 'required|in:web,api',
         ]);
 
@@ -111,7 +111,7 @@ class PermissionCrudController extends CrudController
         $permission = Permission::findOrFail($id);
 
         $validated = $request->validate([
-            'name'        => 'required|unique:permissions,name,' . $id . '|max:255',
+            'name'        => 'required|unique:xlr8_iam_permissions,name,' . $id . '|max:255',
             'guard_name'  => 'required|in:web,api',
         ]);
 

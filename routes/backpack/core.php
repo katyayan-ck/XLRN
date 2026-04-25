@@ -60,6 +60,41 @@ Route::group([
     Route::crud('vehicle-model', 'VehicleModelCrudController');
     Route::crud('vertical', 'VerticalCrudController');
     Route::crud('user', 'UserCrudController');
+
+
+
+    Route::crud('spare-request', 'SpareRequestCrudController');
+
+    Route::get('get-variants/{model}', 'SpareImportController@getVariants')
+        ->name('get.variants');
+
+    Route::get('check-ro-number/{rn}', 'SpareImportController@checkRoNumber')
+        ->name('check-ro-number');
+
+    Route::get('fetch-parts', [App\Http\Controllers\Admin\SpareRequestCrudController::class, 'fetchParts'])
+        ->name('fetch.parts');
+
+    Route::get('spare/consumption', 'SpareImportController@spareConsumptionReport')
+        ->name('spare.consumption');
+
+    Route::get('spare/partwise-requirement', [App\Http\Controllers\Admin\SparePartwiseController::class, 'index'])
+        ->name('spare.partwise');
+
+    Route::get('spare/partwise-requirement/data', [App\Http\Controllers\Admin\SparePartwiseController::class, 'data'])
+        ->name('spare.partwise.data');
+
+    Route::get('spare/ro-closure', 'SpareTechnicianController@closure')
+        ->name('spare.ro-closure');
+
+    Route::get('spare/orderingreport', [App\Http\Controllers\Admin\SpareOrderingreportController::class, 'index'])
+        ->name('spare.orderingreport');
+
+    Route::get('spare/orderingreport/data', [App\Http\Controllers\Admin\SpareOrderingreportController::class, 'data'])
+        ->name('spare.orderingreport.data');
+
+    // Spare Request List Data (AG Grid)
+    Route::get('spare-request/data', [App\Http\Controllers\Admin\SpareRequestCrudController::class, 'data'])
+        ->name('spare-request.data');
 }); // this should be the absolute last line of this file
 
 /**

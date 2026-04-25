@@ -48,36 +48,39 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Type (Workshop / Showroom etc.)</label>
-                                <input type="text" name="type" class="form-control" value="{{ old('type') }}">
+                                <label>Type <span class="text-danger">*</span></label>
+                                <input type="text" name="type" class="form-control" value="{{ old('type') }}" required>
                             </div>
 
                             <div class="col-md-12 mb-3">
-                                <label>Address</label>
-                                <input type="text" name="address" class="form-control" value="{{ old('address') }}">
+                                <label>Address <span class="text-danger">*</span></label>
+                                <input type="text" name="address" class="form-control" value="{{ old('address') }}"
+                                    required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label>City <span class="text-danger">*</span></label>
+                                <input type="text" name="city" class="form-control" value="{{ old('city') }}" required>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>City</label>
-                                <input type="text" name="city" class="form-control" value="{{ old('city') }}">
+                                <label>State <span class="text-danger">*</span></label>
+                                <input type="text" name="state" class="form-control" value="{{ old('state') }}"
+                                    required>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>State</label>
-                                <input type="text" name="state" class="form-control" value="{{ old('state') }}">
+                                <label>Pincode <span class="text-danger">*</span> <small>(6 digits)</small></label>
+                                <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}"
+                                    required maxlength="6" pattern="[0-9]{6}">
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Pincode</label>
-                                <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}">
+                                <label>Mobile <span class="text-danger">*</span> <small>(10 digits)</small></label>
+                                <input type="text" name="mobile" class="form-control" value="{{ old('mobile') }}"
+                                    required maxlength="10" pattern="[0-9]{10}">
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label>Mobile</label>
-                                <input type="text" name="mobile" class="form-control" value="{{ old('mobile') }}">
-                            </div>
-
-                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Is Active?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_active" value="0">

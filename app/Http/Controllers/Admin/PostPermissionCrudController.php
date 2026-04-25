@@ -77,16 +77,16 @@ class PostPermissionCrudController extends CrudController
 
         return view('admin.post-permission.create', [
             'title'       => 'Add New Post Permission',
-            'posts'       => \App\Models\Core\Post::orderBy('id')->get(),           // Changed to 'id'
-            'permissions' => \App\Models\Core\Permission::orderBy('name')->get(),
+            'posts' => \App\Models\IAM\Post::withoutGlobalScopes()->orderBy('id')->get(),          // Changed to 'id'
+            'permissions' => \App\Models\IAM\Permission::orderBy('name')->get(),
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'post_id'       => 'required|exists:posts,id',
-            'permission_id' => 'required|exists:permissions,id',
+            'post_id'       => 'required|exists:xlr8_iam_post,id',
+            'permission_id' => 'required|exists:xlr8_iam_permissions,id',
         ]);
 
         PostPermission::create($validated);
@@ -106,8 +106,8 @@ class PostPermissionCrudController extends CrudController
         return view('admin.post-permission.edit', [
             'title'          => 'Edit Post Permission',
             'postPermission' => $postPermission,
-            'posts'          => \App\Models\Core\Post::orderBy('id')->get(),      // Changed to 'id'
-            'permissions'    => \App\Models\Core\Permission::orderBy('name')->get(),
+            'posts'          => \App\Models\IAM\Post::orderBy('id')->get(),      // Changed to 'id'
+            'permissions'    => \App\Models\IAM\Permission::orderBy('name')->get(),
         ]);
     }
 
@@ -116,8 +116,8 @@ class PostPermissionCrudController extends CrudController
         $postPermission = PostPermission::withoutGlobalScopes()->findOrFail($id);
 
         $validated = $request->validate([
-            'post_id'       => 'required|exists:posts,id',
-            'permission_id' => 'required|exists:permissions,id',
+            'post_id'       => 'required|exists:xlr8_iam_post,id',
+            'permission_id' => 'required|exists:xlr8_iam_permissions,id',
         ]);
 
         $postPermission->update($validated);

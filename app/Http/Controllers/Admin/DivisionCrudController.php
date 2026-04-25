@@ -46,6 +46,8 @@ class DivisionCrudController extends CrudController
         $gridData = $divisions->map(function ($division, $index) {
             $mapped = $division->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $division->is_active ? 'Active' : 'Inactive';
+
             $mapped['department'] = $division->department?->name ?? '—';
 
             $editUrl = backpack_url("division/{$division->id}/edit");
@@ -92,9 +94,9 @@ class DivisionCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'          => 'required|string|unique:divisions,code',
+            'code'          => 'required|string|unique:xlr8_admin_division,code',
             'name'          => 'required|string|max:255',
-            'department_id' => 'required|exists:departments,id',
+            'department_id' => 'required|exists:xlr8_admin_department,id',
             'description'   => 'nullable|string',
             'is_active'     => 'boolean',
         ]);
@@ -124,9 +126,9 @@ class DivisionCrudController extends CrudController
         $division = Division::findOrFail($id);
 
         $validated = $request->validate([
-            'code'          => 'required|string|unique:divisions,code,' . $id,
+            'code'          => 'required|string|unique:xlr8_admin_division,code,' . $id,
             'name'          => 'required|string|max:255',
-            'department_id' => 'required|exists:departments,id',
+            'department_id' => 'required|exists:xlr8_admin_department,id',
             'description'   => 'nullable|string',
             'is_active'     => 'boolean',
         ]);

@@ -83,7 +83,7 @@ class ColorCrudController extends CrudController
         return view('admin.color.edit', [
             'title'  => 'Edit Color - ' . $color->name,
             'color'  => $color,
-            'brands' => \App\Models\Core\Brand::orderBy('name')->get()
+            'brands' => Brand::orderBy('name')->get()
         ]);
     }
 
@@ -92,10 +92,25 @@ class ColorCrudController extends CrudController
         $color = Color::findOrFail($id);
 
         $validated = $request->validate([
-            'brand_id' => 'required|exists:brands,id',
-            'name'     => 'required|string|max:255',
-            'code'     => 'required|string|max:50|unique:colors,code,' . $id,
-            'hex_code' => 'required|string|max:7',
+            'brand_id' => 'required|exists:xlr8_vehicle_brand,id',
+
+            'name' => 'required|string|max:255',
+
+            // ✅ Only alphabets (no special char, no number)
+            'code' => [
+                'required',
+                'string',
+                'max:50',
+                'regex:/^[A-Za-z]+$/', // 🔥 only text allowed
+                'unique:xlr8_vehicle_color,code,' . $id
+            ],
+
+            // ✅ Must start with # and exactly 7 chars (# + 6 hex digits)
+            'hex_code' => [
+                'required',
+                'regex:/^#[0-9A-Fa-f]{6}$/'
+            ],
+
             'is_active' => 'boolean',
         ]);
 

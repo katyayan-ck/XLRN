@@ -50,6 +50,7 @@ class GarageCrudController extends CrudController
         $gridData = $garages->map(function ($garage, $index) {
             $mapped = $garage->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $garage->is_active;
             $mapped['person_name'] = $garage->person
                 ? $garage->person->first_name . ' ' . $garage->person->last_name
                 : '—';
@@ -57,10 +58,10 @@ class GarageCrudController extends CrudController
             $editUrl = backpack_url("garage/{$garage->id}/edit");
 
             $mapped['action'] = '
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
-                </div>
-            ';
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
+            </div>
+        ';
             return $mapped;
         })->values();
 
@@ -71,9 +72,11 @@ class GarageCrudController extends CrudController
                     ['field' => 'serial_no',    'headerName' => 'S.No'],
                     ['field' => 'name',         'headerName' => 'Garage Name'],
                     ['field' => 'person_name',  'headerName' => 'Associated Person'],
-                    ['field' => 'type',         'headerName' => 'Type'],
+                    ['field' => 'type',         'headerName' => 'Type'],           // ← Added
+                    ['field' => 'address',      'headerName' => 'Address'],        // ← Added
                     ['field' => 'city',         'headerName' => 'City'],
                     ['field' => 'state',        'headerName' => 'State'],
+                    ['field' => 'pincode',      'headerName' => 'Pincode'],        // ← Added
                     ['field' => 'mobile',       'headerName' => 'Mobile'],
                     ['field' => 'is_active',    'headerName' => 'Active'],
                     ['field' => 'action',       'headerName' => 'Actions']
@@ -98,15 +101,15 @@ class GarageCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'person_id'   => 'nullable|exists:persons,id',
-            'name'        => 'required|string|max:255',
-            'type'        => 'nullable|string|max:100',
-            'address'     => 'nullable|string|max:255',
-            'city'        => 'nullable|string|max:100',
-            'state'       => 'nullable|string|max:100',
-            'pincode'     => 'nullable|string|max:20',
-            'mobile'      => 'nullable|string|max:20',
-            'is_active'   => 'boolean',
+            'person_id' => 'nullable|exists:xlr8_admin_person,id',
+            'name'      => 'required|string|max:255',
+            'type'      => 'required|string|max:100',           // ← Required
+            'address'   => 'required|string|max:255',           // ← Required
+            'city'      => 'required|string|max:100',           // ← Required
+            'state'     => 'required|string|max:100',           // ← Required
+            'pincode'   => 'required|digits:6',                 // ← Required + 6 digits
+            'mobile'    => 'required|digits:10',                // ← Required + 10 digits
+            'is_active' => 'boolean',
         ]);
 
         Garage::create($validated);
@@ -135,15 +138,15 @@ class GarageCrudController extends CrudController
         $garage = Garage::findOrFail($id);
 
         $validated = $request->validate([
-            'person_id'   => 'nullable|exists:persons,id',
-            'name'        => 'required|string|max:255',
-            'type'        => 'nullable|string|max:100',
-            'address'     => 'nullable|string|max:255',
-            'city'        => 'nullable|string|max:100',
-            'state'       => 'nullable|string|max:100',
-            'pincode'     => 'nullable|string|max:20',
-            'mobile'      => 'nullable|string|max:20',
-            'is_active'   => 'boolean',
+            'person_id' => 'nullable|exists:xlr8_admin_person,id',
+            'name'      => 'required|string|max:255',
+            'type'      => 'required|string|max:100',
+            'address'   => 'required|string|max:255',
+            'city'      => 'required|string|max:100',
+            'state'     => 'required|string|max:100',
+            'pincode'   => 'required|digits:6',
+            'mobile'    => 'required|digits:10',
+            'is_active' => 'boolean',
         ]);
 
         $garage->update($validated);

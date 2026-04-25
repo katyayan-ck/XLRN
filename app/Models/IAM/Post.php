@@ -11,6 +11,4 @@ class Post extends BaseModel
     use CrudTrait;
     use HasFactory;
     protected $table = 'xlr8_iam_post';
-
-    
 }

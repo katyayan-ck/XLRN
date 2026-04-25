@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
+use App\Models\Vehicle\VehicleModel;
+use App\Models\Vehicle\Brand;
+use App\Models\Vehicle\Segment;
+use App\Models\Vehicle\SubSegment;
 
 class VehicleModelCrudController extends CrudController
 {
@@ -15,7 +19,7 @@ class VehicleModelCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Vehicle\VehicleModel::class);
+        CRUD::setModel(VehicleModel::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/vehicle-model');
         CRUD::setEntityNameStrings('vehicle model', 'vehicle models');
     }
@@ -29,7 +33,7 @@ class VehicleModelCrudController extends CrudController
     {
         $this->crud->setListView('admin.vehicle-model.list');
 
-        $models = \App\Models\Core\VehicleModel::with(['brand', 'segment', 'subSegment'])
+        $models = VehicleModel::with(['brand', 'segment', 'subSegment'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -81,28 +85,28 @@ class VehicleModelCrudController extends CrudController
     {
         $this->crud->setEditView('admin.vehicle-model.edit');
 
-        $vehiclemodel = \App\Models\Core\VehicleModel::with(['brand', 'segment', 'subSegment'])->findOrFail($id);
+        $vehiclemodel = VehicleModel::with(['brand', 'segment', 'subSegment'])->findOrFail($id);
 
         return view('admin.vehicle-model.edit', [
             'title'        => 'Edit Vehicle Model - ' . $vehiclemodel->name,
             'vehiclemodel' => $vehiclemodel,
-            'brands'       => \App\Models\Core\Brand::orderBy('name')->get(),
-            'segments'     => \App\Models\Core\Segment::orderBy('name')->get(),
-            'subsegments'  => \App\Models\Core\SubSegment::orderBy('name')->get(),
+            'brands'       => Brand::orderBy('name')->get(),
+            'segments'     => Segment::orderBy('name')->get(),
+            'subsegments'  => SubSegment::orderBy('name')->get(),
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $vehiclemodel = \App\Models\Core\VehicleModel::findOrFail($id);
+        $vehiclemodel = VehicleModel::findOrFail($id);
 
         $validated = $request->validate([
-            'brand_id'       => 'required|exists:brands,id',
-            'segment_id'     => 'required|exists:segments,id',
-            'sub_segment_id' => 'nullable|exists:sub_segments,id',
+            'brand_id'       => 'required|exists:xlr8_vehicle_brand,id',
+            'segment_id'     => 'required|exists:xlr8_vehicle_segment,id',
+            'sub_segment_id' => 'nullable|exists:xlr8_vehicle_subsegment,id',
             'name'           => 'required|string|max:255',
             'custom_name'    => 'nullable|string|max:255',
-            'oem_code'       => 'nullable|string|max:255|unique:vehicle_models,oem_code,' . $id,
+            'oem_code'       => 'nullable|string|max:255|unique:xlr8_vehicle_model,oem_code,' . $id,
             'description'    => 'nullable|string',
             'is_active'      => 'boolean',
         ]);
@@ -120,9 +124,9 @@ class VehicleModelCrudController extends CrudController
 
         return view('admin.vehicle-model.create', [
             'title'        => 'Add New Vehicle Model',
-            'brands'       => \App\Models\Core\Brand::orderBy('name')->get(),
-            'segments'     => \App\Models\Core\Segment::orderBy('name')->get(),
-            'subsegments'  => \App\Models\Core\SubSegment::orderBy('name')->get(),
+            'brands'       => Brand::orderBy('name')->get(),
+            'segments'     => Segment::orderBy('name')->get(),
+            'subsegments'  => SubSegment::orderBy('name')->get(),
         ]);
     }
 }

@@ -40,22 +40,18 @@ class PersonCrudController extends CrudController
             'display_name',
             'gender',
             'dob',
-            'marital_status',
-            'spouse_name',
             'occupation',
-            'aadhaar_no',
-            'pan_no',
-            'gst_no',
-            'email_primary',
-            'email_secondary',
             'mobile_primary',
-            'mobile_secondary'
+            'email_primary'
         ])->orderBy('id', 'desc')->get();
 
         $gridData = $persons->map(function ($person, $index) {
             $mapped = $person->toArray();
             $mapped['serial_no'] = $index + 1;
             $mapped['full_name'] = trim("{$person->first_name} {$person->middle_name} {$person->last_name}");
+
+            // Format DOB as dd/mm/yyyy
+            $mapped['dob'] = $person->dob?->format('d/m/Y') ?? '—';
 
             $editUrl = backpack_url("person/{$person->id}/edit");
 
@@ -78,6 +74,7 @@ class PersonCrudController extends CrudController
                     ['field' => 'display_name',   'headerName' => 'Display Name'],
                     ['field' => 'gender',         'headerName' => 'Gender'],
                     ['field' => 'dob',            'headerName' => 'Date of Birth'],
+                    ['field' => 'occupation',     'headerName' => 'Occupation'],
                     ['field' => 'mobile_primary', 'headerName' => 'Mobile'],
                     ['field' => 'email_primary',  'headerName' => 'Email'],
                     ['field' => 'action',         'headerName' => 'Actions']
@@ -96,11 +93,11 @@ class PersonCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'            => 'required|string|unique:persons,code',
+            'code'            => 'required|string|unique:xlr8_admin_person,code',
             'salutation'      => 'nullable|in:Mr,Mrs,Ms,Dr',
             'first_name'      => 'required|string|max:100',
             'middle_name'     => 'nullable|string|max:100',
-            'last_name'       => 'required|string|max:100',
+            'last_name'       => 'nullable|string|max:100',           // ← Changed to nullable
             'display_name'    => 'nullable|string|max:255',
             'gender'          => 'nullable|in:male,female,other,prefer_not_to_say',
             'dob'             => 'nullable|date',
@@ -110,10 +107,10 @@ class PersonCrudController extends CrudController
             'aadhaar_no'      => 'nullable|string|max:12',
             'pan_no'          => 'nullable|string|max:10',
             'gst_no'          => 'nullable|string|max:15',
-            'email_primary'   => 'nullable|email',
+            'email_primary'   => 'required|email',
             'email_secondary' => 'nullable|email',
-            'mobile_primary'  => 'nullable|string',
-            'mobile_secondary' => 'nullable|string',
+            'mobile_primary'  => 'required|digits:10',                // ← 10 digits only
+            'mobile_secondary' => 'nullable|digits:10',                // ← 10 digits only
         ]);
 
         Person::create($validated);
@@ -138,11 +135,11 @@ class PersonCrudController extends CrudController
         $person = Person::findOrFail($id);
 
         $validated = $request->validate([
-            'code'            => 'required|string|unique:persons,code,' . $id,
+            'code'            => 'required|string|unique:xlr8_admin_person,code,' . $id,
             'salutation'      => 'nullable|in:Mr,Mrs,Ms,Dr',
             'first_name'      => 'required|string|max:100',
             'middle_name'     => 'nullable|string|max:100',
-            'last_name'       => 'required|string|max:100',
+            'last_name'       => 'nullable|string|max:100',           // ← Changed to nullable
             'display_name'    => 'nullable|string|max:255',
             'gender'          => 'nullable|in:male,female,other,prefer_not_to_say',
             'dob'             => 'nullable|date',
@@ -152,10 +149,10 @@ class PersonCrudController extends CrudController
             'aadhaar_no'      => 'nullable|string|max:12',
             'pan_no'          => 'nullable|string|max:10',
             'gst_no'          => 'nullable|string|max:15',
-            'email_primary'   => 'nullable|email',
+            'email_primary'   => 'required|email',
             'email_secondary' => 'nullable|email',
-            'mobile_primary'  => 'nullable|string',
-            'mobile_secondary' => 'nullable|string',
+            'mobile_primary'  => 'required|digits:10',                // ← 10 digits only
+            'mobile_secondary' => 'nullable|digits:10',                // ← 10 digits only
         ]);
 
         $person->update($validated);

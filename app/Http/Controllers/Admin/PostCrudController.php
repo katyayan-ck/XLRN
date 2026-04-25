@@ -17,6 +17,7 @@ class PostCrudController extends CrudController
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
 
+
     public function setup()
     {
         CRUD::setModel(Post::class);
@@ -106,11 +107,11 @@ class PostCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'           => 'required|string|unique:posts,code',
+            'code'           => 'required|string|unique:xlr8_iam_post,code',
             'title'          => 'required|string|max:255',
-            'branch_id'      => 'required|exists:branches,id',
-            'department_id'  => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
+            'branch_id'      => 'required|exists:xlr8_admin_branch,id',
+            'department_id'  => 'required|exists:xlr8_admin_department,id',
+            'designation_id' => 'required|exists:xlr8_admin_designation,id',
             'description'    => 'nullable|string',
             'max_assignees'  => 'required|integer|min:1',
             'is_active'      => 'boolean',
@@ -144,11 +145,11 @@ class PostCrudController extends CrudController
         $post = Post::findOrFail($id);
 
         $validated = $request->validate([
-            'code'           => 'required|string|unique:posts,code,' . $id,
+            'code'           => 'required|string|unique:xlr8_iam_post,code,' . $id,
             'title'          => 'required|string|max:255',
-            'branch_id'      => 'required|exists:branches,id',
-            'department_id'  => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
+            'branch_id'      => 'required|exists:xlr8_admin_branch,id',
+            'department_id'  => 'required|exists:xlr8_admin_department,id',
+            'designation_id' => 'required|exists:xlr8_admin_designation,id',
             'description'    => 'nullable|string',
             'max_assignees'  => 'required|integer|min:1',
             'is_active'      => 'boolean',

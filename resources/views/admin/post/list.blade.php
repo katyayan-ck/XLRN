@@ -73,8 +73,7 @@
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
 <style>
-    .ag-theme-quartz .center-header .ag-header-cell-label,
-    .ag-theme-quartz .ag-header-group-cell-label {
+    .ag-theme-quartz .center-header .ag-header-cell-label {
         justify-content: center !important;
     }
 </style>
@@ -88,42 +87,26 @@
 
 <script>
     const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
-
     let gridApi;
 
+    // ==================== COLUMN DEFINITION (Flat - No Grouping) ====================
     const columnDefs = [
-        {
-            headerName: 'Primary',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['serial_no', 'code', 'title'].includes(col.field))
-        },
-        {
-            headerName: 'Organization',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['designation', 'department', 'branch'].includes(col.field))
-        },
-        {
-            headerName: 'Details',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['max_assignees', 'description'].includes(col.field))
-        },
-        {
-            headerName: 'Status',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['is_active', 'is_vacant'].includes(col.field))
-        },
-        {
-            headerName: 'Actions',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['action'].includes(col.field)).map(col => {
-                col.pinned = 'right';
-                col.width = 140;
-                col.sortable = false;
-                col.filter = false;
-                col.cellRenderer = 'htmlRenderer';
-                return col;
-            })
-        }
+        ...ALL_COLUMNS.filter(col => ['serial_no', 'code', 'title'].includes(col.field)),
+
+        ...ALL_COLUMNS.filter(col => ['designation', 'department', 'branch'].includes(col.field)),
+
+        ...ALL_COLUMNS.filter(col => ['max_assignees', 'description'].includes(col.field)),
+
+        ...ALL_COLUMNS.filter(col => ['is_active', 'is_vacant'].includes(col.field)),
+
+        ...ALL_COLUMNS.filter(col => ['action'].includes(col.field)).map(col => {
+            col.pinned = 'right';
+            col.width = 140;
+            col.sortable = false;
+            col.filter = false;
+            col.cellRenderer = 'htmlRenderer';
+            return col;
+        })
     ];
 
     const gridOptions = {
@@ -145,16 +128,74 @@
         },
         onGridReady: params => {
             gridApi = params.api;
-            // Hide is_active and is_vacant by default
+
+            // Default visible columns (is_active and is_vacant hidden by default)
             const defaultFields = ['serial_no', 'code', 'title', 'designation', 'department', 'branch', 'max_assignees', 'action'];
-            const allCols = [];
-            gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
+
+            const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
+
             gridApi.setColumnsVisible(allCols, false);
             gridApi.setColumnsVisible(defaultFields, true);
+
             setTimeout(() => gridApi.autoSizeAllColumns(), 300);
         }
     };
 
+    // ==================== Customise Headers Popup (Flat Version) ====================
+    function openColumnBubble() {
+        const bubble = document.getElementById('columnBubble');
+        const tbody = document.getElementById('columnBubbleBody');
+        if (!gridApi || !bubble || !tbody) return;
+
+        tbody.innerHTML = '';
+
+        const allFlatColumns = [
+            ...ALL_COLUMNS.filter(col => ['serial_no', 'code', 'title'].includes(col.field)),
+            ...ALL_COLUMNS.filter(col => ['designation', 'department', 'branch'].includes(col.field)),
+            ...ALL_COLUMNS.filter(col => ['max_assignees', 'description'].includes(col.field)),
+            ...ALL_COLUMNS.filter(col => ['is_active', 'is_vacant'].includes(col.field)),
+            ...ALL_COLUMNS.filter(col => ['action'].includes(col.field))
+        ];
+
+        allFlatColumns.forEach(col => {
+            if (!col.field) return;
+
+            const tr = document.createElement('tr');
+
+            const tdCheck = document.createElement('td');
+            tdCheck.style.width = '40px';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
+
+            // Primary fields disable karo
+            if (['serial_no', 'code', 'title'].includes(col.field)) {
+                checkbox.disabled = true;
+            }
+
+            // Action column disable karo
+            if (col.field === 'action') {
+                checkbox.disabled = true;
+            }
+
+            checkbox.addEventListener('change', () => {
+                gridApi.setColumnsVisible([col.field], checkbox.checked);
+            });
+
+            tdCheck.appendChild(checkbox);
+
+            const tdLabel = document.createElement('td');
+            tdLabel.textContent = col.headerName || col.field;
+
+            tr.append(tdCheck, tdLabel);
+            tbody.appendChild(tr);
+        });
+
+        bubble.style.display = 'block';
+    }
+
+    // ==================== Event Listeners ====================
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
         agGrid.createGrid(gridDiv, gridOptions);
@@ -172,83 +213,7 @@
             gridApi.setSortModel(null);
         });
 
-        // Customise Headers Popup (same as before)
-        function openColumnBubble() {
-            const bubble = document.getElementById('columnBubble');
-            const tbody = document.getElementById('columnBubbleBody');
-            if (!gridApi || !bubble || !tbody) return;
-
-            tbody.innerHTML = '';
-
-            columnDefs.forEach(group => {
-                const groupName = group.headerName;
-                const children = group.children || [];
-                if (groupName === 'Actions') return;
-
-                const groupTr = document.createElement('tr');
-                const groupCheckTd = document.createElement('td');
-                groupCheckTd.style.width = '30px';
-                const groupCheckbox = document.createElement('input');
-                groupCheckbox.type = 'checkbox';
-                const fields = children.map(c => c.field).filter(Boolean);
-
-                const anyVisible = fields.some(f => {
-                    const col = gridApi.getColumn(f);
-                    return col && col.isVisible();
-                });
-
-                groupCheckbox.checked = anyVisible;
-                if (groupName === 'Primary') {
-                    groupCheckbox.checked = true;
-                    groupCheckbox.disabled = true;
-                }
-
-                groupCheckbox.addEventListener('change', () => {
-                    gridApi.setColumnsVisible(fields, groupCheckbox.checked);
-                    tbody.querySelectorAll(`[data-group="${groupName}"] input`)
-                        .forEach(cb => cb.checked = groupCheckbox.checked);
-                });
-
-                groupCheckTd.appendChild(groupCheckbox);
-                const groupLabelTd = document.createElement('td');
-                groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
-                groupTr.appendChild(groupCheckTd);
-                groupTr.appendChild(groupLabelTd);
-                tbody.appendChild(groupTr);
-
-                children.forEach(col => {
-                    if (!col.field) return;
-                    const tr = document.createElement('tr');
-                    tr.dataset.group = groupName;
-                    const tdCheck = document.createElement('td');
-                    tdCheck.style.paddingLeft = '25px';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    const column = gridApi.getColumn(col.field);
-                    checkbox.checked = column ? column.isVisible() : false;
-
-                    if (groupName === 'Primary') {
-                        checkbox.checked = true;
-                        checkbox.disabled = true;
-                    }
-
-                    checkbox.addEventListener('change', () => {
-                        gridApi.setColumnsVisible([col.field], checkbox.checked);
-                    });
-
-                    tdCheck.appendChild(checkbox);
-                    const tdLabel = document.createElement('td');
-                    tdLabel.innerText = col.headerName;
-
-                    tr.appendChild(tdCheck);
-                    tr.appendChild(tdLabel);
-                    tbody.appendChild(tr);
-                });
-            });
-
-            bubble.style.display = 'block';
-        }
-
+        // Customise Headers
         document.getElementById('btnCustomiseHeaders').addEventListener('click', e => {
             e.stopPropagation();
             openColumnBubble();
@@ -260,22 +225,23 @@
 
         document.getElementById('columnBubble').addEventListener('click', e => e.stopPropagation());
 
-        document.addEventListener('click', e => {
+        document.addEventListener('click', () => {
             const bubble = document.getElementById('columnBubble');
-            if (bubble && bubble.style.display === 'block') bubble.style.display = 'none';
+            if (bubble?.style.display === 'block') bubble.style.display = 'none';
         });
 
+        // All Headers
         document.getElementById('btnAllHeaders').addEventListener('click', () => {
-            const allCols = [];
-            gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
+            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
             gridApi.setColumnsVisible(allCols, true);
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
         });
 
+        // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
             const defaultFields = ['serial_no', 'code', 'title', 'designation', 'department', 'branch', 'max_assignees', 'action'];
-            const allCols = [];
-            gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
+            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
+
             gridApi.setColumnsVisible(allCols, false);
             gridApi.setColumnsVisible(defaultFields, true);
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
@@ -315,11 +281,7 @@
 
             const rows = [];
             gridApi.forEachNodeAfterFilterAndSort(node => {
-                const row = [];
-                visibleColumns.forEach(col => {
-                    row.push(node.data[col.field] ?? '');
-                });
-                rows.push(row);
+                rows.push(visibleColumns.map(col => node.data[col.field] ?? ''));
             });
 
             doc.autoTable({

@@ -47,23 +47,31 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $gridData = $assignments->map(function ($assign, $index) {
             $mapped = $assign->toArray();
             $mapped['serial_no'] = $index + 1;
+
             $mapped['employee_name'] = $assign->employee && $assign->employee->person
                 ? trim($assign->employee->person->first_name . ' ' . $assign->employee->person->last_name)
                 : '—';
+
             $mapped['department_name'] = $assign->department?->name ?? '—';
+
+            // Format dates to dd/mm/yyyy
+            $mapped['from_date'] = $assign->from_date?->format('d/m/Y') ?? '—';
+            $mapped['to_date']   = $assign->to_date?->format('d/m/Y') ?? '—';
+
+            $mapped['is_current'] = $assign->is_current ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("employee-department-assignment/{$assign->id}/edit");
 
             $mapped['action'] = '
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
-                </div>
-            ';
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
+            </div>
+        ';
             return $mapped;
         })->values();
 
         return view('admin.employee-department-assignment.list', [
-            'title' => 'All Department Assignments',
+            'title' => 'Employee Department Assignments',
             'gridConfig' => [
                 'columns' => [
                     ['field' => 'serial_no',        'headerName' => 'S.No'],
@@ -95,8 +103,8 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_id'   => 'required|exists:employees,id',
-            'department_id' => 'required|exists:departments,id',
+            'employee_id'   => 'required|exists:xlr8_admin_emp_department_pivot,id',
+            'department_id' => 'required|exists:xlr8_admin_department,id',
             'from_date'     => 'required|date',
             'to_date'       => 'nullable|date|after_or_equal:from_date',
             'is_current'    => 'boolean',
@@ -129,8 +137,8 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $assignment = EmployeeDepartmentAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'employee_id'   => 'required|exists:employees,id',
-            'department_id' => 'required|exists:departments,id',
+            'employee_id'   => 'required|exists:xlr8_admin_employee,id',
+            'department_id' => 'required|exists:xlr8_admin_department,id',
             'from_date'     => 'required|date',
             'to_date'       => 'nullable|date|after_or_equal:from_date',
             'is_current'    => 'boolean',

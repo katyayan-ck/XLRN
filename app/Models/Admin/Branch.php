@@ -11,14 +11,14 @@ use OpenApi\Attributes as OA;
 #[OA\Schema(title: 'Branch')]
 /**
  * Branch Model
- * 
+ *
  * Represents company branches/offices
  */
 class Branch extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
-    protected $table = 'xlr8_branch';
+    protected $table = 'xlr8_admin_branch';
     public $scopeType = 'branch';
 
     protected $fillable = [

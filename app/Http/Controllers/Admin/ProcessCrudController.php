@@ -8,6 +8,7 @@ use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
 use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
 use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
 use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
+use \App\Models\IAM\Process;
 
 class ProcessCrudController extends CrudController
 {
@@ -18,7 +19,7 @@ class ProcessCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\IAM\Process::class);
+        CRUD::setModel(Process::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/process');
         CRUD::setEntityNameStrings('process', 'processes');
     }

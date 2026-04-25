@@ -78,13 +78,7 @@
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
 <style>
-    .ag-theme-quartz .center-header .ag-header-cell-label,
-    .ag-theme-quartz .ag-header-group-cell-label {
-        justify-content: center !important;
-    }
-
-    .ag-theme-quartz .ag-header-group-cell {
-        text-align: center !important;
+    .ag-theme-quartz .center-header .ag-header-cell-label {
         justify-content: center !important;
     }
 </style>
@@ -100,39 +94,28 @@
     const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
     let gridApi;
 
-    // ==================== COLUMN DEFINITION ====================
+    // ==================== COLUMN DEFINITION (Flat - No Grouping) ====================
     const columnDefs = [
-        {
-            headerName: 'Primary',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['serial_no', 'code', 'name', 'branch'].includes(col.field))
-                .map(col => {
-                    if (['serial_no', 'code'].includes(col.field)) col.pinned = 'left';
-                    return col;
-                })
-        },
-        {
-            headerName: 'Location',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['city', 'state', 'pincode'].includes(col.field))
-        },
-        {
-            headerName: 'Status',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['is_active'].includes(col.field))
-        },
-        {
-            headerName: 'Actions',
-            headerClass: 'center-header',
-            children: ALL_COLUMNS.filter(col => ['action'].includes(col.field)).map(col => {
-                col.pinned = 'right';
-                col.width = 140;
-                col.sortable = false;
-                col.filter = false;
-                col.cellRenderer = 'htmlRenderer';
+        ...ALL_COLUMNS.filter(col => ['serial_no', 'code', 'name', 'branch'].includes(col.field))
+            .map(col => {
+                if (['serial_no', 'code'].includes(col.field)) {
+                    col.pinned = 'left';
+                }
                 return col;
-            })
-        }
+            }),
+
+        ...ALL_COLUMNS.filter(col => ['city', 'state', 'pincode'].includes(col.field)),
+
+        ...ALL_COLUMNS.filter(col => ['is_active'].includes(col.field)),
+
+        ...ALL_COLUMNS.filter(col => ['action'].includes(col.field)).map(col => {
+            col.pinned = 'right';
+            col.width = 140;
+            col.sortable = false;
+            col.filter = false;
+            col.cellRenderer = 'htmlRenderer';
+            return col;
+        })
     ];
 
     const gridOptions = {
@@ -155,7 +138,6 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            // 🔥 Page Load par sirf Default Headers dikhao
             const defaultFields = [
                 'serial_no', 'code', 'name', 'branch',
                 'city', 'state', 'pincode',
@@ -171,7 +153,7 @@
         }
     };
 
-    // ==================== Customise Headers Popup ====================
+    // ==================== Customise Headers Popup (Flat Version) ====================
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
         const tbody = document.getElementById('columnBubbleBody');
@@ -179,66 +161,47 @@
 
         tbody.innerHTML = '';
 
-        columnDefs.forEach(group => {
-            const groupName = group.headerName;
-            const children = group.children || [];
-            if (groupName === 'Actions') return;
+        // Sab columns ko flat list mein show karo
+        const allFlatColumns = [
+            ...ALL_COLUMNS.filter(col => ['serial_no', 'code', 'name', 'branch'].includes(col.field)),
+            ...ALL_COLUMNS.filter(col => ['city', 'state', 'pincode'].includes(col.field)),
+            ...ALL_COLUMNS.filter(col => ['is_active'].includes(col.field)),
+            ...ALL_COLUMNS.filter(col => ['action'].includes(col.field))
+        ];
 
-            // Group Row
-            const groupTr = document.createElement('tr');
-            const groupCheckTd = document.createElement('td');
-            groupCheckTd.style.width = '30px';
+        allFlatColumns.forEach(col => {
+            if (!col.field) return;
 
-            const groupCheckbox = document.createElement('input');
-            groupCheckbox.type = 'checkbox';
-            const fields = children.map(c => c.field).filter(Boolean);
+            const tr = document.createElement('tr');
 
-            const anyVisible = fields.some(f => gridApi.getColumn(f)?.isVisible());
-            groupCheckbox.checked = anyVisible;
+            const tdCheck = document.createElement('td');
+            tdCheck.style.width = '40px';
 
-            if (groupName === 'Primary') {
-                groupCheckbox.checked = true;
-                groupCheckbox.disabled = true;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
+
+            // Primary fields ko disable rakho (optional)
+            if (['serial_no', 'code', 'name', 'branch'].includes(col.field)) {
+                checkbox.disabled = true;
             }
 
-            groupCheckbox.addEventListener('change', () => {
-                gridApi.setColumnsVisible(fields, groupCheckbox.checked);
-                tbody.querySelectorAll(`[data-group="${groupName}"] input`).forEach(cb => cb.checked = groupCheckbox.checked);
+            // Action column ko bhi disable rakho
+            if (col.field === 'action') {
+                checkbox.disabled = true;
+            }
+
+            checkbox.addEventListener('change', () => {
+                gridApi.setColumnsVisible([col.field], checkbox.checked);
             });
 
-            groupCheckTd.appendChild(groupCheckbox);
-            const groupLabelTd = document.createElement('td');
-            groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
+            tdCheck.appendChild(checkbox);
 
-            groupTr.append(groupCheckTd, groupLabelTd);
-            tbody.appendChild(groupTr);
+            const tdLabel = document.createElement('td');
+            tdLabel.textContent = col.headerName || col.field;
 
-            // Child Columns
-            children.forEach(col => {
-                if (!col.field) return;
-                const tr = document.createElement('tr');
-                tr.dataset.group = groupName;
-
-                const tdCheck = document.createElement('td');
-                tdCheck.style.paddingLeft = '25px';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
-
-                if (groupName === 'Primary') checkbox.disabled = true;
-
-                checkbox.addEventListener('change', () => {
-                    gridApi.setColumnsVisible([col.field], checkbox.checked);
-                });
-
-                tdCheck.appendChild(checkbox);
-                const tdLabel = document.createElement('td');
-                tdLabel.textContent = col.headerName;
-
-                tr.append(tdCheck, tdLabel);
-                tbody.appendChild(tr);
-            });
+            tr.append(tdCheck, tdLabel);
+            tbody.appendChild(tr);
         });
 
         bubble.style.display = 'block';
@@ -285,7 +248,7 @@
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
         });
 
-        // Default Headers Button
+        // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
             const defaultFields = [
                 'serial_no', 'code', 'name', 'branch',

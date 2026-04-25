@@ -110,42 +110,28 @@
 
     let gridApi;
 
-    const columnDefs = [
-        {
-            headerName: 'Primary',
-            headerClass: 'center-header',           // Group header center
-            children: getCols(['serial_no', 'code', 'name', 'short_name']).map(col => {
-                if (['serial_no', 'code'].includes(col.field)) col.pinned = 'left';
-                return col;
-            })
-        },
-        {
-            headerName: 'Contact',
-            headerClass: 'center-header',
-            children: getCols(['phone', 'email'])
-        },
-        {
-            headerName: 'Location',
-            headerClass: 'center-header',
-            children: getCols(['city', 'state', 'pincode'])
-        },
-        {
-            headerName: 'Status',
-            headerClass: 'center-header',
-            children: getCols(['is_head_office', 'is_active'])
-        },
-        {
-            headerName: 'Actions',
-            headerClass: 'center-header',
-            children: getCols(['action']).map(col => {
-                col.pinned = 'right';
-                col.width = 140;
-                col.sortable = false;
-                col.filter = false;
-                col.cellRenderer = 'htmlRenderer';
-                return col;
-            })
-        }
+        const columnDefs = [
+        ...getCols(['serial_no', 'code', 'name', 'short_name']).map(col => {
+            if (['serial_no', 'code'].includes(col.field)) {
+                col.pinned = 'left';
+            }
+            return col;
+        }),
+
+        ...getCols(['phone', 'email']),
+
+        ...getCols(['city', 'state', 'pincode']),
+
+        ...getCols(['is_head_office', 'is_active']),
+
+        ...getCols(['action']).map(col => {
+            col.pinned = 'right';
+            col.width = 140;
+            col.sortable = false;
+            col.filter = false;
+            col.cellRenderer = 'htmlRenderer';
+            return col;
+        })
     ];
 
     const gridOptions = {
@@ -176,7 +162,7 @@
         }
     };
 
-    // Customise Headers Popup (Booking Style)
+        // Updated openColumnBubble for Flat Columns (No Grouping)
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
         const tbody = document.getElementById('columnBubbleBody');
@@ -184,70 +170,51 @@
 
         tbody.innerHTML = '';
 
-        columnDefs.forEach(group => {
-            const groupName = group.headerName;
-            const children = group.children || [];
-            if (groupName === 'Actions') return;
+        // Sab columns ko ek saath flat list mein show karo
+        const allFlatColumns = [
+            ...getCols(['serial_no', 'code', 'name', 'short_name']),
+            ...getCols(['phone', 'email']),
+            ...getCols(['city', 'state', 'pincode']),
+            ...getCols(['is_head_office', 'is_active']),
+            ...getCols(['action'])
+        ];
 
-            const groupTr = document.createElement('tr');
-            const groupCheckTd = document.createElement('td');
-            groupCheckTd.style.width = '30px';
-            const groupCheckbox = document.createElement('input');
-            groupCheckbox.type = 'checkbox';
-            const fields = children.map(c => c.field).filter(Boolean);
+        allFlatColumns.forEach(col => {
+            if (!col.field) return;
 
-            const anyVisible = fields.some(f => {
-                const col = gridApi.getColumn(f);
-                return col && col.isVisible();
-            });
+            const tr = document.createElement('tr');
+            const tdCheck = document.createElement('td');
+            tdCheck.style.width = '40px';
 
-            groupCheckbox.checked = anyVisible;
-            if (groupName === 'Primary') {
-                groupCheckbox.checked = true;
-                groupCheckbox.disabled = true;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            const column = gridApi.getColumn(col.field);
+            checkbox.checked = column ? column.isVisible() : false;
+
+            // Primary columns ko disable kar sakte ho (optional)
+            if (['serial_no', 'code', 'name', 'short_name'].includes(col.field)) {
+                checkbox.checked = true;
+                checkbox.disabled = true;
             }
 
-            groupCheckbox.addEventListener('change', () => {
-                gridApi.setColumnsVisible(fields, groupCheckbox.checked);
-                tbody.querySelectorAll(`[data-group="${groupName}"] input`)
-                    .forEach(cb => cb.checked = groupCheckbox.checked);
+            // Action column ko bhi hide nahi karne dena chahte ho toh
+            if (col.field === 'action') {
+                checkbox.checked = true;
+                checkbox.disabled = true;
+            }
+
+            checkbox.addEventListener('change', () => {
+                gridApi.setColumnsVisible([col.field], checkbox.checked);
             });
 
-            groupCheckTd.appendChild(groupCheckbox);
-            const groupLabelTd = document.createElement('td');
-            groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
-            groupTr.appendChild(groupCheckTd);
-            groupTr.appendChild(groupLabelTd);
-            tbody.appendChild(groupTr);
+            tdCheck.appendChild(checkbox);
 
-            children.forEach(col => {
-                if (!col.field) return;
-                const tr = document.createElement('tr');
-                tr.dataset.group = groupName;
-                const tdCheck = document.createElement('td');
-                tdCheck.style.paddingLeft = '25px';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                const column = gridApi.getColumn(col.field);
-                checkbox.checked = column ? column.isVisible() : false;
+            const tdLabel = document.createElement('td');
+            tdLabel.innerText = col.headerName || col.field;
 
-                if (groupName === 'Primary') {
-                    checkbox.checked = true;
-                    checkbox.disabled = true;
-                }
-
-                checkbox.addEventListener('change', () => {
-                    gridApi.setColumnsVisible([col.field], checkbox.checked);
-                });
-
-                tdCheck.appendChild(checkbox);
-                const tdLabel = document.createElement('td');
-                tdLabel.innerText = col.headerName;
-
-                tr.appendChild(tdCheck);
-                tr.appendChild(tdLabel);
-                tbody.appendChild(tr);
-            });
+            tr.appendChild(tdCheck);
+            tr.appendChild(tdLabel);
+            tbody.appendChild(tr);
         });
 
         bubble.style.display = 'block';
