@@ -1,3 +1,4 @@
+
 <?php
 
 namespace App\Models\Admin;
@@ -8,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * PersonAddress Model
- * 
+ *
  * Multiple addresses for a person (Residential, Office, Billing, etc.)
  */
 class PersonAddress extends BaseModel

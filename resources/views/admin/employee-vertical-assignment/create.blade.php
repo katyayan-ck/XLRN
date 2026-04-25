@@ -35,7 +35,7 @@
                                 <label>Employee <span class="text-danger">*</span></label>
                                 <select name="employee_id" class="form-control form-select" required>
                                     <option value="">-- Select Employee --</option>
-                                    @foreach(App\Models\Core\Employee::with('person')->orderBy('code')->get() as $emp)
+                                    @foreach(App\Models\Admin\Employee::with('person')->orderBy('code')->get() as $emp)
                                     <option value="{{ $emp->id }}">
                                         {{ $emp->code }} -
                                         {{ $emp->person ? trim($emp->person->first_name.' '.$emp->person->last_name) :
@@ -49,7 +49,7 @@
                                 <label>Vertical <span class="text-danger">*</span></label>
                                 <select name="vertical_id" class="form-control form-select" required>
                                     <option value="">-- Select Vertical --</option>
-                                    @foreach(App\Models\Core\Vertical::orderBy('name')->get() as $vertical)
+                                    @foreach(App\Models\Admin\Vertical::orderBy('name')->get() as $vertical)
                                     <option value="{{ $vertical->id }}">{{ $vertical->name }}</option>
                                     @endforeach
                                 </select>

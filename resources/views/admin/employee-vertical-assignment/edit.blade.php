@@ -71,7 +71,7 @@
                             <div class="col-md-4 mb-3">
                                 <label>Vertical <span class="text-danger">*</span></label>
                                 <select name="vertical_id" class="form-control form-select" required>
-                                    @foreach(App\Models\Core\Vertical::orderBy('name')->get() as $vertical)
+                                    @foreach(App\Models\Admin\Vertical::orderBy('name')->get() as $vertical)
                                     <option value="{{ $vertical->id }}" {{ $vertical->id == $assignment->vertical_id ?
                                         'selected' : '' }}>
                                         {{ $vertical->name }}

@@ -35,7 +35,7 @@
                                 <label>Employee <span class="text-danger">*</span></label>
                                 <select name="employee_id" class="form-control form-select" required>
                                     <option value="">-- Select Employee --</option>
-                                    @foreach(App\Models\Core\Employee::with('person')->orderBy('code')->get() as $emp)
+                                    @foreach(App\Models\Admin\Employee::with('person')->orderBy('code')->get() as $emp)
                                     <option value="{{ $emp->id }}">
                                         {{ $emp->code }} -
                                         {{ $emp->person ? trim($emp->person->first_name.' '.$emp->person->last_name) :
@@ -49,7 +49,7 @@
                                 <label>Branch <span class="text-danger">*</span></label>
                                 <select name="branch_id" class="form-control form-select" required>
                                     <option value="">-- Select Branch --</option>
-                                    @foreach(App\Models\Core\Branch::orderBy('name')->get() as $branch)
+                                    @foreach(App\Models\Admin\Branch::orderBy('name')->get() as $branch)
                                     <option value="{{ $branch->id }}">{{ $branch->name }}</option>
                                     @endforeach
                                 </select>

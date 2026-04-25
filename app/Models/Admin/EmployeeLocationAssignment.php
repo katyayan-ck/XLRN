@@ -10,47 +10,38 @@ class EmployeeLocationAssignment extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
+
     protected $table = 'xlr8_admin_emp_location_pivot';
 
     protected $fillable = [
-        'employee_id',
-        'location_id',
-        'branch_id',
+        'employee_code',
+        'location_code',
+        'branch_code',
         'from_date',
         'to_date',
         'is_current',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
-        'from_date' => 'date',
-        'to_date' => 'date',
+        'from_date'  => 'date',
+        'to_date'    => 'date',
         'is_current' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
-    /**
-     * Relationship: Employee
-     */
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_code', 'code');
     }
 
-    /**
-     * Relationship: Location
-     */
     public function location()
     {
-        return $this->belongsTo(Location::class);
+        return $this->belongsTo(Location::class, 'location_code', 'code');
     }
 
-    /**
-     * Relationship: Branch
-     */
     public function branch()
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Branch::class, 'branch_code', 'code');
     }
 }

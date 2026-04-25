@@ -105,8 +105,8 @@ class EmployeeVerticalAssignmentCrudController extends CrudController
         $assignment = \App\Models\Admin\EmployeeVerticalAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'vertical_id' => 'required|exists:verticals,id',
+            'employee_id' => 'required|exists:xlr8_admin_employee,id',
+            'vertical_id' => 'required|exists:xlr8_admin_vertical,id',
             'from_date'   => 'required|date',
             'to_date'     => 'nullable|date|after_or_equal:from_date',
             'is_current'  => 'boolean',

@@ -10,25 +10,25 @@ class EmployeeBranchAssignment extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
+
     protected $table = 'xlr8_admin_emp_branch_pivot';
 
     protected $fillable = [
-        'employee_id',
-        'branch_id',
+        'employee_code',
+        'branch_code',
         'from_date',
         'to_date',
         'is_primary',
         'is_current',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
-        'from_date' => 'date',
-        'to_date' => 'date',
-        'is_primary' => 'boolean',
-        'is_current' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'from_date'   => 'date',
+        'to_date'     => 'date',
+        'is_primary'  => 'boolean',
+        'is_current'  => 'boolean',
     ];
 
     /**
@@ -36,7 +36,7 @@ class EmployeeBranchAssignment extends BaseModel
      */
     public function employee()
     {
-        return $this->belongsTo(Employee::class);
+        return $this->belongsTo(Employee::class, 'employee_code', 'code');
     }
 
     /**
@@ -44,6 +44,6 @@ class EmployeeBranchAssignment extends BaseModel
      */
     public function branch()
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Branch::class, 'branch_code', 'code');
     }
 }
