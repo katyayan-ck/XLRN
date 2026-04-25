@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Vertical;
+use App\Models\Admin\Vertical;
 
 class VerticalCrudController extends CrudController
 {
@@ -41,6 +41,8 @@ class VerticalCrudController extends CrudController
         $gridData = $verticals->map(function ($vertical, $index) {
             $mapped = $vertical->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $vertical->is_active ? 'Active' : 'Inactive';
+
 
             $editUrl = backpack_url("vertical/{$vertical->id}/edit");
 

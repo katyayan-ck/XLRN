@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Role;
-use App\Models\Core\Permission;
+use App\Models\IAM\Role;
+use App\Models\IAM\Permission;
 use Spatie\Permission\Models\Role as SpatieRole; // Agar original Spatie model bhi use karna ho to
 
 class RoleCrudController extends CrudController

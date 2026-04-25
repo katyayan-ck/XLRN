@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Designation;
+use App\Models\Admin\Designation;
 
 class DesignationCrudController extends CrudController
 {
@@ -41,6 +41,7 @@ class DesignationCrudController extends CrudController
         $gridData = $designations->map(function ($desig, $index) {
             $mapped = $desig->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $desig->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("designation/{$desig->id}/edit");
 

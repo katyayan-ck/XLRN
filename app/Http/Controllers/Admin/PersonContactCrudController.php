@@ -6,7 +6,7 @@ use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use App\Models\Core\Person;
-use App\Models\Core\PersonContact;
+use App\Models\Admin\PersonContact;
 
 class PersonContactCrudController extends CrudController
 {
@@ -49,6 +49,7 @@ class PersonContactCrudController extends CrudController
         $gridData = $contacts->map(function ($contact, $index) {
             $mapped = $contact->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_primary'] = $contact->is_primary ? 'Primary' : 'Secondary';
             $mapped['person_name'] = $contact->person ? $contact->person->first_name . ' ' . $contact->person->last_name : '—';
 
             $editUrl = backpack_url("person-contact/{$contact->id}/edit");
@@ -96,10 +97,10 @@ class PersonContactCrudController extends CrudController
     {
         $validated = $request->validate([
             'person_id'    => 'required|exists:persons,id',
-            'type'         => 'required|string|max:50',
+            'type'         => 'required|in:email,mobile',
             'name'         => 'required|string|max:100',
-            'mobile'       => 'nullable|string|max:20',
-            'email'        => 'nullable|email|max:100',
+            'mobile'       => 'required_if:type,mobile|digits:10',           // ← 10 digits + conditional
+            'email'        => 'required_if:type,email|email|max:100',
             'relationship' => 'nullable|string|max:50',
             'notes'        => 'nullable|string',
             'is_primary'   => 'boolean',
@@ -132,10 +133,10 @@ class PersonContactCrudController extends CrudController
 
         $validated = $request->validate([
             'person_id'    => 'required|exists:persons,id',
-            'type'         => 'required|string|max:50',
+            'type'         => 'required|in:email,mobile',
             'name'         => 'required|string|max:100',
-            'mobile'       => 'nullable|string|max:20',
-            'email'        => 'nullable|email|max:100',
+            'mobile'       => 'required_if:type,mobile|digits:10',
+            'email'        => 'required_if:type,email|email|max:100',
             'relationship' => 'nullable|string|max:50',
             'notes'        => 'nullable|string',
             'is_primary'   => 'boolean',

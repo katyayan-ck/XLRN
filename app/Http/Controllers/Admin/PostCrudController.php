@@ -10,12 +10,14 @@ use App\Models\Core\Department;
 use App\Models\Core\Designation;
 use App\Models\Core\Post;
 
+
 class PostCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
+
 
     public function setup()
     {

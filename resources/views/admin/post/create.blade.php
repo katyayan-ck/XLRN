@@ -85,7 +85,7 @@
                                     value="{{ old('max_assignees', 1) }}" min="1" required>
                             </div>
 
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-9 mb-3">
                                 <label>Description</label>
                                 <textarea name="description" class="form-control"
                                     rows="3">{{ old('description') }}</textarea>

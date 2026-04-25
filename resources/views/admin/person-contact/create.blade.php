@@ -26,7 +26,7 @@
                 </div>
                 <div class="card-body">
 
-                    <form method="POST" action="{{ backpack_url('person-contact') }}">
+                    <form id="contactForm" method="POST" action="{{ backpack_url('person-contact') }}">
                         @csrf
 
                         <div class="row">
@@ -44,11 +44,10 @@
 
                             <div class="col-md-3 mb-3">
                                 <label>Contact Type <span class="text-danger">*</span></label>
-                                <select name="type" class="form-control form-select" required>
+                                <select name="type" id="type" class="form-control form-select" required>
                                     <option value="">Select Type</option>
-                                    <option value="phone" {{ old('type')=='phone' ? 'selected' : '' }}>Phone</option>
-                                    <option value="email" {{ old('type')=='email' ? 'selected' : '' }}>Email</option>
                                     <option value="mobile" {{ old('type')=='mobile' ? 'selected' : '' }}>Mobile</option>
+                                    <option value="email" {{ old('type')=='email' ? 'selected' : '' }}>Email</option>
                                 </select>
                             </div>
 
@@ -58,27 +57,29 @@
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label>Mobile</label>
-                                <input type="text" name="mobile" class="form-control" value="{{ old('mobile') }}">
+                                <label>Mobile <span id="mobile_star" class="text-danger">*</span></label>
+                                <input type="text" name="mobile" id="mobile" class="form-control"
+                                    value="{{ old('mobile') }}" maxlength="10" pattern="[0-9]{10}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label>Email</label>
-                                <input type="email" name="email" class="form-control" value="{{ old('email') }}">
+                            <div class="col-md-3 mb-3">
+                                <label>Email <span id="email_star" class="text-danger">*</span></label>
+                                <input type="email" name="email" id="email" class="form-control"
+                                    value="{{ old('email') }}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Relationship</label>
                                 <input type="text" name="relationship" class="form-control"
                                     value="{{ old('relationship') }}">
                             </div>
 
-                            <div class="col-md-12 mb-3">
+                            <div class="col-md-11 mb-3">
                                 <label>Notes</label>
                                 <textarea name="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Primary?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_primary" value="0">
@@ -101,3 +102,34 @@
     </div>
 </div>
 @endsection
+
+@push('after_scripts')
+<script>
+    function toggleRequiredFields() {
+        const type = document.getElementById('type').value;
+        const mobileInput = document.getElementById('mobile');
+        const emailInput = document.getElementById('email');
+        const mobileStar = document.getElementById('mobile_star');
+        const emailStar = document.getElementById('email_star');
+
+        if (type === 'mobile') {
+            mobileInput.required = true;
+            emailInput.required = false;
+            mobileStar.style.display = 'inline';
+            emailStar.style.display = 'none';
+        } else if (type === 'email') {
+            mobileInput.required = false;
+            emailInput.required = true;
+            mobileStar.style.display = 'none';
+            emailStar.style.display = 'inline';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const typeSelect = document.getElementById('type');
+        typeSelect.addEventListener('change', toggleRequiredFields);
+        // Run once on load
+        toggleRequiredFields();
+    });
+</script>
+@endpush

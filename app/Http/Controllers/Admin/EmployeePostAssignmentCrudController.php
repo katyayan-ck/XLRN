@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Employee;
-use App\Models\Core\Post;
-use App\Models\Core\EmployeePostAssignment;
+use App\Models\Admin\Employee;
+use App\Models\Admin\Post;
+use App\Models\Admin\EmployeePostAssignment;
 
 class EmployeePostAssignmentCrudController extends CrudController
 {
@@ -48,35 +48,44 @@ class EmployeePostAssignmentCrudController extends CrudController
         $gridData = $assignments->map(function ($assign, $index) {
             $mapped = $assign->toArray();
             $mapped['serial_no'] = $index + 1;
+
             $mapped['employee_name'] = $assign->employee && $assign->employee->person
                 ? trim($assign->employee->person->first_name . ' ' . $assign->employee->person->last_name)
                 : '—';
+
             $mapped['post_name'] = $assign->post
                 ? ($assign->post->name ?? $assign->post->display_name ?? $assign->post->title ?? '—')
                 : '—';
 
+            // ✅ Date Format: dd/mm/yyyy
+            $mapped['from_date'] = $assign->from_date?->format('d/m/Y') ?? '—';
+            $mapped['to_date']   = $assign->to_date?->format('d/m/Y') ?? '—';
+
+            // ✅ Show Active / Inactive instead of 1/0
+            $mapped['is_current'] = $assign->is_current ? 'Active' : 'Inactive';
+
             $editUrl = backpack_url("employee-post-assignment/{$assign->id}/edit");
 
             $mapped['action'] = '
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
-                </div>
-            ';
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
+            </div>
+        ';
             return $mapped;
         })->values();
 
         return view('admin.employee-post-assignment.list', [
-            'title' => 'All Post Assignments',
+            'title' => 'Employee Post Assignments',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',      'headerName' => 'S.No'],
-                    ['field' => 'employee_name',  'headerName' => 'Employee'],
-                    ['field' => 'post_name',      'headerName' => 'Post'],
-                    ['field' => 'from_date',      'headerName' => 'From Date'],
-                    ['field' => 'to_date',        'headerName' => 'To Date'],
+                    ['field' => 'serial_no',        'headerName' => 'S.No'],
+                    ['field' => 'employee_name',    'headerName' => 'Employee'],
+                    ['field' => 'post_name',        'headerName' => 'Post'],
+                    ['field' => 'from_date',        'headerName' => 'From Date'],
+                    ['field' => 'to_date',          'headerName' => 'To Date'],
                     ['field' => 'assignment_order', 'headerName' => 'Order'],
-                    ['field' => 'is_current',     'headerName' => 'Current'],
-                    ['field' => 'action',         'headerName' => 'Actions']
+                    ['field' => 'is_current',       'headerName' => 'Current Status'],   // Updated label
+                    ['field' => 'action',           'headerName' => 'Actions']
                 ],
                 'data' => $gridData
             ]

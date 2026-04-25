@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
+use \App\Models\Vehicle\Segment;
+use \App\Models\Vehicle\Brand;
 
 class SegmentCrudController extends CrudController
 {
@@ -15,7 +17,7 @@ class SegmentCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Segment::class);
+        CRUD::setModel(Segment::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/segment');
         CRUD::setEntityNameStrings('segment', 'segments');
     }
@@ -29,7 +31,7 @@ class SegmentCrudController extends CrudController
     {
         $this->crud->setListView('admin.segment.list');
 
-        $segments = \App\Models\Core\Segment::with('brand')
+        $segments = Segment::with('brand')
             ->orderBy('id', 'desc')
             ->get();
 
@@ -77,18 +79,18 @@ class SegmentCrudController extends CrudController
     {
         $this->crud->setEditView('admin.segment.edit');
 
-        $segment = \App\Models\Core\Segment::findOrFail($id);
+        $segment = Segment::findOrFail($id);
 
         return view('admin.segment.edit', [
             'title'   => 'Edit Segment - ' . $segment->name,
             'segment' => $segment,
-            'brands'  => \App\Models\Core\Brand::orderBy('name')->get()
+            'brands'  => Brand::orderBy('name')->get()
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $segment = \App\Models\Core\Segment::findOrFail($id);
+        $segment = Segment::findOrFail($id);
 
         $validated = $request->validate([
             'brand_id'    => 'required|exists:brands,id',
@@ -111,7 +113,7 @@ class SegmentCrudController extends CrudController
 
         return view('admin.segment.create', [
             'title'  => 'Add New Segment',
-            'brands' => \App\Models\Core\Brand::orderBy('name')->get()
+            'brands' => Brand::orderBy('name')->get()
         ]);
     }
 }

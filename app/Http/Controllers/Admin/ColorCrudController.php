@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
+use \App\Models\Vehicle\Color;
+use \App\Models\Vehicle\Brand;
 
 class ColorCrudController extends CrudController
 {
@@ -15,7 +17,7 @@ class ColorCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\Color::class);
+        CRUD::setModel(Color::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/color');
         CRUD::setEntityNameStrings('color', 'colors');
     }
@@ -29,7 +31,7 @@ class ColorCrudController extends CrudController
     {
         $this->crud->setListView('admin.color.list');
 
-        $colors = \App\Models\Core\Color::with('brand')
+        $colors = Color::with('brand')
             ->orderBy('id', 'desc')
             ->get();
 
@@ -76,24 +78,39 @@ class ColorCrudController extends CrudController
     {
         $this->crud->setEditView('admin.color.edit');
 
-        $color = \App\Models\Core\Color::findOrFail($id);
+        $color = Color::findOrFail($id);
 
         return view('admin.color.edit', [
             'title'  => 'Edit Color - ' . $color->name,
             'color'  => $color,
-            'brands' => \App\Models\Core\Brand::orderBy('name')->get()
+            'brands' => Brand::orderBy('name')->get()
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $color = \App\Models\Core\Color::findOrFail($id);
+        $color = Color::findOrFail($id);
 
         $validated = $request->validate([
             'brand_id' => 'required|exists:brands,id',
-            'name'     => 'required|string|max:255',
-            'code'     => 'required|string|max:50|unique:colors,code,' . $id,
-            'hex_code' => 'required|string|max:7',
+
+            'name' => 'required|string|max:255',
+
+            // ✅ Only alphabets (no special char, no number)
+            'code' => [
+                'required',
+                'string',
+                'max:50',
+                'regex:/^[A-Za-z]+$/', // 🔥 only text allowed
+                'unique:colors,code,' . $id
+            ],
+
+            // ✅ Must start with # and exactly 7 chars (# + 6 hex digits)
+            'hex_code' => [
+                'required',
+                'regex:/^#[0-9A-Fa-f]{6}$/'
+            ],
+
             'is_active' => 'boolean',
         ]);
 
@@ -110,7 +127,7 @@ class ColorCrudController extends CrudController
 
         return view('admin.color.create', [
             'title'  => 'Add New Color',
-            'brands' => \App\Models\Core\Brand::orderBy('name')->get()
+            'brands' => Brand::orderBy('name')->get()
         ]);
     }
 }

@@ -76,14 +76,15 @@
                                     value="{{ old('name', $location->name) }}" required>
                             </div>
 
-                            <!-- 🔹 BRANCH DROPDOWN -->
                             <div class="col-md-4 mb-3">
                                 <label>Branch <span class="text-danger">*</span></label>
-                                <select name="branch_id" class="form-control form-select" required>
-                                    @foreach(\App\Models\Core\Branch::all() as $branchItem)
-                                    <option value="{{ $branchItem->id }}" {{ old('branch_id', $location->branch_id) ==
-                                        $branchItem->id ? 'selected' : '' }}>
-                                        {{ $branchItem->name }}
+                                <select name="branch_code" class="form-control form-select" required>
+                                    <option value="">Select Branch</option>
+
+                                    @foreach($branches as $branch)
+                                    <option value="{{ $branch->code }}" {{ old('branch_code', $location->branch_code) ==
+                                        $branch->code ? 'selected' : '' }}>
+                                        {{ $branch->name }} ({{ $branch->code }})
                                     </option>
                                     @endforeach
                                 </select>

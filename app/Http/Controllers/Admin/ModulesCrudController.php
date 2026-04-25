@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Module;
+use App\Models\IAM\Module;
 
 class ModulesCrudController extends CrudController
 {
@@ -54,7 +54,7 @@ class ModulesCrudController extends CrudController
             ';
 
             // Boolean ko readable banao
-            $mapped['is_active'] = $module->is_active ? 'Yes' : 'No';
+            $mapped['is_active'] = $module->is_active ? 'Active' : 'Inactive';
 
             return $mapped;
         })->values();

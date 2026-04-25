@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
+use \App\Models\Vehicle\SubSegment;
+use \App\Models\Vehicle\Segment;
 
 class SubSegmentCrudController extends CrudController
 {
@@ -15,7 +17,7 @@ class SubSegmentCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\SubSegment::class);
+        CRUD::setModel(SubSegment::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/sub-segment');
         CRUD::setEntityNameStrings('sub segment', 'sub segments');
     }
@@ -29,7 +31,7 @@ class SubSegmentCrudController extends CrudController
     {
         $this->crud->setListView('admin.sub-segment.list');
 
-        $subsegments = \App\Models\Core\SubSegment::with(['segment.brand'])
+        $subsegments = SubSegment::with(['segment.brand'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -78,18 +80,18 @@ class SubSegmentCrudController extends CrudController
     {
         $this->crud->setEditView('admin.sub-segment.edit');
 
-        $subsegment = \App\Models\Core\SubSegment::with('segment.brand')->findOrFail($id);
+        $subsegment = SubSegment::with('segment.brand')->findOrFail($id);
 
         return view('admin.sub-segment.edit', [
             'title'      => 'Edit Sub Segment - ' . $subsegment->name,
             'subsegment' => $subsegment,
-            'segments'   => \App\Models\Core\Segment::with('brand')->orderBy('name')->get()
+            'segments'   => Segment::with('brand')->orderBy('name')->get()
         ]);
     }
 
     public function update(Request $request, $id)
     {
-        $subsegment = \App\Models\Core\SubSegment::findOrFail($id);
+        $subsegment = SubSegment::findOrFail($id);
 
         $validated = $request->validate([
             'segment_id'  => 'required|exists:segments,id',
@@ -112,7 +114,7 @@ class SubSegmentCrudController extends CrudController
 
         return view('admin.sub-segment.create', [
             'title'    => 'Add New Sub Segment',
-            'segments' => \App\Models\Core\Segment::with('brand')->orderBy('name')->get()
+            'segments' => Segment::with('brand')->orderBy('name')->get()
         ]);
     }
 }

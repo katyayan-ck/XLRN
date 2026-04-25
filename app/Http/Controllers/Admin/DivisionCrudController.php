@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Department;
-use App\Models\Core\Division;
+use App\Models\Admin\Department;
+use App\Models\Admin\Division;
 
 class DivisionCrudController extends CrudController
 {
@@ -46,6 +46,8 @@ class DivisionCrudController extends CrudController
         $gridData = $divisions->map(function ($division, $index) {
             $mapped = $division->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $division->is_active ? 'Active' : 'Inactive';
+
             $mapped['department'] = $division->department?->name ?? '—';
 
             $editUrl = backpack_url("division/{$division->id}/edit");

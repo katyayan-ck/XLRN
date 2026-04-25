@@ -1,7 +1,244 @@
 @extends(backpack_view('blank'))
 
-@section('header')
-@endsection
+@section('title', 'All Post Permissions')
+
+@push('after_styles')
+<link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
+<style>
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+
+    .ag-theme-quartz .center-header .ag-header-cell-label {
+        justify-content: center !important;
+    }
+</style>
+@endpush
+
+@push('after_scripts')
+<script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+    const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
+
+    function getCols(fields) {
+        return ALL_COLUMNS.filter(col => fields.includes(col.field));
+    }
+
+    let gridApi;
+
+    // ==================== FLAT COLUMN DEFINITION ====================
+    const columnDefs = [
+        ...getCols(['serial_no', 'post_name', 'permission_name']).map(col => {
+            if (col.field === 'serial_no') {
+                col.pinned = 'left';
+                col.width = 80;
+            }
+            return col;
+        }),
+
+        ...getCols(['action']).map(col => {
+            col.pinned = 'right';
+            col.width = 140;
+            col.sortable = false;
+            col.filter = false;
+            col.cellRenderer = params => params.value || '';
+            return col;
+        })
+    ];
+
+    const gridOptions = {
+        columnDefs: columnDefs,
+        rowData: @json($gridConfig['data'] ?? []),
+        pagination: true,
+        paginationPageSize: 50,
+        rowHeight: 28,
+        animateRows: true,
+        defaultColDef: {
+            sortable: true,
+            filter: true,
+            resizable: true,
+            headerClass: 'center-header',
+            cellStyle: { textAlign: 'center' }
+        },
+        components: {
+            htmlRenderer: params => params.value || ''
+        },
+        onGridReady: params => {
+            gridApi = params.api;
+
+            const defaultFields = ['serial_no', 'post_name', 'permission_name', 'action'];
+
+            const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
+
+            gridApi.setColumnsVisible(allCols, false);
+            gridApi.setColumnsVisible(defaultFields, true);
+
+            setTimeout(() => gridApi.autoSizeAllColumns(), 300);
+        }
+    };
+
+    // ==================== CUSTOMISE HEADERS (Flat Version) ====================
+    function openColumnBubble() {
+        const bubble = document.getElementById('columnBubble');
+        const tbody = document.getElementById('columnBubbleBody');
+        if (!gridApi || !bubble || !tbody) return;
+
+        tbody.innerHTML = '';
+
+        const allFlatColumns = [
+            ...getCols(['serial_no', 'post_name', 'permission_name']),
+            ...getCols(['action'])
+        ];
+
+        allFlatColumns.forEach(col => {
+            if (!col.field) return;
+
+            const tr = document.createElement('tr');
+
+            const tdCheck = document.createElement('td');
+            tdCheck.style.width = '40px';
+            tdCheck.className = 'text-center';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
+
+            // Disable Primary columns
+            if (['serial_no', 'post_name', 'permission_name'].includes(col.field)) {
+                checkbox.disabled = true;
+            }
+
+            // Disable Action column
+            if (col.field === 'action') {
+                checkbox.disabled = true;
+            }
+
+            checkbox.addEventListener('change', () => {
+                gridApi.setColumnsVisible([col.field], checkbox.checked);
+            });
+
+            tdCheck.appendChild(checkbox);
+
+            const tdLabel = document.createElement('td');
+            tdLabel.innerText = col.headerName || col.field;
+
+            tr.appendChild(tdCheck);
+            tr.appendChild(tdLabel);
+            tbody.appendChild(tr);
+        });
+
+        bubble.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const gridDiv = document.querySelector('#myGrid');
+        agGrid.createGrid(gridDiv, gridOptions);
+
+        // Quick Filter
+        document.getElementById('quickFilter').addEventListener('input', e => {
+            gridApi.setGridOption('quickFilterText', e.target.value);
+        });
+
+        // Reset All
+        document.getElementById('resetAll').addEventListener('click', () => {
+            gridApi.setFilterModel(null);
+            document.getElementById('quickFilter').value = '';
+            gridApi.setGridOption('quickFilterText', '');
+            gridApi.setSortModel(null);
+        });
+
+        // Customise Headers
+        document.getElementById('btnCustomiseHeaders').addEventListener('click', e => {
+            e.stopPropagation();
+            openColumnBubble();
+        });
+
+        document.getElementById('closeColumnBubble').addEventListener('click', () => {
+            document.getElementById('columnBubble').style.display = 'none';
+        });
+
+        document.getElementById('columnBubble').addEventListener('click', e => e.stopPropagation());
+
+        document.addEventListener('click', () => {
+            const bubble = document.getElementById('columnBubble');
+            if (bubble && bubble.style.display === 'block') bubble.style.display = 'none';
+        });
+
+        // All Headers
+        document.getElementById('btnAllHeaders').addEventListener('click', () => {
+            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
+            gridApi.setColumnsVisible(allCols, true);
+            setTimeout(() => gridApi.autoSizeAllColumns(), 200);
+        });
+
+        // Default Headers
+        document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
+            const defaultFields = ['serial_no', 'post_name', 'permission_name', 'action'];
+            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
+
+            gridApi.setColumnsVisible(allCols, false);
+            gridApi.setColumnsVisible(defaultFields, true);
+            setTimeout(() => gridApi.autoSizeAllColumns(), 200);
+        });
+
+        // Excel Export
+        document.getElementById('exportCsv').addEventListener('click', () => {
+            const visibleColumns = gridApi.getAllDisplayedColumns()
+                .map(col => col.getColDef())
+                .filter(col => col.field && col.field !== 'action');
+
+            const rows = [];
+            gridApi.forEachNodeAfterFilterAndSort(node => {
+                const row = {};
+                visibleColumns.forEach(col => {
+                    row[col.headerName] = node.data[col.field] ?? '';
+                });
+                rows.push(row);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, "PostPermissions");
+            XLSX.writeFile(wb, `post-permissions-${new Date().toISOString().slice(0,10)}.xlsx`);
+        });
+
+        // PDF Export
+        document.getElementById('exportPdf').addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const visibleColumns = gridApi.getAllDisplayedColumns()
+                .map(col => col.getColDef())
+                .filter(col => col.field && col.field !== 'action');
+
+            const headers = visibleColumns.map(col => col.headerName);
+
+            const rows = [];
+            gridApi.forEachNodeAfterFilterAndSort(node => {
+                const row = [];
+                visibleColumns.forEach(col => {
+                    row.push(node.data[col.field] ?? '');
+                });
+                rows.push(row);
+            });
+
+            doc.autoTable({
+                head: [headers],
+                body: rows,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [41, 128, 185] },
+            });
+
+            doc.save(`post-permissions-${new Date().toISOString().slice(0,10)}.pdf`);
+        });
+    });
+</script>
+@endpush
 
 @section('content')
 <div class="row">
@@ -73,291 +310,3 @@
     </div>
 </div>
 @endsection
-
-@push('after_styles')
-<link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
-<style>
-    .ag-theme-quartz .center-header .ag-header-cell-label,
-    .ag-theme-quartz .ag-header-group-cell-label {
-        justify-content: center !important;
-        text-align: center !important;
-    }
-
-    #columnBubble {
-        width: 320px;
-    }
-</style>
-@endpush
-
-@push('after_scripts')
-<script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-
-<script>
-    const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
-
-    function getCols(fields) {
-        return ALL_COLUMNS.filter(col => fields.includes(col.field));
-    }
-
-    let gridApi;
-
-    const DEFAULT_VISIBLE_FIELDS = [
-        'serial_no',
-        'post_name',
-        'permission_name',
-        'created_at',
-        'action'
-    ];
-
-    const columnGroups = [
-        {
-            headerName: 'Primary',
-            headerClass: 'center-header',
-            children: getCols(['serial_no', 'post_name']).map(col => {
-                if (col.field === 'serial_no') col.pinned = 'left';
-                return col;
-            })
-        },
-        {
-            headerName: 'Permission Details',
-            headerClass: 'center-header',
-            children: getCols(['permission_name'])
-        },
-        {
-            headerName: 'Info',
-            headerClass: 'center-header',
-            children: getCols(['created_at'])
-        },
-        {
-            headerName: 'Actions',
-            headerClass: 'center-header',
-            children: getCols(['action']).map(col => {
-                col.pinned = 'right';
-                col.width = 140;
-                col.sortable = false;
-                col.filter = false;
-                col.cellRenderer = 'htmlRenderer';
-                return col;
-            })
-        }
-    ];
-
-    const gridOptions = {
-        columnDefs: columnGroups,
-        rowData: @json($gridConfig['data'] ?? []),
-        pagination: true,
-        paginationPageSize: 50,
-        paginationPageSizeSelector: [20, 50, 100, 200],
-        rowHeight: 28,
-        animateRows: true,
-
-        defaultColDef: {
-            sortable: true,
-            filter: true,
-            resizable: true,
-            headerClass: 'center-header',
-            cellStyle: { textAlign: 'center' }
-        },
-
-        components: {
-            htmlRenderer: params => params.value || ''
-        },
-
-        onGridReady: params => {
-            gridApi = params.api;
-
-            const allFields = [];
-            columnGroups.forEach(group => {
-                if (group.children) {
-                    group.children.forEach(child => {
-                        if (child.field) allFields.push(child.field);
-                    });
-                }
-            });
-
-            gridApi.setColumnsVisible(allFields, false);
-            gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
-
-            setTimeout(() => {
-                const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
-                gridApi.autoSizeColumns(visibleIds, false);
-            }, 400);
-        }
-    };
-
-    // Column Customizer Bubble
-    function openColumnBubble() {
-        const bubble = document.getElementById('columnBubble');
-        const tbody = document.getElementById('columnBubbleBody');
-        if (!gridApi || !bubble || !tbody) return;
-
-        tbody.innerHTML = '';
-
-        columnGroups.forEach(group => {
-            const groupName = group.headerName;
-            const children = group.children || [];
-            if (groupName === 'Actions') return;
-
-            // Group Row
-            const groupTr = document.createElement('tr');
-            groupTr.style.background = '#f8f9fa';
-            const groupCheckTd = document.createElement('td');
-            groupCheckTd.style.width = '30px';
-            groupCheckTd.className = 'text-center';
-
-            const groupCheckbox = document.createElement('input');
-            groupCheckbox.type = 'checkbox';
-            const fields = children.map(c => c.field).filter(Boolean);
-            const visibleCount = fields.filter(f => {
-                const col = gridApi.getColumn(f);
-                return col && col.isVisible();
-            }).length;
-
-            groupCheckbox.checked = visibleCount === fields.length && visibleCount > 0;
-            groupCheckbox.indeterminate = visibleCount > 0 && visibleCount < fields.length;
-
-            groupCheckbox.addEventListener('change', () => {
-                gridApi.setColumnsVisible(fields, groupCheckbox.checked);
-                tbody.querySelectorAll(`tr[data-group="${groupName}"] input`).forEach(cb => cb.checked = groupCheckbox.checked);
-            });
-
-            groupCheckTd.appendChild(groupCheckbox);
-            const groupLabelTd = document.createElement('td');
-            groupLabelTd.colSpan = 2;
-            groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
-
-            groupTr.appendChild(groupCheckTd);
-            groupTr.appendChild(groupLabelTd);
-            tbody.appendChild(groupTr);
-
-            // Child Columns
-            children.forEach(child => {
-                if (!child.field) return;
-                const tr = document.createElement('tr');
-                tr.dataset.group = groupName;
-
-                const tdCheck = document.createElement('td');
-                tdCheck.style.paddingLeft = '40px';
-                tdCheck.className = 'text-center';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                const col = gridApi.getColumn(child.field);
-                checkbox.checked = col ? col.isVisible() : false;
-
-                checkbox.addEventListener('change', () => {
-                    gridApi.setColumnsVisible([child.field], checkbox.checked);
-                });
-
-                tdCheck.appendChild(checkbox);
-
-                const tdLabel = document.createElement('td');
-                tdLabel.innerText = child.headerName;
-
-                tr.appendChild(tdCheck);
-                tr.appendChild(tdLabel);
-                tbody.appendChild(tr);
-            });
-        });
-
-        bubble.style.display = 'block';
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        agGrid.createGrid(document.querySelector('#myGrid'), gridOptions);
-
-        document.getElementById('quickFilter').addEventListener('input', e => {
-            gridApi.setGridOption('quickFilterText', e.target.value);
-        });
-
-        document.getElementById('resetAll').addEventListener('click', () => {
-            gridApi.setFilterModel(null);
-            gridApi.setGridOption('quickFilterText', '');
-            document.getElementById('quickFilter').value = '';
-        });
-
-        document.getElementById('btnCustomiseHeaders').addEventListener('click', e => {
-            e.stopPropagation();
-            openColumnBubble();
-        });
-
-        document.getElementById('closeColumnBubble').addEventListener('click', () => {
-            document.getElementById('columnBubble').style.display = 'none';
-        });
-
-        document.getElementById('columnBubble').addEventListener('click', e => e.stopPropagation());
-
-        document.addEventListener('click', () => {
-            const bubble = document.getElementById('columnBubble');
-            if (bubble) bubble.style.display = 'none';
-        });
-
-        document.getElementById('btnAllHeaders').addEventListener('click', () => {
-            const allFields = [];
-            columnGroups.forEach(group => {
-                if (group.children) group.children.forEach(c => { if (c.field) allFields.push(c.field); });
-            });
-            gridApi.setColumnsVisible(allFields, true);
-            setTimeout(() => gridApi.autoSizeColumns(gridApi.getAllDisplayedColumns().map(c => c.getColId()), false), 200);
-        });
-
-        document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const allFields = [];
-            columnGroups.forEach(group => {
-                if (group.children) group.children.forEach(c => { if (c.field) allFields.push(c.field); });
-            });
-            gridApi.setColumnsVisible(allFields, false);
-            gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
-            setTimeout(() => gridApi.autoSizeColumns(gridApi.getAllDisplayedColumns().map(c => c.getColId()), false), 200);
-        });
-
-        // Excel Export
-        document.getElementById('exportCsv').addEventListener('click', () => {
-            const visibleColumns = gridApi.getAllDisplayedColumns()
-                .map(col => col.getColDef())
-                .filter(col => col.field && col.field !== 'action');
-
-            const rows = [];
-            gridApi.forEachNodeAfterFilterAndSort(node => {
-                const row = {};
-                visibleColumns.forEach(col => row[col.headerName] = node.data[col.field] ?? '');
-                rows.push(row);
-            });
-
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(rows);
-            XLSX.utils.book_append_sheet(wb, ws, "PostPermissions");
-            XLSX.writeFile(wb, `post-permissions-${new Date().toISOString().slice(0,10)}.xlsx`);
-        });
-
-        // PDF Export
-        document.getElementById('exportPdf').addEventListener('click', () => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            const visibleColumns = gridApi.getAllDisplayedColumns()
-                .map(col => col.getColDef())
-                .filter(col => col.field && col.field !== 'action');
-
-            const headers = visibleColumns.map(col => col.headerName);
-            const rows = [];
-            gridApi.forEachNodeAfterFilterAndSort(node => {
-                const row = visibleColumns.map(col => node.data[col.field] ?? '');
-                rows.push(row);
-            });
-
-            doc.autoTable({
-                head: [headers],
-                body: rows,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [41, 128, 185] }
-            });
-
-            doc.save(`post-permissions-${new Date().toISOString().slice(0,10)}.pdf`);
-        });
-    });
-</script>
-@endpush

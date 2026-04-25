@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\Employee;
-use App\Models\Core\Vertical;
+use App\Models\Admin\Employee;
+use App\Models\Admin\Vertical;
 
 class EmployeeVerticalAssignmentCrudController extends CrudController
 {
@@ -17,7 +17,7 @@ class EmployeeVerticalAssignmentCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Core\EmployeeVerticalAssignment::class);
+        CRUD::setModel(\App\Models\Admin\EmployeeVerticalAssignment::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/employee-vertical-assignment');
         CRUD::setEntityNameStrings('vertical assignment', 'vertical assignments');
     }
@@ -31,7 +31,7 @@ class EmployeeVerticalAssignmentCrudController extends CrudController
     {
         $this->crud->setListView('admin.employee-vertical-assignment.list');
 
-        $assignments = \App\Models\Core\EmployeeVerticalAssignment::with(['employee.person', 'vertical'])
+        $assignments = \App\Models\Admin\EmployeeVerticalAssignment::with(['employee.person', 'vertical'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -91,7 +91,7 @@ class EmployeeVerticalAssignmentCrudController extends CrudController
 
     public function edit($id)
     {
-        $assignment = \App\Models\Core\EmployeeVerticalAssignment::with(['employee.person', 'vertical'])
+        $assignment = \App\Models\Admin\EmployeeVerticalAssignment::with(['employee.person', 'vertical'])
             ->findOrFail($id);
 
         return view('admin.employee-vertical-assignment.edit', [
@@ -102,7 +102,7 @@ class EmployeeVerticalAssignmentCrudController extends CrudController
 
     public function update(Request $request, $id)
     {
-        $assignment = \App\Models\Core\EmployeeVerticalAssignment::findOrFail($id);
+        $assignment = \App\Models\Admin\EmployeeVerticalAssignment::findOrFail($id);
 
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',

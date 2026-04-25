@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use App\Models\Core\UserType;
+use App\Models\Admin\UserType;
 
 class UserTypeCrudController extends CrudController
 {
@@ -41,6 +41,7 @@ class UserTypeCrudController extends CrudController
         $gridData = $userTypes->map(function ($userType, $index) {
             $mapped = $userType->toArray();
             $mapped['serial_no'] = $index + 1;
+            $mapped['is_active'] = $userType->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("user-type/{$userType->id}/edit");
 

@@ -67,55 +67,57 @@
                             </div>
 
                             <!-- Editable Fields -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Branch Code <span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control"
                                     value="{{ old('code', $branch->code) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Branch Name <span class="text-danger">*</span></label>
-                                <input type="text" name="name" class="form-control"
+                                <input type="text" name="name" id="name" class="form-control"
                                     value="{{ old('name', $branch->name) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Short Name <span class="text-danger">*</span></label>
-                                <input type="text" name="short_name" class="form-control"
+                                <input type="text" name="short_name" id="short_name" class="form-control"
                                     value="{{ old('short_name', $branch->short_name) }}" required>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label>Phone</label>
+                            <div class="col-md-3 mb-3">
+                                <label>Phone <small class="text-muted">(10 digits)</small></label>
                                 <input type="text" name="phone" class="form-control"
-                                    value="{{ old('phone', $branch->phone) }}">
+                                    value="{{ old('phone', $branch->phone) }}" maxlength="10" pattern="[0-9]{10}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Email</label>
                                 <input type="email" name="email" class="form-control"
                                     value="{{ old('email', $branch->email) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>City <span class="text-danger">*</span></label>
                                 <input type="text" name="city" class="form-control"
                                     value="{{ old('city', $branch->city) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>State <span class="text-danger">*</span></label>
                                 <input type="text" name="state" class="form-control"
                                     value="{{ old('state', $branch->state) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Pincode <span class="text-danger">*</span></label>
+                            <div class="col-md-3 mb-3">
+                                <label>Pincode <span class="text-danger">*</span> <small class="text-muted">(6
+                                        digits)</small></label>
                                 <input type="text" name="pincode" class="form-control"
-                                    value="{{ old('pincode', $branch->pincode) }}" required>
+                                    value="{{ old('pincode', $branch->pincode) }}" required maxlength="6"
+                                    pattern="[0-9]{6}">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Head Office?</label>
                                 <div class="form-check form-switch">
                                     <!-- Hidden fallback -->
@@ -127,7 +129,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>
                                 <div class="form-check form-switch">
                                     <!-- Hidden fallback -->
@@ -155,3 +157,15 @@
     </div>
 </div>
 @endsection
+@push('after_scripts')
+<script>
+    document.getElementById('name').addEventListener('input', function() {
+        let name = this.value.trim();
+        let shortNameField = document.getElementById('short_name');
+        if (name) {
+            let firstWord = name.split(' ')[0].toUpperCase();
+            shortNameField.value = firstWord;
+        }
+    });
+</script>
+@endpush
