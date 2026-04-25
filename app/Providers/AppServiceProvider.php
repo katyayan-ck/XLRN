@@ -50,8 +50,19 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot()
     {
-        //
+        $files = glob(base_path('routes/backpack/*.php'));
+
+        foreach ($files as $file) {
+            Route::middleware(
+                array_merge(
+                    (array) config('backpack.base.web_middleware', 'web'),
+                    (array) config('backpack.base.middleware_key', 'admin')
+                )
+            )->prefix(config('backpack.base.route_prefix', 'admin'))
+                ->namespace('App\Http\Controllers\Admin')
+                ->group($file);
+        }
     }
 }

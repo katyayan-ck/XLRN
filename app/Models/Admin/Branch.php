@@ -18,7 +18,7 @@ class Branch extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
-    protected $table = 'xcelr8_us_branch';
+    protected $table = 'xlr8_admin_branch';
     public $scopeType = 'branch';
 
     protected $fillable = [

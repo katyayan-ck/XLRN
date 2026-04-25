@@ -45,10 +45,10 @@
 
         ...getCols(['is_current']).map(col => {
             col.cellRenderer = params => {
-                if (params.value === 1 || params.value === true || params.value === 'Yes') {
-                    return `Current`;
+                if (params.value === 'Active') {
+                    return 'Yes';
                 }
-                return `Past`;
+                return 'No';
             };
             return col;
         }),

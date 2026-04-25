@@ -96,9 +96,9 @@ class LocationCrudController extends CrudController
         // print_r($request->all()); // Debugging line, remove in production
         // die();
         $validated = $request->validate([
-            'code'        => 'required|string|unique:locations,code',
+            'code'        => 'required|string|unique:xlr8_admin_location,code',
             'name'        => 'required|string|max:255',
-            'branch_code' => 'required|exists:branches,code',   // ← Ye line important hai
+            'branch_code' => 'required|exists:xlr8_admin_branch,code',   // ← Ye line important hai
             'city'        => 'nullable|string',
             'state'       => 'nullable|string',
             'pincode'     => 'nullable|string',
@@ -134,9 +134,9 @@ class LocationCrudController extends CrudController
         $location = Location::findOrFail($id);
 
         $validated = $request->validate([
-            'code'        => 'required|string|unique:locations,code,' . $id,
+            'code'        => 'required|string|unique:xlr8_admin_location,code,' . $id,
             'name'        => 'required|string|max:255',
-            'branch_code' => 'required|exists:branches,code',   // ← Important
+            'branch_code' => 'required|exists:xlr8_admin_branch,code',   // ← Important
             'city'        => 'nullable|string',
             'state'       => 'nullable|string',
             'pincode'     => 'nullable|string',

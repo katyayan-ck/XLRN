@@ -103,8 +103,8 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_id'   => 'required|exists:employees,id',
-            'department_id' => 'required|exists:departments,id',
+            'employee_id'   => 'required|exists:xlr8_admin_emp_department_pivot,id',
+            'department_id' => 'required|exists:xlr8_admin_department,id',
             'from_date'     => 'required|date',
             'to_date'       => 'nullable|date|after_or_equal:from_date',
             'is_current'    => 'boolean',
@@ -137,8 +137,8 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $assignment = EmployeeDepartmentAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'employee_id'   => 'required|exists:employees,id',
-            'department_id' => 'required|exists:departments,id',
+            'employee_id'   => 'required|exists:xlr8_admin_employee,id',
+            'department_id' => 'required|exists:xlr8_admin_department,id',
             'from_date'     => 'required|date',
             'to_date'       => 'nullable|date|after_or_equal:from_date',
             'is_current'    => 'boolean',

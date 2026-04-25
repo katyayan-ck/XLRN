@@ -105,11 +105,11 @@ class EmployeeCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'                  => 'required|string|unique:employees,code',
-            'person_id'             => 'required|exists:persons,id',
-            'designation_id'        => 'required|exists:designations,id',
-            'primary_branch_id'     => 'required|exists:branches,id',
-            'primary_department_id' => 'required|exists:departments,id',
+            'code'                  => 'required|string|unique:xlr8_admin_employee,code',
+            'person_id'             => 'required|exists:xlr8_admin_person,id',
+            'designation_id'        => 'required|exists:xlr8_admin_designation,id',
+            'primary_branch_id'     => 'required|exists:xlr8_admin_branch,id',
+            'primary_department_id' => 'required|exists:xlr8_admin_department,id',
             'joining_date'          => 'required|date',
             'resignation_date'      => 'nullable|date|after_or_equal:joining_date',
             'employment_type'       => 'required|in:permanent,contract,temporary,probation',
@@ -143,11 +143,11 @@ class EmployeeCrudController extends CrudController
         $employee = Employee::findOrFail($id);
 
         $validated = $request->validate([
-            'code'                  => 'required|string|unique:employees,code,' . $id,
-            'person_id'             => 'required|exists:persons,id',
-            'designation_id'        => 'required|exists:designations,id',
-            'primary_branch_id'     => 'required|exists:branches,id',
-            'primary_department_id' => 'required|exists:departments,id',
+            'code'                  => 'required|string|unique:xlr8_admin_employee,code,' . $id,
+            'person_id'             => 'required|exists:xlr8_admin_person,id',
+            'designation_id'        => 'required|exists:xlr8_admin_designation,id',
+            'primary_branch_id'     => 'required|exists:xlr8_admin_branch,id',
+            'primary_department_id' => 'required|exists:xlr8_admin_department,id',
             'joining_date'          => 'required|date',
             'resignation_date'      => 'nullable|date|after_or_equal:joining_date',
             'employment_type'       => 'required|in:permanent,contract,temporary,probation',

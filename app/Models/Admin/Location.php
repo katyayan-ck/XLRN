@@ -10,10 +10,10 @@ class Location extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
-    protected $table = 'xcelr8_us_location';
+    protected $table = 'xlr8_admin_location';
     public $scopeType = 'location';
     protected $fillable = [
-        'branch_id',
+        'branch_code',
         'code',
         'name',
         'description',
