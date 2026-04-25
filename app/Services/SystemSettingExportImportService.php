@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Core\SystemSetting;
+use App\Models\Utilities\Settings\SystemSetting;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Excel;
 

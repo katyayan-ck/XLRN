@@ -6,7 +6,6 @@ use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use App\Models\IAM\PostPermission;
-use App\Models\IAM\Permission;
 
 class PostPermissionCrudController extends CrudController
 {

@@ -49,7 +49,7 @@
                                 <label>Branch <span class="text-danger">*</span></label>
                                 <select name="branch_id" class="form-control form-select" required>
                                     <option value="">-- Select Branch --</option>
-                                    @foreach(App\Models\Core\Branch::orderBy('name')->get() as $branch)
+                                    @foreach(App\Models\Admin\Branch::orderBy('name')->get() as $branch)
                                     <option value="{{ $branch->id }}">{{ $branch->name }}</option>
                                     @endforeach
                                 </select>

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use App\Models\Core\Employee;
-use App\Models\Core\Person;
+use App\Models\Admin\Person;
 use App\Models\Core\UserType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\{

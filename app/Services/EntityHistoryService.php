@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Core\CommMaster;
-use App\Models\Core\CommThread;
-use App\Models\Core\Keyvalue;
+use App\Models\Utilities\CommHistory\CommMaster;
+use App\Models\Utilities\CommHistory\CommThread;
+use App\Models\Utilities\KeyValue\Keyvalue;
 use App\Services\KeywordValueService;
 use App\Services\NotificationService;
-use App\Models\Core\Chat;
+use App\Models\Utilities\CommHistory\Chat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Throwable;

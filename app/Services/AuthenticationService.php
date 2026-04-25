@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Core\OtpToken;
-use App\Models\Core\DeviceSession;
-use App\Models\Core\OtpAttemptLog;
-use App\Models\Core\AccountLock;
+use App\Models\IAM\OtpToken;
+use App\Models\IAM\DeviceSession;
+use App\Models\IAM\OtpAttemptLog;
+use App\Models\IAM\AccountLock;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;

@@ -6,10 +6,10 @@ use App\User;
 use Auth;
 
 
-use App\Models\Documents;
-use App\Models\DocsGroups;
-use App\Models\DocsFilters;
-use App\Models\DocUser;
+use App\Models\Utilities\Docs\Documents;
+use App\Models\Utilities\Docs\DocsGroups;
+use App\Models\Utilities\Docs\DocsFilters;
+use App\Models\Utilities\Docs\DocUser;
 
 use Carbon\Carbon;
 

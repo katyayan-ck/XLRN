@@ -17,7 +17,7 @@ class BrandCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(Brand::class);
+        CRUD::setModel(\App\Models\Vehicle\Brand::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/brand');
         CRUD::setEntityNameStrings('brand', 'brands');
     }
@@ -31,7 +31,7 @@ class BrandCrudController extends CrudController
     {
         $this->crud->setListView('admin.brand.list');
 
-        $brands = Brand::select([
+        $brands = \App\Models\Vehicle\Brand::select([
             'id',
             'code',
             'name',

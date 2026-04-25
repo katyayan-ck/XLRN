@@ -22,7 +22,7 @@ class BranchCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(Branch::class);                    // ← Fixed
+        CRUD::setModel(\App\Models\Admin\Branch::class);
         CRUD::setRoute(config('backpack.base.route_prefix') . '/branch');
         CRUD::setEntityNameStrings('branch', 'branches');
     }
@@ -36,7 +36,7 @@ class BranchCrudController extends CrudController
     {
         $this->crud->setListView('admin.branch.list');
 
-        $branches = Branch::select([                      // ← Use the imported model
+        $branches = \App\Models\Admin\Branch::select([
             'id',
             'code',
             'name',
@@ -93,7 +93,7 @@ class BranchCrudController extends CrudController
     {
         $this->crud->setEditView('admin.branch.edit');
 
-        $branch = Branch::findOrFail($id);   // ← Fixed
+        $branch = \App\Models\Admin\Branch::findOrFail($id);
 
         return view('admin.branch.edit', [
             'title'  => 'Edit Branch - ' . $branch->name,
@@ -103,7 +103,7 @@ class BranchCrudController extends CrudController
 
     public function update(Request $request, $id)
     {
-        $branch = Branch::findOrFail($id);   // ← Fixed
+        $branch = \App\Models\Admin\Branch::findOrFail($id);
 
         $validated = $request->validate([
             'code'           => 'required|string|unique:xlr8_branch,code,' . $id,

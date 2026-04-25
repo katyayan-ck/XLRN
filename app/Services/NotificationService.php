@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Core\{Notification, Alert, Message};
+use App\Models\Utilities\Noty\{Notification, Alert, Message};
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Exception;

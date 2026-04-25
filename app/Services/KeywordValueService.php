@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Core\Keyvalue;
-use App\Models\Core\KeywordMaster;
+use App\Models\Utilities\KeyValue\Keyvalue;
+use App\Models\Utilities\KeyValue\KeywordMaster;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
