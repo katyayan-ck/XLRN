@@ -94,9 +94,9 @@ class DepartmentCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'        => 'required|string|unique:departments,code',
+            'code'        => 'required|string|unique:xlr8_admin_department,code',
             'name'        => 'required|string|max:255',
-            'branch_id'   => 'required|exists:branches,id',
+            'branch_id'   => 'required|exists:xlr8_admin_branch,id',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);
@@ -126,9 +126,9 @@ class DepartmentCrudController extends CrudController
         $department = Department::findOrFail($id);
 
         $validated = $request->validate([
-            'code'        => 'required|string|unique:departments,code,' . $id,
+            'code'        => 'required|string|unique:xlr8_admin_department,code,' . $id,
             'name'        => 'required|string|max:255',
-            'branch_id'   => 'required|exists:branches,id',
+            'branch_id'   => 'required|exists:xlr8_admin_branch,id',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);

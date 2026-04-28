@@ -88,7 +88,7 @@ class RoleCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'        => 'required|unique:xlr8_iam_roles,name|max:255',
+            'name'        => 'required|unique:xlr8_iam_user_role_pivot,name|max:255',
             'guard_name'  => 'required|in:web,api',
             'permissions' => 'array',
             'permissions.*' => 'exists:xlr8_iam_permissions,id'
@@ -125,7 +125,7 @@ class RoleCrudController extends CrudController
         $role = Role::findOrFail($id);
 
         $validated = $request->validate([
-            'name'        => 'required|unique:xlr8_iam_roles,name,' . $id . '|max:255',
+            'name'        => 'required|unique:xlr8_iam_user_role_pivot,name,' . $id . '|max:255',
             'guard_name'  => 'required|in:web,api',
             'permissions' => 'array',
             'permissions.*' => 'exists:xlr8_iam_permissions,id'

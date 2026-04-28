@@ -6,6 +6,8 @@ use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use App\Models\Admin\EmployeeBranchAssignment;
+use App\Models\Admin\Employee;
+use App\Models\Admin\Branch;
 
 class EmployeeBranchAssignmentCrudController extends CrudController
 {
@@ -43,8 +45,10 @@ class EmployeeBranchAssignmentCrudController extends CrudController
                 'is_primary'    => $assignment->is_primary ? 'Yes' : 'No',
                 'is_current'    => $assignment->is_current ? 'Yes' : 'No',
                 'action' => '
-                    <a href="' . backpack_url("employee-branch-assignment/{$assignment->id}/edit") . '"
-                       class="btn btn-sm btn-primary py-1 px-2">Edit</a>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="' . backpack_url("employee-branch-assignment/{$assignment->id}/edit") . '"
+                        class="btn btn-sm btn-primary py-1 px-2">Edit</a>
+                    </div>
                 '
             ];
         });
@@ -71,7 +75,9 @@ class EmployeeBranchAssignmentCrudController extends CrudController
     public function create()
     {
         return view('admin.employee-branch-assignment.create', [
-            'title' => 'Assign Branch to Employee',
+            'title'     => 'Assign Branch to Employee',
+            'employees' => Employee::with('person')->orderBy('code')->get(),
+            'branches'  => Branch::orderBy('name')->get(),
         ]);
     }
 
@@ -96,9 +102,11 @@ class EmployeeBranchAssignmentCrudController extends CrudController
             'is_current'  => 'boolean',
         ]);
 
-        // Convert id → code
-        $employeeCode = \App\Models\Admin\Employee::findOrFail($validated['employee_id'])->code;
-        $branchCode   = \App\Models\Admin\Branch::findOrFail($validated['branch_id'])->code;
+        // Convert ID to Code
+        $employeeCode = Employee::findOrFail($validated['employee_id'])->code;
+        $branchCode   = Branch::findOrFail($validated['branch_id'])->code;
+
+        $userId = backpack_user()->id ?? auth()->id();   // ← Correct way to get user ID
 
         EmployeeBranchAssignment::create([
             'employee_code' => $employeeCode,
@@ -107,7 +115,7 @@ class EmployeeBranchAssignmentCrudController extends CrudController
             'to_date'       => $validated['to_date'],
             'is_primary'    => $validated['is_primary'] ?? 0,
             'is_current'    => $validated['is_current'] ?? 1,
-            'created_by'    => backpack_auth()->id(),
+            'created_by'    => $userId,
         ]);
 
         \Alert::success('Branch assignment created successfully!')->flash();
@@ -126,7 +134,8 @@ class EmployeeBranchAssignmentCrudController extends CrudController
             'is_current'  => 'boolean',
         ]);
 
-        $branchCode = \App\Models\Admin\Branch::findOrFail($validated['branch_id'])->code;
+        $branchCode = Branch::findOrFail($validated['branch_id'])->code;
+        $userId = backpack_user()->id ?? auth()->id();   // ← Correct way
 
         $assignment->update([
             'branch_code' => $branchCode,
@@ -134,7 +143,7 @@ class EmployeeBranchAssignmentCrudController extends CrudController
             'to_date'     => $validated['to_date'],
             'is_primary'  => $validated['is_primary'] ?? $assignment->is_primary,
             'is_current'  => $validated['is_current'] ?? $assignment->is_current,
-            'updated_by'  => backpack_auth()->id(),
+            'updated_by'  => $userId,
         ]);
 
         \Alert::success('Branch assignment updated successfully!')->flash();

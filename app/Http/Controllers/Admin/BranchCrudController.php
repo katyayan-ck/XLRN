@@ -106,7 +106,7 @@ class BranchCrudController extends CrudController
         $branch = Branch::findOrFail($id);   // ← Fixed
 
         $validated = $request->validate([
-            'code'           => 'required|string|unique:xlr8_branch,code,' . $id,
+            'code'           => 'required|string|unique:xlr8_admin_branch,code,' . $id,
             'name'           => 'required|string|max:255',
             'short_name'     => 'required|string|max:100',
             'phone'          => 'nullable|string',

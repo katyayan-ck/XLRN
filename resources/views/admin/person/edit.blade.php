@@ -1,6 +1,6 @@
 @extends(backpack_view('blank'))
 
-@section('title', 'Edit Person - ' . ($person->display_name ?? $person->first_name . ' ' . $person->last_name))
+@section('title', 'Edit Person - ' . ($person->display_name ?? $person->full_name))
 
 @push('after_styles')
 <style>
@@ -22,6 +22,7 @@
         min-height: 42px;
         display: flex;
         align-items: center;
+        font-weight: 500;
     }
 </style>
 @endpush
@@ -41,14 +42,26 @@
                         @method('PUT')
 
                         <div class="row">
-                            <!-- Read Only -->
+
+                            <!-- Read Only Fields -->
                             <div class="col-md-12 mb-4">
-                                <div class="row">
+                                <div class="row g-3">
                                     <div class="col-md-3">
                                         <label class="form-label fw-bold">Person ID</label>
                                         <div class="readonly-value">{{ $person->id }}</div>
                                     </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Person Code (Immutable)</label>
+                                        <div class="readonly-value">{{ $person->person_code }}
+                                        </div>
+                                    </div>
                                     <div class="col-md-3">
+                                        <label class="form-label fw-bold">Entity Type</label>
+                                        <div class="readonly-value">
+                                            {{ ucwords(str_replace('_', ' ', $person->entity_type)) }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
                                         <label class="form-label fw-bold">Created At</label>
                                         <div class="readonly-value">
                                             {{ $person->created_at?->format('d-m-Y H:i') ?? '—' }}
@@ -57,10 +70,29 @@
                                 </div>
                             </div>
 
+                            <!-- Editable Fields -->
                             <div class="col-md-3 mb-3">
-                                <label>Code <span class="text-danger">*</span></label>
-                                <input type="text" name="code" class="form-control"
-                                    value="{{ old('code', $person->code) }}" required>
+                                <label>First Name <span class="text-danger">*</span></label>
+                                <input type="text" name="first_name" class="form-control"
+                                    value="{{ old('first_name', $person->first_name) }}" required>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Middle Name</label>
+                                <input type="text" name="middle_name" class="form-control"
+                                    value="{{ old('middle_name', $person->middle_name) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Last Name</label>
+                                <input type="text" name="last_name" class="form-control"
+                                    value="{{ old('last_name', $person->last_name) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Display Name</label>
+                                <input type="text" name="display_name" class="form-control"
+                                    value="{{ old('display_name', $person->display_name) }}">
                             </div>
 
                             <div class="col-md-3 mb-3">
@@ -76,30 +108,6 @@
                                     <option value="Dr" {{ old('salutation', $person->salutation) == 'Dr' ? 'selected' :
                                         '' }}>Dr</option>
                                 </select>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Display Name</label>
-                                <input type="text" name="display_name" class="form-control"
-                                    value="{{ old('display_name', $person->display_name) }}">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>First Name <span class="text-danger">*</span></label>
-                                <input type="text" name="first_name" class="form-control"
-                                    value="{{ old('first_name', $person->first_name) }}" required>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Middle Name</label>
-                                <input type="text" name="middle_name" class="form-control"
-                                    value="{{ old('middle_name', $person->middle_name) }}">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Last Name </label>
-                                <input type="text" name="last_name" class="form-control"
-                                    value="{{ old('last_name', $person->last_name) }}" required>
                             </div>
 
                             <div class="col-md-3 mb-3">
@@ -123,25 +131,57 @@
                                     value="{{ old('dob', $person->dob?->format('Y-m-d')) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Occupation</label>
                                 <input type="text" name="occupation" class="form-control"
                                     value="{{ old('occupation', $person->occupation) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Email Primary <span class="text-danger">*</span></label>
-                                <input type="email" name="email_primary" class="form-control" required
-                                    value="{{ old('email_primary', $person->email_primary) }}">
+                            <div class="col-md-3 mb-3">
+                                <label>PAN No</label>
+                                <input type="text" name="pan_no" class="form-control" maxlength="10"
+                                    value="{{ old('pan_no', $person->pan_no) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Mobile Primary <span class="text-danger">*</span> <small class="text-muted">(10
-                                        digits only)</small></label>
-                                <input type="text" name="mobile_primary" class="form-control" required
-                                    value="{{ old('mobile_primary', $person->mobile_primary) }}" pattern="[0-9]{10}"
-                                    maxlength="10" title="Please enter exactly 10 digits">
+                            <div class="col-md-3 mb-3">
+                                <label>Aadhaar No</label>
+                                <input type="text" name="aadhaar_no" class="form-control" maxlength="12"
+                                    value="{{ old('aadhaar_no', $person->aadhaar_no) }}">
                             </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>GSTIN</label>
+                                <input type="text" name="gst_no" class="form-control" maxlength="15"
+                                    value="{{ old('gst_no', $person->gst_no) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>TAN No</label>
+                                <input type="text" name="tan_no" class="form-control" maxlength="20"
+                                    value="{{ old('tan_no', $person->tan_no) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Marital Status</label>
+                                <select name="marital_status" class="form-control form-select">
+                                    <option value="">Select</option>
+                                    <option value="single" {{ old('marital_status', $person->marital_status) == 'single'
+                                        ? 'selected' : '' }}>Single</option>
+                                    <option value="married" {{ old('marital_status', $person->marital_status) ==
+                                        'married' ? 'selected' : '' }}>Married</option>
+                                    <option value="divorced" {{ old('marital_status', $person->marital_status) ==
+                                        'divorced' ? 'selected' : '' }}>Divorced</option>
+                                    <option value="widowed" {{ old('marital_status', $person->marital_status) ==
+                                        'widowed' ? 'selected' : '' }}>Widowed</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Spouse Name</label>
+                                <input type="text" name="spouse_name" class="form-control"
+                                    value="{{ old('spouse_name', $person->spouse_name) }}">
+                            </div>
+
                         </div>
 
                         <div class="mt-4">

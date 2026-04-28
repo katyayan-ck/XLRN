@@ -21,7 +21,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header text-black">
+                <div class="card-header">
                     <h2 class="mb-0">Add New Person</h2>
                 </div>
                 <div class="card-body">
@@ -31,80 +31,99 @@
 
                         <div class="row">
                             <div class="col-md-3 mb-3">
-                                <label>Code <span class="text-danger">*</span></label>
-                                <input type="text" name="code" class="form-control" value="{{ old('code') }}" required>
+                                <label>Entity Type <span class="text-danger">*</span></label>
+                                <select name="entity_type" class="form-control form-select" required>
+                                    <option value="individual">Individual</option>
+                                    <option value="legal_entity">Legal Entity (Firm/Company)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>First Name <span class="text-danger">*</span></label>
+                                <input type="text" name="first_name" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Middle Name</label>
+                                <input type="text" name="middle_name" class="form-control">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Last Name</label>
+                                <input type="text" name="last_name" class="form-control">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Display Name</label>
+                                <input type="text" name="display_name" class="form-control">
                             </div>
 
                             <div class="col-md-3 mb-3">
                                 <label>Salutation</label>
                                 <select name="salutation" class="form-control form-select">
                                     <option value="">Select</option>
-                                    <option value="Mr" {{ old('salutation')=='Mr' ? 'selected' : '' }}>Mr</option>
-                                    <option value="Mrs" {{ old('salutation')=='Mrs' ? 'selected' : '' }}>Mrs</option>
-                                    <option value="Ms" {{ old('salutation')=='Ms' ? 'selected' : '' }}>Ms</option>
-                                    <option value="Dr" {{ old('salutation')=='Dr' ? 'selected' : '' }}>Dr</option>
+                                    <option value="Mr">Mr</option>
+                                    <option value="Mrs">Mrs</option>
+                                    <option value="Ms">Ms</option>
+                                    <option value="Dr">Dr</option>
                                 </select>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Display Name</label>
-                                <input type="text" name="display_name" class="form-control"
-                                    value="{{ old('display_name') }}">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>First Name <span class="text-danger">*</span></label>
-                                <input type="text" name="first_name" class="form-control"
-                                    value="{{ old('first_name') }}" required>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Middle Name</label>
-                                <input type="text" name="middle_name" class="form-control"
-                                    value="{{ old('middle_name') }}">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Last Name</label>
-                                <input type="text" name="last_name" class="form-control" value="{{ old('last_name') }}">
                             </div>
 
                             <div class="col-md-3 mb-3">
                                 <label>Gender</label>
                                 <select name="gender" class="form-control form-select">
                                     <option value="">Select</option>
-                                    <option value="male" {{ old('gender')=='male' ? 'selected' : '' }}>Male</option>
-                                    <option value="female" {{ old('gender')=='female' ? 'selected' : '' }}>Female
-                                    </option>
-                                    <option value="other" {{ old('gender')=='other' ? 'selected' : '' }}>Other</option>
-                                    <option value="prefer_not_to_say" {{ old('gender')=='prefer_not_to_say' ? 'selected'
-                                        : '' }}>Prefer not to say</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                    <option value="prefer_not_to_say">Prefer not to say</option>
                                 </select>
                             </div>
 
                             <div class="col-md-3 mb-3">
                                 <label>Date of Birth</label>
-                                <input type="date" name="dob" class="form-control" value="{{ old('dob') }}">
+                                <input type="date" name="dob" class="form-control">
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Occupation</label>
-                                <input type="text" name="occupation" class="form-control"
-                                    value="{{ old('occupation') }}">
+                                <input type="text" name="occupation" class="form-control">
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Email Primary <span class="text-danger">*</span></label>
-                                <input type="email" name="email_primary" class="form-control" required
-                                    value="{{ old('email_primary') }}">
+                            <div class="col-md-3 mb-3">
+                                <label>PAN No</label>
+                                <input type="text" name="pan_no" class="form-control" maxlength="10">
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Mobile Primary <span class="text-danger">*</span> <small class="text-muted">(10
-                                        digits only)</small></label>
-                                <input type="text" name="mobile_primary" class="form-control" required
-                                    value="{{ old('mobile_primary') }}" pattern="[0-9]{10}" maxlength="10"
-                                    title="Please enter exactly 10 digits">
+                            <div class="col-md-3 mb-3">
+                                <label>Aadhaar No</label>
+                                <input type="text" name="aadhaar_no" class="form-control" maxlength="12">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>GSTIN</label>
+                                <input type="text" name="gst_no" class="form-control" maxlength="15">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>TAN No</label>
+                                <input type="text" name="tan_no" class="form-control" maxlength="20">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Marital Status</label>
+                                <select name="marital_status" class="form-control form-select">
+                                    <option value="">Select</option>
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                    <option value="divorced">Divorced</option>
+                                    <option value="widowed">Widowed</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Spouse Name</label>
+                                <input type="text" name="spouse_name" class="form-control">
                             </div>
                         </div>
 

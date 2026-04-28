@@ -13,6 +13,10 @@
     .ag-theme-quartz .center-header .ag-header-cell-label {
         justify-content: center !important;
     }
+
+    .ag-theme-quartz .ag-header-cell {
+        font-weight: 600;
+    }
 </style>
 @endpush
 
@@ -25,25 +29,36 @@
 <script>
     const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
 
+    const DEFAULT_VISIBLE_FIELDS = [
+    'serial_no', 'person_code', 'code', 'entity_type', 'salutation',
+    'full_name', 'display_name', 'gender', 'dob',
+    'marital_status', 'spouse_name', 'occupation',
+    'aadhaar_no', 'pan_no', 'gst_no', 'tan_no',
+    'action'
+];
+
     function getCols(fields) {
         return ALL_COLUMNS.filter(col => fields.includes(col.field));
     }
 
     let gridApi;
 
-    // ==================== FLAT COLUMN DEFINITION ====================
+    // ==================== COLUMN DEFINITIONS ====================
     const columnDefs = [
-        ...getCols(['serial_no', 'code', 'salutation', 'full_name', 'display_name']).map(col => {
+        ...getCols(['serial_no', 'person_code', 'code', 'entity_type', 'salutation', 'full_name', 'display_name']).map(col => {
             if (col.field === 'serial_no') {
                 col.pinned = 'left';
                 col.width = 80;
             }
+            // person_code normal rakha (no bold, no color)
             return col;
         }),
 
-        ...getCols(['gender', 'dob', 'occupation']),
+        ...getCols(['first_name', 'middle_name', 'last_name', 'gender', 'dob']),
 
-        ...getCols(['mobile_primary', 'email_primary']),
+        ...getCols(['marital_status', 'spouse_name', 'occupation']),
+
+        ...getCols(['aadhaar_no', 'pan_no', 'gst_no', 'tan_no']),
 
         ...getCols(['action']).map(col => {
             col.pinned = 'right';
@@ -69,24 +84,26 @@
             headerClass: 'center-header',
             cellStyle: { textAlign: 'center' }
         },
-        components: {
-            htmlRenderer: params => params.value || ''
-        },
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'code', 'full_name', 'display_name', 'gender', 'occupation', 'mobile_primary', 'email_primary', 'action'];
+            // Default visible columns - saari fields
+            const defaultFields = [
+                'serial_no', 'person_code', 'code', 'entity_type', 'salutation',
+                'full_name', 'display_name', 'gender', 'dob', 'marital_status',
+                'spouse_name', 'occupation', 'pan_no', 'aadhaar_no', 'gst_no', 'tan_no', 'action'
+            ];
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
             gridApi.setColumnsVisible(allCols, false);
-            gridApi.setColumnsVisible(defaultFields, true);
+            gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
 
             setTimeout(() => gridApi.autoSizeAllColumns(), 300);
         }
     };
 
-    // ==================== CUSTOMISE HEADERS (Flat Version) ====================
+    // ==================== CUSTOMISE HEADERS ====================
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
         const tbody = document.getElementById('columnBubbleBody');
@@ -95,9 +112,10 @@
         tbody.innerHTML = '';
 
         const allFlatColumns = [
-            ...getCols(['serial_no', 'code', 'salutation', 'full_name', 'display_name']),
-            ...getCols(['gender', 'dob', 'occupation']),
-            ...getCols(['mobile_primary', 'email_primary']),
+            ...getCols(['serial_no', 'person_code', 'code', 'entity_type', 'salutation', 'full_name', 'display_name']),
+            ...getCols(['first_name', 'middle_name', 'last_name', 'gender', 'dob']),
+            ...getCols(['marital_status', 'spouse_name', 'occupation']),
+            ...getCols(['aadhaar_no', 'pan_no', 'gst_no', 'tan_no']),
             ...getCols(['action'])
         ];
 
@@ -105,7 +123,6 @@
             if (!col.field) return;
 
             const tr = document.createElement('tr');
-
             const tdCheck = document.createElement('td');
             tdCheck.style.width = '40px';
             tdCheck.className = 'text-center';
@@ -114,13 +131,7 @@
             checkbox.type = 'checkbox';
             checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
 
-            // Disable Primary columns (always visible)
-            if (['serial_no', 'code', 'full_name', 'display_name'].includes(col.field)) {
-                checkbox.disabled = true;
-            }
-
-            // Disable Action column
-            if (col.field === 'action') {
+            if (['serial_no', 'person_code', 'full_name', 'action'].includes(col.field)) {
                 checkbox.disabled = true;
             }
 
@@ -145,12 +156,10 @@
         const gridDiv = document.querySelector('#myGrid');
         agGrid.createGrid(gridDiv, gridOptions);
 
-        // Quick Filter
         document.getElementById('quickFilter').addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
 
-        // Reset All
         document.getElementById('resetAll').addEventListener('click', () => {
             gridApi.setFilterModel(null);
             document.getElementById('quickFilter').value = '';
@@ -158,7 +167,6 @@
             gridApi.setSortModel(null);
         });
 
-        // Customise Headers
         document.getElementById('btnCustomiseHeaders').addEventListener('click', e => {
             e.stopPropagation();
             openColumnBubble();
@@ -175,22 +183,18 @@
             if (bubble && bubble.style.display === 'block') bubble.style.display = 'none';
         });
 
-        // All Headers
         document.getElementById('btnAllHeaders').addEventListener('click', () => {
             const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
             gridApi.setColumnsVisible(allCols, true);
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
         });
 
-        // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'code', 'full_name', 'display_name', 'gender', 'occupation', 'mobile_primary', 'email_primary', 'action'];
-            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
-
-            gridApi.setColumnsVisible(allCols, false);
-            gridApi.setColumnsVisible(defaultFields, true);
-            setTimeout(() => gridApi.autoSizeAllColumns(), 200);
-        });
+    const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
+    gridApi.setColumnsVisible(allCols, false);
+    gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
+    setTimeout(() => gridApi.autoSizeAllColumns(), 200);
+});
 
         // Excel Export
         document.getElementById('exportCsv').addEventListener('click', () => {
@@ -282,13 +286,13 @@
                             <button id="btnCustomiseHeaders" class="btn btn-red btn-sm text-nowrap">Customise
                                 Headers</button>
                             <div id="columnBubble"
-                                style="display:none; position:absolute; top:110%; left:0; width:320px; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:9999;">
+                                style="display:none; position:absolute; top:110%; left:0; width:360px; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:9999;">
                                 <div class="d-flex justify-content-between align-items-center px-2 py-1 border-bottom">
                                     <strong style="font-size:13px;">Customise Headers</strong>
                                     <button id="closeColumnBubble"
                                         class="btn btn-sm btn-link text-danger p-0">✕</button>
                                 </div>
-                                <div style="max-height:260px; overflow:auto;">
+                                <div style="max-height:280px; overflow:auto;">
                                     <table class="table table-sm mb-0">
                                         <tbody id="columnBubbleBody"></tbody>
                                     </table>

@@ -1,81 +1,92 @@
-
 <?php
 
 namespace App\Models\Admin;
 
 use App\Models\BaseModel;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * PersonAddress Model
- *
- * Multiple addresses for a person (Residential, Office, Billing, etc.)
- */
 class PersonAddress extends BaseModel
 {
-    use CrudTrait;
-    use HasFactory;
+    use SoftDeletes;
+
     protected $table = 'xlr8_admin_person_addresses';
+
+    const ADDRESS_TYPES = ['Primary', 'Office', 'Home', 'Alternate', 'Permanent'];
 
     protected $fillable = [
         'person_id',
-        'type',
+        'address_type',    // Primary | Office | Home | Alternate | Permanent
         'address_line_1',
         'address_line_2',
         'city',
         'state',
-        'pincode',
         'country',
+        'pincode',
         'latitude',
         'longitude',
-        'is_primary',
-        'notes',
+        // Audit fields managed by BaseModel:
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     protected $casts = [
-        'is_primary' => 'boolean',
-        'latitude' => 'float',
-        'longitude' => 'float',
+        'latitude'   => 'float',
+        'longitude'  => 'float',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    /**
-     * Relationship: Person
-     */
-    public function person()
+    // ── Boot — auto-Primary for first address ────────────────────
+
+    protected static function booted(): void
     {
-        return $this->belongsTo(Person::class);
+        parent::booted(); // ← BaseModel handles audit fields
+
+        static::creating(function (PersonAddress $a) {
+            $exists = static::where('person_id', $a->person_id)->whereNull('deleted_at')->exists();
+            if (!$exists) $a->address_type = 'Primary';
+        });
     }
 
-    /**
-     * Scope: Get by type
-     */
-    public function scopeByType($query, $type)
+    // ── Relationships ────────────────────────────────────────────
+
+    public function person(): BelongsTo
     {
-        return $query->where('type', $type);
+        return $this->belongsTo(Person::class, 'person_id');
     }
 
-    /**
-     * Scope: Get primary address
-     */
-    public function scopePrimary($query)
+    // ── Business Logic ───────────────────────────────────────────
+
+    public function makePrimary(): void
     {
-        return $query->where('is_primary', true)->first();
+        static::where('person_id', $this->person_id)
+            ->where('address_type', 'Primary')
+            ->where('id', '!=', $this->id)
+            ->whereNull('deleted_at')
+            ->update(['address_type' => 'Alternate']);
+
+        $this->address_type = 'Primary';
+        $this->save();
     }
 
-    /**
-     * Get full address string
-     */
-    public function getFullAddressAttribute()
+    // ── Accessors ────────────────────────────────────────────────
+
+    public function getFullAddressAttribute(): string
     {
-        $address = $this->address_line_1;
-        if ($this->address_line_2) {
-            $address .= ", {$this->address_line_2}";
-        }
-        $address .= ", {$this->city}, {$this->state} {$this->pincode}";
-        return $address;
+        return collect([
+            $this->address_line_1,
+            $this->address_line_2,
+            $this->city,
+            "{$this->state} {$this->pincode}",
+            $this->country,
+        ])->filter()->implode(', ');
     }
+
+    // ── Scopes ───────────────────────────────────────────────────
+
+    public function scopePrimary($query)           { return $query->where('address_type', 'Primary'); }
+    public function scopeByType($query, string $t) { return $query->where('address_type', $t); }
 }

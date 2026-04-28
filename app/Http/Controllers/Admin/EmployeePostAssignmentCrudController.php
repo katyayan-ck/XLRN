@@ -6,7 +6,7 @@ use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use App\Models\Admin\Employee;
-use App\Models\Admin\Post;
+use App\Models\IAM\Post;                    // ← Yeh sahi hai
 use App\Models\Admin\EmployeePostAssignment;
 
 class EmployeePostAssignmentCrudController extends CrudController
@@ -57,20 +57,17 @@ class EmployeePostAssignmentCrudController extends CrudController
                 ? ($assign->post->name ?? $assign->post->display_name ?? $assign->post->title ?? '—')
                 : '—';
 
-            // ✅ Date Format: dd/mm/yyyy
             $mapped['from_date'] = $assign->from_date?->format('d/m/Y') ?? '—';
             $mapped['to_date']   = $assign->to_date?->format('d/m/Y') ?? '—';
-
-            // ✅ Show Active / Inactive instead of 1/0
             $mapped['is_current'] = $assign->is_current ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("employee-post-assignment/{$assign->id}/edit");
 
             $mapped['action'] = '
-            <div class="d-flex gap-2 justify-content-center">
-                <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
-            </div>
-        ';
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
+                </div>';
+
             return $mapped;
         })->values();
 
@@ -84,7 +81,7 @@ class EmployeePostAssignmentCrudController extends CrudController
                     ['field' => 'from_date',        'headerName' => 'From Date'],
                     ['field' => 'to_date',          'headerName' => 'To Date'],
                     ['field' => 'assignment_order', 'headerName' => 'Order'],
-                    ['field' => 'is_current',       'headerName' => 'Current Status'],   // Updated label
+                    ['field' => 'is_current',       'headerName' => 'Current Status'],
                     ['field' => 'action',           'headerName' => 'Actions']
                 ],
                 'data' => $gridData
@@ -97,22 +94,25 @@ class EmployeePostAssignmentCrudController extends CrudController
         $this->crud->setCreateView('admin.employee-post-assignment.create');
 
         return view('admin.employee-post-assignment.create', [
-            'title'      => 'Add New Post Assignment',
-            'employees'  => Employee::with('person')->orderBy('code')->get(),
-            'posts' => Post::orderBy('id')->get(),   // Safe sorting (id se, name nahi tha)
+            'title'     => 'Add New Post Assignment',
+            'employees' => Employee::with('person')->orderBy('code')->get(),
+            'posts'     => Post::orderBy('title')->get(),     // ← title se sort kiya
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_id'     => 'required|exists:employees,id',
-            'post_id'         => 'required|exists:posts,id',
-            'from_date'       => 'required|date',
-            'to_date'         => 'nullable|date|after_or_equal:from_date',
-            'assignment_order' => 'integer|min:1',
-            'is_current'      => 'boolean',
+            'employee_id'      => 'required|exists:xlr8_admin_employee,id',
+            'post_id'          => 'required|exists:xlr8_iam_post,id',
+            'from_date'        => 'required|date',
+            'to_date'          => 'nullable|date|after_or_equal:from_date',
+            'assignment_order' => 'nullable|integer|min:1',
+            'is_current'       => 'boolean',
         ]);
+
+        // created_by add kar rahe hain (best practice)
+        $validated['created_by'] = backpack_user()->id ?? auth()->id();
 
         EmployeePostAssignment::create($validated);
 
@@ -130,7 +130,7 @@ class EmployeePostAssignmentCrudController extends CrudController
             'title'      => 'Edit Post Assignment',
             'assignment' => $assignment,
             'employees'  => Employee::with('person')->orderBy('code')->get(),
-            'posts' => Post::orderBy('id')->get(),
+            'posts'      => Post::orderBy('title')->get(),
         ]);
     }
 
@@ -139,13 +139,15 @@ class EmployeePostAssignmentCrudController extends CrudController
         $assignment = EmployeePostAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'employee_id'     => 'required|exists:employees,id',
-            'post_id'         => 'required|exists:posts,id',
-            'from_date'       => 'required|date',
-            'to_date'         => 'nullable|date|after_or_equal:from_date',
-            'assignment_order' => 'integer|min:1',
-            'is_current'      => 'boolean',
+            'employee_id'      => 'required|exists:xlr8_admin_employee,id',
+            'post_id'          => 'required|exists:xlr8_iam_post,id',
+            'from_date'        => 'required|date',
+            'to_date'          => 'nullable|date|after_or_equal:from_date',
+            'assignment_order' => 'nullable|integer|min:1',
+            'is_current'       => 'boolean',
         ]);
+
+        $validated['updated_by'] = backpack_user()->id ?? auth()->id();
 
         $assignment->update($validated);
 

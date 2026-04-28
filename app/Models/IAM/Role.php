@@ -10,7 +10,7 @@ class Role extends SpatieRole
 {
     use CrudTrait;
 
-    protected $table = 'xlr8_iam_roles';
+    protected $table = 'xlr8_iam_user_role_pivot';
     protected $guarded = [];
 
     // Optional: Add any custom methods here

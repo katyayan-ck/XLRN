@@ -28,11 +28,10 @@ class PersonCrudController extends CrudController
 
     public function index()
     {
-        $this->crud->setListView('admin.person.list');
-
         $persons = Person::select([
             'id',
-            'code',
+            'person_code',
+            'entity_type',
             'salutation',
             'first_name',
             'middle_name',
@@ -40,18 +39,21 @@ class PersonCrudController extends CrudController
             'display_name',
             'gender',
             'dob',
+            'marital_status',
+            'spouse_name',
             'occupation',
-            'mobile_primary',
-            'email_primary'
+            'aadhaar_no',
+            'pan_no',
+            'tan_no',
+            'gst_no'
         ])->orderBy('id', 'desc')->get();
 
         $gridData = $persons->map(function ($person, $index) {
             $mapped = $person->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['full_name'] = trim("{$person->first_name} {$person->middle_name} {$person->last_name}");
-
-            // Format DOB as dd/mm/yyyy
+            $mapped['full_name'] = $person->full_name ?? trim("{$person->first_name} {$person->middle_name} {$person->last_name}");
             $mapped['dob'] = $person->dob?->format('d/m/Y') ?? '—';
+            $mapped['entity_type'] = ucwords(str_replace('_', ' ', $person->entity_type ?? ''));
 
             $editUrl = backpack_url("person/{$person->id}/edit");
 
@@ -68,15 +70,16 @@ class PersonCrudController extends CrudController
             'gridConfig' => [
                 'columns' => [
                     ['field' => 'serial_no',      'headerName' => 'S.No'],
-                    ['field' => 'code',           'headerName' => 'Code'],
-                    ['field' => 'salutation',     'headerName' => 'Salutation'],
+                    ['field' => 'person_code',    'headerName' => 'Person Code'],
+                    ['field' => 'entity_type',    'headerName' => 'Entity Type'],
                     ['field' => 'full_name',      'headerName' => 'Full Name'],
                     ['field' => 'display_name',   'headerName' => 'Display Name'],
                     ['field' => 'gender',         'headerName' => 'Gender'],
                     ['field' => 'dob',            'headerName' => 'Date of Birth'],
                     ['field' => 'occupation',     'headerName' => 'Occupation'],
-                    ['field' => 'mobile_primary', 'headerName' => 'Mobile'],
-                    ['field' => 'email_primary',  'headerName' => 'Email'],
+                    ['field' => 'pan_no',         'headerName' => 'PAN No'],
+                    ['field' => 'aadhaar_no',     'headerName' => 'Aadhaar No'],
+                    ['field' => 'gst_no',         'headerName' => 'GSTIN'],
                     ['field' => 'action',         'headerName' => 'Actions']
                 ],
                 'data' => $gridData
@@ -93,25 +96,25 @@ class PersonCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'            => 'required|string|unique:xlr8_admin_person,code',
+            'entity_type'     => 'required|in:individual,legal_entity',
             'salutation'      => 'nullable|in:Mr,Mrs,Ms,Dr',
             'first_name'      => 'required|string|max:100',
             'middle_name'     => 'nullable|string|max:100',
-            'last_name'       => 'nullable|string|max:100',           // ← Changed to nullable
+            'last_name'       => 'nullable|string|max:100',
             'display_name'    => 'nullable|string|max:255',
             'gender'          => 'nullable|in:male,female,other,prefer_not_to_say',
             'dob'             => 'nullable|date',
             'marital_status'  => 'nullable|in:single,married,divorced,widowed',
-            'spouse_name'     => 'nullable|string',
-            'occupation'      => 'nullable|string',
+            'spouse_name'     => 'nullable|string|max:100',
+            'occupation'      => 'nullable|string|max:100',
             'aadhaar_no'      => 'nullable|string|max:12',
             'pan_no'          => 'nullable|string|max:10',
+            'tan_no'          => 'nullable|string|max:20',
             'gst_no'          => 'nullable|string|max:15',
-            'email_primary'   => 'required|email',
-            'email_secondary' => 'nullable|email',
-            'mobile_primary'  => 'required|digits:10',                // ← 10 digits only
-            'mobile_secondary' => 'nullable|digits:10',                // ← 10 digits only
         ]);
+
+        // Code field automatically generate kar rahe hain
+        $validated['code'] = 'PERS-' . str_pad(Person::withTrashed()->max('id') ?? 0 + 1, 5, '0', STR_PAD_LEFT);
 
         Person::create($validated);
 
@@ -125,7 +128,7 @@ class PersonCrudController extends CrudController
         $person = Person::findOrFail($id);
 
         return view('admin.person.edit', [
-            'title'  => 'Edit Person - ' . ($person->display_name ?? $person->first_name . ' ' . $person->last_name),
+            'title'  => 'Edit Person - ' . ($person->display_name ?? $person->full_name),
             'person' => $person,
         ]);
     }
@@ -135,24 +138,20 @@ class PersonCrudController extends CrudController
         $person = Person::findOrFail($id);
 
         $validated = $request->validate([
-            'code'            => 'required|string|unique:xlr8_admin_person,code,' . $id,
             'salutation'      => 'nullable|in:Mr,Mrs,Ms,Dr',
             'first_name'      => 'required|string|max:100',
             'middle_name'     => 'nullable|string|max:100',
-            'last_name'       => 'nullable|string|max:100',           // ← Changed to nullable
+            'last_name'       => 'nullable|string|max:100',
             'display_name'    => 'nullable|string|max:255',
             'gender'          => 'nullable|in:male,female,other,prefer_not_to_say',
             'dob'             => 'nullable|date',
             'marital_status'  => 'nullable|in:single,married,divorced,widowed',
-            'spouse_name'     => 'nullable|string',
-            'occupation'      => 'nullable|string',
+            'spouse_name'     => 'nullable|string|max:100',
+            'occupation'      => 'nullable|string|max:100',
             'aadhaar_no'      => 'nullable|string|max:12',
             'pan_no'          => 'nullable|string|max:10',
+            'tan_no'          => 'nullable|string|max:20',
             'gst_no'          => 'nullable|string|max:15',
-            'email_primary'   => 'required|email',
-            'email_secondary' => 'nullable|email',
-            'mobile_primary'  => 'required|digits:10',                // ← 10 digits only
-            'mobile_secondary' => 'nullable|digits:10',                // ← 10 digits only
         ]);
 
         $person->update($validated);
