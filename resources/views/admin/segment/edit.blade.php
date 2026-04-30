@@ -65,8 +65,8 @@
                                 <select name="brand_id" class="form-control form-select" required>
                                     <option value="">Select Brand</option>
                                     @foreach($brands as $brand)
-                                    <option value="{{ $brand->id }}" {{ old('brand_id', $segment->brand_id) ==
-                                        $brand->id ? 'selected' : '' }}>
+                                    <option value="{{ $brand->id }}" {{ old('brand_id', optional($segment->brand)->id)
+                                        == $brand->id ? 'selected' : '' }}>
                                         {{ $brand->name }}
                                     </option>
                                     @endforeach
@@ -74,7 +74,7 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Segment Code <span class="text-danger">*</span></label>
+                                <label>Segment Code (5 Characters)<span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control text-uppercase"
                                     value="{{ old('code', $segment->code) }}" maxlength="5" required
                                     style="text-transform: uppercase;">

@@ -66,7 +66,7 @@
                                 <select name="brand_id" class="form-control form-select" required>
                                     <option value="">Select Brand</option>
                                     @foreach($brands as $brand)
-                                    <option value="{{ $brand->id }}" {{ old('brand_id', $vehiclemodel->brand_id) ==
+                                    <option value="{{ $brand->id }}" {{ old('brand_id', $vehiclemodel->brand?->id) ==
                                         $brand->id ? 'selected' : '' }}>
                                         {{ $brand->name }}
                                     </option>
@@ -79,7 +79,7 @@
                                 <select name="segment_id" class="form-control form-select" required>
                                     <option value="">Select Segment</option>
                                     @foreach($segments as $segment)
-                                    <option value="{{ $segment->id }}" {{ old('segment_id', $vehiclemodel->segment_id)
+                                    <option value="{{ $segment->id }}" {{ old('segment_id', $vehiclemodel->segment?->id)
                                         == $segment->id ? 'selected' : '' }}>
                                         {{ $segment->name }}
                                     </option>
@@ -93,7 +93,7 @@
                                     <option value="">Select Sub Segment</option>
                                     @foreach($subsegments as $subsegment)
                                     <option value="{{ $subsegment->id }}" {{ old('sub_segment_id', $vehiclemodel->
-                                        sub_segment_id) == $subsegment->id ? 'selected' : '' }}>
+                                        subSegment?->id) == $subsegment->id ? 'selected' : '' }}>
                                         {{ $subsegment->name }}
                                     </option>
                                     @endforeach

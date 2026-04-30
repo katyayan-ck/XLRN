@@ -31,9 +31,8 @@
 
     let gridApi;
 
-    // ==================== FLAT COLUMN DEFINITION ====================
-    const columnDefs = [
-        ...getCols(['serial_no', 'person_name', 'type']).map(col => {
+        const columnDefs = [
+        ...getCols(['serial_no', 'person_name']).map(col => {
             if (col.field === 'serial_no') {
                 col.pinned = 'left';
                 col.width = 80;
@@ -41,18 +40,20 @@
             return col;
         }),
 
-        ...getCols(['address_line_1', 'address_line_2', 'city', 'state', 'pincode']),
-
-        ...getCols(['is_primary']).map(col => {
-            col.cellRenderer = params => {
-                if (params.value === 1 || params.value === true || params.value === 'Yes') {
-                    return `Primary`;
-                }
-                return `Secondary`;
-            };
-            return col;
-        }),
-
+        ...getCols([
+            'address_type',
+            'address_line_1',
+            'address_line_2',
+            'landmark',
+            'city',
+            'taluka',
+            'district',
+            'state',
+            'country',
+            'pincode',
+            'latitude',
+            'longitude'
+        ]),
         ...getCols(['action']).map(col => {
             col.pinned = 'right';
             col.width = 140;
@@ -83,8 +84,16 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'person_name', 'type', 'address_line_1', 'city', 'is_primary', 'action'];
-
+            const defaultFields = [
+                'serial_no',
+                'person_name',
+                'address_type',
+                'address_line_1',
+                'city',
+                'state',
+                'pincode',
+                'action'
+            ];
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
             gridApi.setColumnsVisible(allCols, false);
@@ -103,11 +112,24 @@
         tbody.innerHTML = '';
 
         const allFlatColumns = [
-            ...getCols(['serial_no', 'person_name', 'type']),
-            ...getCols(['address_line_1', 'address_line_2', 'city', 'state', 'pincode']),
-            ...getCols(['is_primary']),
-            ...getCols(['action'])
-        ];
+    ...getCols([
+        'serial_no',
+        'person_name',
+        'address_type',
+        'address_line_1',
+        'address_line_2',
+        'landmark',
+        'city',
+        'taluka',
+        'district',
+        'state',
+        'country',
+        'pincode',
+        'latitude',
+        'longitude',
+        'action'
+    ])
+];
 
         allFlatColumns.forEach(col => {
             if (!col.field) return;
@@ -123,7 +145,7 @@
             checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
 
             // Disable Primary columns (always visible)
-            if (['serial_no', 'person_name', 'type'].includes(col.field)) {
+            if (['serial_no', 'person_name', 'address_type'].includes(col.field)) {
                 checkbox.disabled = true;
             }
 
@@ -192,7 +214,7 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'person_name', 'type', 'address_line_1', 'city', 'is_primary', 'action'];
+                        const defaultFields = ['serial_no', 'person_name', 'address_type', 'address_line_1', 'city', 'state', 'pincode', 'action'];
             const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
 
             gridApi.setColumnsVisible(allCols, false);

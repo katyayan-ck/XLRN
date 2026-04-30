@@ -41,8 +41,15 @@
             return col;
         }),
 
-        ...getCols(['bank_name', 'account_number', 'ifsc_code', 'branch_name', 'swift_code', 'account_type']),
-
+...getCols([
+    'bank_name',
+    'account_number',
+    'ifsc_code',
+    'micr_code',
+    'branch_name',
+    'account_type',
+    'account_nature'
+]),
         ...getCols(['is_primary', 'is_verified']).map(col => {
             if (col.field === 'is_primary') {
                 col.cellRenderer = params => {

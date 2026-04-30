@@ -1,137 +1,59 @@
 <?php
-
 namespace App\Models\Admin;
 
 use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use OpenApi\Attributes as OA;
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, BelongsToMany};
 
-#[OA\Schema(title: 'Department')]
-/**
- * Department Model
- *
- * Represents organizational departments (Sales, HR, Finance, etc.)
- */
 class Department extends BaseModel
 {
-    use CrudTrait;
-    use HasFactory;
+    use CrudTrait, HasFactory;
+
     protected $table = 'xlr8_admin_department';
-    protected string $scopeType = 'department';
+
     protected $fillable = [
-        'code',
-        'name',
-        'description',
-        'parent_department_id',
-        'branch_id',
-        'head_id',
-        'is_active',
+        'code', 'name', 'description', 'head_emp_code', 'is_active',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'  => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    /**
-     * Relationship: Parent department (hierarchical)
-     */
-    public function parent()
+    public function head(): BelongsTo
     {
-        return $this->belongsTo(self::class, 'parent_department_id');
+        return $this->belongsTo(Employee::class, 'head_emp_code', 'code');
     }
 
-    /**
-     * Relationship: Child departments
-     */
-    public function children()
+    public function divisions(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_department_id');
+        return $this->hasMany(Division::class, 'dept_code', 'code');
     }
 
-    /**
-     * Relationship: Department head (Person)
-     */
-    public function head()
+    public function designationTree(): HasMany
     {
-        return $this->belongsTo(Person::class, 'head_id');
+        return $this->hasMany(DesignationDeptTree::class, 'dept_code', 'code');
     }
 
-    /**
-     * Relationship: Branch
-     */
-    public function branch()
+    public function posts(): HasMany
     {
-        return $this->belongsTo(Branch::class);
+        return $this->hasMany(\App\Models\IAM\Post::class, 'dept_code', 'code');
     }
 
-    /**
-     * Relationship: Posts under department
-     */
-    public function posts()
+    public function employees(): BelongsToMany
     {
-        return $this->hasMany(Post::class);
+        return $this->belongsToMany(Employee::class, 'xlr8_admin_emp_department_pivot', 'dept_code', 'emp_code', 'code', 'code')
+            ->withPivot(['from_date','to_date','is_current'])->withTimestamps();
     }
 
-    /**
-     * Relationship: Divisions
-     */
-    public function divisions()
-    {
-        return $this->hasMany(Division::class);
-    }
+    public function scopeTopLevel($q) { return $q->whereNull('parent_dept_code'); }
 
-    /**
-     * Relationship: Employees
-     */
-    public function employees()
+    public static function generateCode(string $prefix = 'DEPT'): string
     {
-        return $this->belongsToMany(
-            Employee::class,
-            'employee_department_assignments',
-            'department_id',
-            'employee_id'
-        )->withPivot(['from_date', 'to_date', 'is_current']);
-    }
-
-    /**
-     * Scope: Get top-level departments
-     */
-    public function scopeTopLevel($query)
-    {
-        return $query->whereNull('parent_department_id');
-    }
-
-    /**
-     * Scope: Get departments in specific branch
-     */
-    public function scopeInBranch($query, $branchId)
-    {
-        return $query->where('branch_id', $branchId);
-    }
-
-    /**
-     * Get all descendants (flat list)
-     */
-    public function getAllDescendants()
-    {
-        $descendants = collect();
-        foreach ($this->children as $child) {
-            $descendants->push($child);
-            $descendants = $descendants->merge($child->getAllDescendants());
-        }
-        return $descendants;
-    }
-
-    /**
-     * Generate auto code
-     */
-    public static function generateCode($prefix = 'DEPT')
-    {
-        $lastId = self::withTrashed()->max('id') ?? 0;
-        return $prefix . '-' . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
+        $lastId = static::withTrashed()->max('id') ?? 0;
+        return strtoupper($prefix) . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
     }
 }

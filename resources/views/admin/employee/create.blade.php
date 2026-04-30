@@ -37,10 +37,11 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Person <span class="text-danger">*</span></label>
-                                <select name="person_id" class="form-control form-select" required>
+                                <select name="person_code" class="form-control form-select" required>
                                     <option value="">Select Person</option>
                                     @foreach($persons as $p)
-                                    <option value="{{ $p->id }}" {{ old('person_id')==$p->id ? 'selected' : '' }}>
+                                    <option value="{{ $p->person_code }}" {{ old('person_code')==$p->person_code ?
+                                        'selected' : '' }}>
                                         {{ $p->first_name }} {{ $p->last_name }}
                                     </option>
                                     @endforeach
@@ -48,79 +49,66 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Designation <span class="text-danger">*</span></label>
-                                <select name="designation_id" class="form-control form-select" required>
-                                    <option value="">Select Designation</option>
+                                <label>Designation</label>
+                                <select name="desig_code" class="form-control form-select" required>
+                                    <option value="">Select</option>
                                     @foreach($designations as $d)
-                                    <option value="{{ $d->id }}" {{ old('designation_id')==$d->id ? 'selected' : '' }}>
-                                        {{ $d->name }}
-                                    </option>
+                                    <option value="{{ $d->code }}">{{ $d->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Primary Branch <span class="text-danger">*</span></label>
-                                <select name="primary_branch_id" class="form-control form-select" required>
-                                    <option value="">Select Branch</option>
+                                <label>Primary Branch</label>
+                                <select name="primary_branch_code" class="form-control form-select" required>
+                                    <option value="">Select</option>
                                     @foreach($branches as $b)
-                                    <option value="{{ $b->id }}" {{ old('primary_branch_id')==$b->id ? 'selected' : ''
-                                        }}>
-                                        {{ $b->name }}
-                                    </option>
+                                    <option value="{{ $b->code }}">{{ $b->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Primary Department <span class="text-danger">*</span></label>
-                                <select name="primary_department_id" class="form-control form-select" required>
-                                    <option value="">Select Department</option>
+                                <label>Primary Department</label>
+                                <select name="primary_dept_code" class="form-control form-select" required>
+                                    <option value="">Select</option>
                                     @foreach($departments as $d)
-                                    <option value="{{ $d->id }}" {{ old('primary_department_id')==$d->id ? 'selected' :
-                                        '' }}>
-                                        {{ $d->name }}
-                                    </option>
+                                    <option value="{{ $d->code }}">{{ $d->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Joining Date <span class="text-danger">*</span></label>
-                                <input type="date" name="joining_date" class="form-control"
-                                    value="{{ old('joining_date') }}" required>
+                                <label>Division</label>
+                                <input type="text" name="primary_div_code" class="form-control">
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Employment Type <span class="text-danger">*</span></label>
-                                <select name="employment_type" class="form-control form-select" required>
-                                    <option value="permanent" {{ old('employment_type')=='permanent' ? 'selected' : ''
-                                        }}>Permanent</option>
-                                    <option value="contract" {{ old('employment_type')=='contract' ? 'selected' : '' }}>
-                                        Contract</option>
-                                    <option value="temporary" {{ old('employment_type')=='temporary' ? 'selected' : ''
-                                        }}>Temporary</option>
-                                    <option value="probation" {{ old('employment_type')=='probation' ? 'selected' : ''
-                                        }}>Probation</option>
-                                </select>
+                                <label>Location</label>
+                                <input type="text" name="primary_loc_code" class="form-control">
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Is Active?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_active" value="0">
-                                    <input type="checkbox" name="is_active" value="1" class="form-check-input" {{
-                                        old('is_active', true) ? 'checked' : '' }}>
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Vertical</label>
+                                <input type="text" name="vertical_code" class="form-control">
                             </div>
-                        </div>
 
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="la la-save"></i> Create Employee
-                            </button>
-                            <a href="{{ backpack_url('employee') }}" class="btn btn-secondary btn-lg">Cancel</a>
-                        </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Segment</label>
+                                <input type="text" name="segment_code" class="form-control">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label>Sub Segment</label>
+                                <input type="text" name="sub_segment_code" class="form-control">
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="la la-save"></i> Create Employee
+                                </button>
+                                <a href="{{ backpack_url('employee') }}" class="btn btn-secondary btn-lg">Cancel</a>
+                            </div>
                     </form>
                 </div>
             </div>

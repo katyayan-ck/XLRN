@@ -29,19 +29,14 @@ class PersonContactCrudController extends CrudController
 
     public function index()
     {
-        $this->crud->setListView('admin.person-contact.list');
-
         $contacts = PersonContact::with('person')
             ->select([
                 'id',
-                'person_id',
-                'type',
-                'name',
-                'mobile',
-                'email',
-                'relationship',
-                'is_primary',
-                'notes'
+                'person_code',
+                'data_type',
+                'contact_type',
+                'contact_detail',
+                'created_at'
             ])
             ->orderBy('id', 'desc')
             ->get();
@@ -49,8 +44,16 @@ class PersonContactCrudController extends CrudController
         $gridData = $contacts->map(function ($contact, $index) {
             $mapped = $contact->toArray();
             $mapped['serial_no'] = $index + 1;
-            $mapped['is_primary'] = $contact->is_primary;
-            $mapped['person_name'] = $contact->person ? $contact->person->first_name . ' ' . $contact->person->last_name : '—';
+
+            // Person Name
+            $mapped['person_name'] = $contact->person
+                ? trim($contact->person->first_name . ' ' . ($contact->person->last_name ?? ''))
+                : '—';
+
+            // Better display
+            $mapped['data_type'] = $contact->data_type;
+            $mapped['contact_type'] = $contact->contact_type;
+            $mapped['contact_detail'] = $contact->contact_detail;
 
             $editUrl = backpack_url("person-contact/{$contact->id}/edit");
 
@@ -59,6 +62,7 @@ class PersonContactCrudController extends CrudController
                     <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
                 </div>
             ';
+
             return $mapped;
         })->values();
 
@@ -66,15 +70,12 @@ class PersonContactCrudController extends CrudController
             'title' => 'All Person Contacts',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',    'headerName' => 'S.No'],
-                    ['field' => 'person_name',  'headerName' => 'Person'],
-                    ['field' => 'type',         'headerName' => 'Type'],
-                    ['field' => 'name',         'headerName' => 'Name'],
-                    ['field' => 'mobile',       'headerName' => 'Mobile'],
-                    ['field' => 'email',        'headerName' => 'Email'],
-                    ['field' => 'relationship', 'headerName' => 'Relationship'],
-                    ['field' => 'is_primary',   'headerName' => 'Primary'],
-                    ['field' => 'action',       'headerName' => 'Actions']
+                    ['field' => 'serial_no',      'headerName' => 'S.No'],
+                    ['field' => 'person_name',    'headerName' => 'Person'],
+                    ['field' => 'data_type',      'headerName' => 'Data Type'],
+                    ['field' => 'contact_type',   'headerName' => 'Contact Type'],
+                    ['field' => 'contact_detail', 'headerName' => 'Contact Detail'],
+                    ['field' => 'action',         'headerName' => 'Actions']
                 ],
                 'data' => $gridData
             ]
@@ -87,7 +88,7 @@ class PersonContactCrudController extends CrudController
 
         return view('admin.person-contact.create', [
             'title'   => 'Add New Person Contact',
-            'persons' => Person::select('id', 'first_name', 'last_name')
+            'persons' => Person::select('id', 'person_code', 'first_name', 'last_name', 'display_name')
                 ->orderBy('first_name')
                 ->get(),
         ]);
@@ -96,14 +97,10 @@ class PersonContactCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'person_id'    => 'required|exists:xlr8_admin_person,id',
-            'type'         => 'required|in:email,mobile',
-            'name'         => 'required|string|max:100',
-            'mobile'       => 'required_if:type,mobile|digits:10',           // ← 10 digits + conditional
-            'email'        => 'required_if:type,email|email|max:100',
-            'relationship' => 'nullable|string|max:50',
-            'notes'        => 'nullable|string',
-            'is_primary'   => 'boolean',
+            'person_code'     => 'required|exists:xlr8_admin_person,person_code',
+            'data_type'       => 'required|in:Mobile,Email,Landline,Fax',
+            'contact_type'    => 'nullable|in:Primary,Alternate,Office,Home,Emergency',
+            'contact_detail'  => 'required|string|max:100',
         ]);
 
         PersonContact::create($validated);
@@ -119,9 +116,9 @@ class PersonContactCrudController extends CrudController
         $contact = PersonContact::with('person')->findOrFail($id);
 
         return view('admin.person-contact.edit', [
-            'title'   => 'Edit Person Contact',
-            'contact' => $contact,
-            'persons' => Person::select('id', 'first_name', 'last_name')
+            'title'    => 'Edit Person Contact',
+            'contact'  => $contact,
+            'persons'  => Person::select('id', 'person_code', 'first_name', 'last_name', 'display_name')
                 ->orderBy('first_name')
                 ->get(),
         ]);
@@ -132,14 +129,10 @@ class PersonContactCrudController extends CrudController
         $contact = PersonContact::findOrFail($id);
 
         $validated = $request->validate([
-            'person_id'    => 'required|exists:xlr8_admin_person,id',
-            'type'         => 'required|in:email,mobile',
-            'name'         => 'required|string|max:100',
-            'mobile'       => 'required_if:type,mobile|digits:10',
-            'email'        => 'required_if:type,email|email|max:100',
-            'relationship' => 'nullable|string|max:50',
-            'notes'        => 'nullable|string',
-            'is_primary'   => 'boolean',
+            'person_code'     => 'required|exists:xlr8_admin_person,person_code',
+            'data_type'       => 'required|in:Mobile,Email,Landline,Fax',
+            'contact_type'    => 'nullable|in:Primary,Alternate,Office,Home,Emergency',
+            'contact_detail'  => 'required|string|max:100',
         ]);
 
         $contact->update($validated);

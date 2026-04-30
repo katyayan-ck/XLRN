@@ -38,14 +38,14 @@ class EmployeeCrudController extends CrudController
             ->select([
                 'id',
                 'code',
-                'person_id',
-                'designation_id',
-                'primary_branch_id',
-                'primary_department_id',
+                'person_code',
+                'desig_code',
+                'primary_branch_code',
+                'primary_dept_code',
                 'joining_date',
-                'resignation_date',
+                'separation_date',
                 'employment_type',
-                'is_active'
+                'employment_status'
             ])
             ->orderBy('id', 'desc')
             ->get();
@@ -95,7 +95,7 @@ class EmployeeCrudController extends CrudController
 
         return view('admin.employee.create', [
             'title'        => 'Add New Employee',
-            'persons'      => Person::select('id', 'first_name', 'last_name')->orderBy('first_name')->get(),
+            'persons'      => Person::select('person_code', 'first_name', 'last_name')->orderBy('first_name')->get(),
             'designations' => Designation::orderBy('name')->get(),
             'branches'     => Branch::orderBy('name')->get(),
             'departments'  => Department::orderBy('name')->get(),
@@ -105,15 +105,16 @@ class EmployeeCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'                  => 'required|string|unique:xlr8_admin_employee,code',
-            'person_id'             => 'required|exists:xlr8_admin_person,id',
-            'designation_id'        => 'required|exists:xlr8_admin_designation,id',
-            'primary_branch_id'     => 'required|exists:xlr8_admin_branch,id',
-            'primary_department_id' => 'required|exists:xlr8_admin_department,id',
-            'joining_date'          => 'required|date',
-            'resignation_date'      => 'nullable|date|after_or_equal:joining_date',
-            'employment_type'       => 'required|in:permanent,contract,temporary,probation',
-            'is_active'             => 'boolean',
+            'code' => 'required|string|unique:xlr8_admin_employee,code',
+
+            'person_code' => 'required|exists:xlr8_admin_person,person_code',
+            'desig_code' => 'required|exists:xlr8_admin_designation,code',
+            'primary_branch_code' => 'required|exists:xlr8_admin_branch,code',
+            'primary_dept_code' => 'required|exists:xlr8_admin_department,code',
+            'joining_date' => 'required|date',
+            'resignation_date' => 'nullable|date|after_or_equal:joining_date',
+            'employment_type' => 'required|in:permanent,contract,temporary,probation',
+            'is_active' => 'boolean',
         ]);
 
         Employee::create($validated);
@@ -131,7 +132,7 @@ class EmployeeCrudController extends CrudController
         return view('admin.employee.edit', [
             'title'        => 'Edit Employee',
             'employee'     => $employee,
-            'persons'      => Person::select('id', 'first_name', 'last_name')->orderBy('first_name')->get(),
+            'persons'      => Person::select('person_code', 'first_name', 'last_name')->orderBy('first_name')->get(),
             'designations' => Designation::orderBy('name')->get(),
             'branches'     => Branch::orderBy('name')->get(),
             'departments'  => Department::orderBy('name')->get(),
@@ -143,15 +144,15 @@ class EmployeeCrudController extends CrudController
         $employee = Employee::findOrFail($id);
 
         $validated = $request->validate([
-            'code'                  => 'required|string|unique:xlr8_admin_employee,code,' . $id,
-            'person_id'             => 'required|exists:xlr8_admin_person,id',
-            'designation_id'        => 'required|exists:xlr8_admin_designation,id',
-            'primary_branch_id'     => 'required|exists:xlr8_admin_branch,id',
-            'primary_department_id' => 'required|exists:xlr8_admin_department,id',
-            'joining_date'          => 'required|date',
-            'resignation_date'      => 'nullable|date|after_or_equal:joining_date',
-            'employment_type'       => 'required|in:permanent,contract,temporary,probation',
-            'is_active'             => 'boolean',
+            'code' => 'required|string|unique:xlr8_admin_employee,code,' . $id,
+
+            'person_code' => 'required|exists:xlr8_admin_person,person_code',
+            'desig_code' => 'required|exists:xlr8_admin_designation,code',
+            'primary_branch_code' => 'required|exists:xlr8_admin_branch,code',
+            'primary_dept_code' => 'required|exists:xlr8_admin_department,code',
+
+            'joining_date' => 'required|date',
+            'employment_type' => 'required|in:permanent,contract,temporary,probation',
         ]);
 
         $employee->update($validated);

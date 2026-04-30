@@ -2,51 +2,49 @@
 
 namespace App\Models\Admin;
 
-use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Bank account details for a Person.
- *
- * account_type → Saving | Salary | Current | OD  (what KIND of account — unchanged)
- * is_primary   → boolean (which account is the person's primary — enforced here)
- *
- * Rule: Only ONE is_primary = true per person_id at any time.
- *       Enforced in makePrimary() + booted() auto-primary logic.
- *       Audit fields fully handled by BaseModel.
- */
-class PersonBankingDetail extends BaseModel
+class PersonBankingDetail extends Model
 {
-    use CrudTrait, HasFactory, SoftDeletes;
+    use SoftDeletes, CrudTrait;
 
     protected $table = 'xlr8_admin_person_banking_details';
 
-    // account_type values — what kind of bank account (not primary flag)
-    const ACCOUNT_TYPES = ['Saving', 'Salary', 'Current', 'OD'];
+    /*
+    |--------------------------------------------------------------------------
+    | DESIGN RULES
+    |  - account_type replaces is_primary flag
+    |  - One Primary per person_code (DB UNIQUE enforced)
+    |  - First bank record for a person is auto-set to Primary
+    |  - Use makePrimary() to change Primary account
+    |--------------------------------------------------------------------------
+    */
+
+    const ACCOUNT_TYPES  = ['Primary', 'Secondary', 'Joint', 'Trust'];
+    const ACCOUNT_NATURES = ['Savings', 'Current', 'Salary', 'NRO', 'NRE'];
 
     protected $fillable = [
-        'person_id',
+        'person_code',
+        'account_type',
         'bank_name',
-        'account_holder_name',
-        'account_number',
-        'ifsc_code',
-        'account_type',     // Saving | Salary | Current | OD — category of account
         'branch_name',
-        'swift_code',
-        'is_primary',       // boolean — true for the person's primary bank account
+        'account_number',
+        'account_holder_name',
+        'ifsc_code',
+        'micr_code',
+        'account_nature',
         'is_verified',
         'verified_at',
-        // Audit fields managed by BaseModel:
+        'verified_by',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
     protected $casts = [
-        'is_primary'  => 'boolean',
         'is_verified' => 'boolean',
         'verified_at' => 'datetime',
         'created_at'  => 'datetime',
@@ -54,72 +52,91 @@ class PersonBankingDetail extends BaseModel
         'deleted_at'  => 'datetime',
     ];
 
-    // ── Boot — auto-primary for first record ─────────────────────
+    // ── Boot ──────────────────────────────────────────────────────────────────
 
-    protected static function booted(): void
+    protected static function boot(): void
     {
-        parent::booted(); // ← BaseModel handles created_by / updated_by / deleted_by
+        parent::boot();
 
         static::creating(function (PersonBankingDetail $b) {
-            // First bank account for this person is automatically primary
-            $exists = static::where('person_id', $b->person_id)->whereNull('deleted_at')->exists();
-            if (!$exists) {
-                $b->is_primary = true;
+            if (empty($b->account_type)) {
+                $exists = static::where('person_code', $b->person_code)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                $b->account_type = $exists ? 'Secondary' : 'Primary';
+            }
+
+            if (auth()->check() && empty($b->created_by)) {
+                $b->created_by = auth()->id();
+            }
+        });
+
+        static::updating(function (PersonBankingDetail $b) {
+            if (auth()->check()) {
+                $b->updated_by = auth()->id();
+            }
+        });
+
+        static::deleting(function (PersonBankingDetail $b) {
+            if (!$b->isForceDeleting() && auth()->check()) {
+                $b->deleted_by = auth()->id();
+                $b->saveQuietly();
             }
         });
     }
 
-    // ── Relationships ────────────────────────────────────────────
+    // ── Relationships ──────────────────────────────────────────────────────────
 
     public function person(): BelongsTo
     {
-        return $this->belongsTo(Person::class, 'person_id');
+        return $this->belongsTo(Person::class, 'person_code', 'person_code');
     }
 
-    // ── Business Logic ───────────────────────────────────────────
+    // ── Business logic ────────────────────────────────────────────────────────
 
     /**
-     * Make this the primary bank account for this person.
-     * Demotes any existing primary to is_primary = false.
-     * Rule: only one is_primary = true per person_id at any time.
+     * Make this account the Primary. Demotes current Primary to Secondary.
      */
     public function makePrimary(): void
     {
-        // Demote current primary (if different from this record)
-        static::where('person_id', $this->person_id)
-            ->where('is_primary', true)
-            ->where('id', '!=', $this->id)
+        static::where('person_code',   $this->person_code)
+            ->where('account_type',  'Primary')
+            ->where('id', '!=',      $this->id)
             ->whereNull('deleted_at')
-            ->update(['is_primary' => false]);
+            ->update(['account_type' => 'Secondary', 'updated_by' => auth()->id()]);
 
-        $this->is_primary = true;
+        $this->account_type = 'Primary';
         $this->save();
     }
 
-    // ── Accessors ────────────────────────────────────────────────
+    public function markVerified(): void
+    {
+        $this->update([
+            'is_verified' => true,
+            'verified_at' => now(),
+            'verified_by' => auth()->id(),
+        ]);
+    }
+
+    // ── Accessors ─────────────────────────────────────────────────────────────
 
     public function getMaskedAccountAttribute(): string
     {
-        $number = $this->account_number;
-        return substr_replace($number, '****', 2, -4);
+        if (strlen($this->account_number) <= 6) return str_repeat('*', strlen($this->account_number));
+        return substr($this->account_number, 0, 2)
+            . str_repeat('*', strlen($this->account_number) - 6)
+            . substr($this->account_number, -4);
     }
 
-    // ── Scopes ───────────────────────────────────────────────────
+    // ── Scopes ────────────────────────────────────────────────────────────────
 
-    /** Returns the single primary bank account for a person (use on collection) */
-    public function scopePrimary($query)
+    public function scopePrimary($q)
     {
-        return $query->where('is_primary', true);
+        return $q->where('account_type', 'Primary');
     }
-
-    /** Filter by account category */
-    public function scopeByType($query, string $type)
+    public function scopeVerified($q)
     {
-        return $query->where('account_type', $type);
-    }
-
-    public function scopeVerified($query)
-    {
-        return $query->where('is_verified', true);
+        return $q->where('is_verified', true);
     }
 }

@@ -65,7 +65,7 @@
                                 <select name="brand_id" class="form-control form-select" required>
                                     <option value="">Select Brand</option>
                                     @foreach($brands as $brand)
-                                    <option value="{{ $brand->id }}" {{ old('brand_id', $variant->brand_id) ==
+                                    <option value="{{ $brand->id }}" {{ old('brand_id', $variant->brand?->id) ==
                                         $brand->id ? 'selected' : '' }}>
                                         {{ $brand->name }}
                                     </option>
@@ -78,7 +78,7 @@
                                 <select name="segment_id" class="form-control form-select" required>
                                     <option value="">Select Segment</option>
                                     @foreach($segments as $segment)
-                                    <option value="{{ $segment->id }}" {{ old('segment_id', $variant->segment_id) ==
+                                    <option value="{{ $segment->id }}" {{ old('segment_id', $variant->segment?->id) ==
                                         $segment->id ? 'selected' : '' }}>
                                         {{ $segment->name }}
                                     </option>
@@ -92,7 +92,7 @@
                                     <option value="">Select Model</option>
                                     @foreach($vehiclemodels as $model)
                                     <option value="{{ $model->id }}" {{ old('vehicle_model_id', $variant->
-                                        vehicle_model_id) == $model->id ? 'selected' : '' }}>
+                                        vehicleModel?->id) == $model->id ? 'selected' : '' }}>
                                         {{ $model->name }}
                                     </option>
                                     @endforeach
@@ -104,8 +104,8 @@
                                 <select name="sub_segment_id" class="form-control form-select">
                                     <option value="">Select Sub Segment</option>
                                     @foreach($subsegments as $sub)
-                                    <option value="{{ $sub->id }}" {{ old('sub_segment_id', $variant->sub_segment_id) ==
-                                        $sub->id ? 'selected' : '' }}>
+                                    <option value="{{ $sub->id }}" {{ old('sub_segment_id', $variant->subSegment?->id)
+                                        == $sub->id ? 'selected' : '' }}>
                                         {{ $sub->name }}
                                     </option>
                                     @endforeach

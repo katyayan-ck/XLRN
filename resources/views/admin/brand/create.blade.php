@@ -27,7 +27,7 @@
                 </div>
                 <div class="card-body">
 
-                    <form method="POST" action="{{ backpack_url('brand') }}">
+                    <form method="POST" action="{{ backpack_url('brand') }}" novalidate>
                         @csrf
 
                         <div class="row">

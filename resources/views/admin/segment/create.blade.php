@@ -46,7 +46,7 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Segment Code <span class="text-danger">*</span></label>
+                                <label>Segment Code (5 Characters)<span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control text-uppercase"
                                     value="{{ old('code') }}" maxlength="5" required style="text-transform: uppercase;">
                                 <small class="text-muted">e.g. HATCH, SUVXX, SEDAN, MPVXX</small>

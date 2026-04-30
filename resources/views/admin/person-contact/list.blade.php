@@ -31,9 +31,9 @@
 
     let gridApi;
 
-    // ==================== FLAT COLUMN DEFINITION ====================
+        // ==================== FLAT COLUMN DEFINITION ====================
     const columnDefs = [
-        ...getCols(['serial_no', 'person_name', 'name']).map(col => {
+        ...getCols(['serial_no', 'person_name']).map(col => {
             if (col.field === 'serial_no') {
                 col.pinned = 'left';
                 col.width = 80;
@@ -41,19 +41,7 @@
             return col;
         }),
 
-        ...getCols(['type', 'mobile', 'email']),
-
-        ...getCols(['relationship']),
-
-        ...getCols(['is_primary']).map(col => {
-            col.cellRenderer = params => {
-                if (params.value === 1 || params.value === true || params.value === 'Yes') {
-                    return `Primary`;
-                }
-                return `Secondary`;
-            };
-            return col;
-        }),
+        ...getCols(['data_type', 'contact_type', 'contact_detail']),
 
         ...getCols(['action']).map(col => {
             col.pinned = 'right';
@@ -85,8 +73,7 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'person_name', 'name', 'type', 'mobile', 'email', 'action'];
-
+            const defaultFields = ['serial_no', 'person_name', 'data_type', 'contact_type', 'contact_detail', 'action'];
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
             gridApi.setColumnsVisible(allCols, false);
@@ -105,10 +92,8 @@
         tbody.innerHTML = '';
 
         const allFlatColumns = [
-            ...getCols(['serial_no', 'person_name', 'name']),
-            ...getCols(['type', 'mobile', 'email']),
-            ...getCols(['relationship']),
-            ...getCols(['is_primary']),
+            ...getCols(['serial_no', 'person_name', 'data_type']),
+            ...getCols(['contact_type', 'contact_detail']),
             ...getCols(['action'])
         ];
 

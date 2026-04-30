@@ -114,14 +114,14 @@
                                 <label>Gender</label>
                                 <select name="gender" class="form-control form-select">
                                     <option value="">Select</option>
-                                    <option value="male" {{ old('gender', $person->gender) == 'male' ? 'selected' : ''
+                                    <option value="Male" {{ old('gender', $person->gender) == 'Male' ? 'selected' : ''
                                         }}>Male</option>
-                                    <option value="female" {{ old('gender', $person->gender) == 'female' ? 'selected' :
+                                    <option value="Female" {{ old('gender', $person->gender) == 'Female' ? 'selected' :
                                         '' }}>Female</option>
-                                    <option value="other" {{ old('gender', $person->gender) == 'other' ? 'selected' : ''
+                                    <option value="Other" {{ old('gender', $person->gender) == 'Other' ? 'selected' : ''
                                         }}>Other</option>
-                                    <option value="prefer_not_to_say" {{ old('gender', $person->gender) ==
-                                        'prefer_not_to_say' ? 'selected' : '' }}>Prefer not to say</option>
+                                    <option value="Prefer not to say" {{ old('gender', $person->gender) == 'Prefer not
+                                        to say' ? 'selected' : '' }}>Prefer not to say</option>
                                 </select>
                             </div>
 
@@ -165,14 +165,14 @@
                                 <label>Marital Status</label>
                                 <select name="marital_status" class="form-control form-select">
                                     <option value="">Select</option>
-                                    <option value="single" {{ old('marital_status', $person->marital_status) == 'single'
+                                    <option value="Single" {{ old('marital_status', $person->marital_status) == 'Single'
                                         ? 'selected' : '' }}>Single</option>
-                                    <option value="married" {{ old('marital_status', $person->marital_status) ==
-                                        'married' ? 'selected' : '' }}>Married</option>
-                                    <option value="divorced" {{ old('marital_status', $person->marital_status) ==
-                                        'divorced' ? 'selected' : '' }}>Divorced</option>
-                                    <option value="widowed" {{ old('marital_status', $person->marital_status) ==
-                                        'widowed' ? 'selected' : '' }}>Widowed</option>
+                                    <option value="Married" {{ old('marital_status', $person->marital_status) ==
+                                        'Married' ? 'selected' : '' }}>Married</option>
+                                    <option value="Divorced" {{ old('marital_status', $person->marital_status) ==
+                                        'Divorced' ? 'selected' : '' }}>Divorced</option>
+                                    <option value="Widowed" {{ old('marital_status', $person->marital_status) ==
+                                        'Widowed' ? 'selected' : '' }}>Widowed</option>
                                 </select>
                             </div>
 

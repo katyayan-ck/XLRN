@@ -59,9 +59,11 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Person</label>
-                                <select name="person_id" class="form-control form-select" required>
+                                <select name="person_code" class="form-control form-select" required>
                                     @foreach($persons as $p)
-                                    <option value="{{ $p->id }}" {{ old('person_id', $banking->person_id) == $p->id ?
+                                    <option value="{{ $p->person_code }}" {{ old('person_code', $banking->person_code)
+                                        == $p->person_code
+                                        ?
                                         'selected' : '' }}>
                                         {{ $p->first_name }} {{ $p->last_name }}
                                     </option>
@@ -96,16 +98,14 @@
                             <div class="col-md-4 mb-3">
                                 <label>Account Type <span class="text-danger">*</span></label>
                                 <select name="account_type" class="form-control form-select" required>
-                                    <option value="savings" {{ old('account_type', $banking->account_type) == 'savings'
-                                        ? 'selected' : '' }}>Savings</option>
-                                    <option value="current" {{ old('account_type', $banking->account_type) == 'current'
-                                        ? 'selected' : '' }}>Current</option>
-                                    <option value="fd" {{ old('account_type', $banking->account_type) == 'fd' ?
-                                        'selected' : '' }}>Fixed Deposit</option>
-                                    <option value="rd" {{ old('account_type', $banking->account_type) == 'rd' ?
-                                        'selected' : '' }}>Recurring Deposit</option>
-                                    <option value="other" {{ old('account_type', $banking->account_type) == 'other' ?
-                                        'selected' : '' }}>Other</option>
+                                    <option value="Primary" {{ old('account_type', $banking->account_type) == 'Primary'
+                                        ? 'selected' : '' }}>Primary</option>
+                                    <option value="Secondary" {{ old('account_type', $banking->account_type) ==
+                                        'Secondary' ? 'selected' : '' }}>Secondary</option>
+                                    <option value="Joint" {{ old('account_type', $banking->account_type) == 'Joint' ?
+                                        'selected' : '' }}>Joint</option>
+                                    <option value="Trust" {{ old('account_type', $banking->account_type) == 'Trust' ?
+                                        'selected' : '' }}>Trust</option>
                                 </select>
                             </div>
 
@@ -116,18 +116,25 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Swift Code</label>
-                                <input type="text" name="swift_code" class="form-control"
-                                    value="{{ old('swift_code', $banking->swift_code) }}">
+                                <label>MICR Code</label>
+                                <input type="text" name="micr_code" class="form-control"
+                                    value="{{ old('micr_code', $banking->micr_code) }}">
                             </div>
 
-                            <div class="col-md-1 mb-3">
-                                <label class="form-label">Is Primary?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_primary" value="0">
-                                    <input type="checkbox" name="is_primary" value="1" class="form-check-input" {{
-                                        old('is_primary', $banking->is_primary) ? 'checked' : '' }}>
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Account Nature</label>
+                                <select name="account_nature" class="form-control form-select">
+                                    <option value="Savings" {{ old('account_nature', $banking->account_nature) ==
+                                        'Savings' ? 'selected' : '' }}>Savings</option>
+                                    <option value="Current" {{ old('account_nature', $banking->account_nature) ==
+                                        'Current' ? 'selected' : '' }}>Current</option>
+                                    <option value="Salary" {{ old('account_nature', $banking->account_nature) ==
+                                        'Salary' ? 'selected' : '' }}>Salary</option>
+                                    <option value="NRO" {{ old('account_nature', $banking->account_nature) == 'NRO' ?
+                                        'selected' : '' }}>NRO</option>
+                                    <option value="NRE" {{ old('account_nature', $banking->account_nature) == 'NRE' ?
+                                        'selected' : '' }}>NRE</option>
+                                </select>
                             </div>
 
                             <div class="col-md-1 mb-3">

@@ -32,10 +32,11 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label>Person <span class="text-danger">*</span></label>
-                                <select name="person_id" class="form-control form-select" required>
+                                <select name="person_code" class="form-control form-select" required>
                                     <option value="">Select Person</option>
                                     @foreach($persons as $p)
-                                    <option value="{{ $p->id }}" {{ old('person_id')==$p->id ? 'selected' : '' }}>
+                                    <option value="{{ $p->person_code }}" {{ old('person_code')==$p->person_code ?
+                                        'selected' : '' }}>
                                         {{ $p->first_name }} {{ $p->last_name }}
                                     </option>
                                     @endforeach
@@ -72,16 +73,10 @@
                             <div class="col-md-4 mb-3">
                                 <label>Account Type <span class="text-danger">*</span></label>
                                 <select name="account_type" class="form-control form-select" required>
-                                    <option value="savings" {{ old('account_type')=='savings' ? 'selected' : '' }}>
-                                        Savings</option>
-                                    <option value="current" {{ old('account_type')=='current' ? 'selected' : '' }}>
-                                        Current</option>
-                                    <option value="fd" {{ old('account_type')=='fd' ? 'selected' : '' }}>Fixed Deposit
-                                    </option>
-                                    <option value="rd" {{ old('account_type')=='rd' ? 'selected' : '' }}>Recurring
-                                        Deposit</option>
-                                    <option value="other" {{ old('account_type')=='other' ? 'selected' : '' }}>Other
-                                    </option>
+                                    <option value="Primary">Primary</option>
+                                    <option value="Secondary">Secondary</option>
+                                    <option value="Joint">Joint</option>
+                                    <option value="Trust">Trust</option>
                                 </select>
                             </div>
 
@@ -92,19 +87,22 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Swift Code</label>
-                                <input type="text" name="swift_code" class="form-control"
-                                    value="{{ old('swift_code') }}">
+                                <label>MICR Code</label>
+                                <input type="text" name="micr_code" class="form-control" value="{{ old('micr_code') }}">
                             </div>
 
-                            <div class="col-md-1 mb-3">
-                                <label class="form-label">Is Primary?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_primary" value="0">
-                                    <input type="checkbox" name="is_primary" value="1" class="form-check-input" {{
-                                        old('is_primary') ? 'checked' : '' }}>
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Account Nature</label>
+                                <select name="account_type" class="form-control form-select" required>
+                                    <option value="Primary">Primary</option>
+                                    <option value="Secondary">Secondary</option>
+                                    <option value="Joint">Joint</option>
+                                    <option value="Trust">Trust</option>
+                                </select>
                             </div>
+
+
+
 
                             <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Verified?</label>

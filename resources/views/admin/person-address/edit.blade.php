@@ -22,6 +22,7 @@
         min-height: 42px;
         display: flex;
         align-items: center;
+        font-weight: 500;
     }
 </style>
 @endpush
@@ -41,12 +42,16 @@
                         @method('PUT')
 
                         <div class="row">
-                            <!-- Read Only -->
+                            <!-- Read Only Fields -->
                             <div class="col-md-12 mb-4">
-                                <div class="row">
+                                <div class="row g-3">
                                     <div class="col-md-3">
                                         <label class="form-label fw-bold">Address ID</label>
                                         <div class="readonly-value">{{ $address->id }}</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Person Code</label>
+                                        <div class="readonly-value">{{ $address->person_code }}</div>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label fw-bold">Created At</label>
@@ -57,75 +62,99 @@
                                 </div>
                             </div>
 
+                            <!-- Editable Fields -->
                             <div class="col-md-4 mb-3">
                                 <label>Person</label>
-                                <select name="person_id" class="form-control form-select" required>
+                                <select name="person_code" class="form-control form-select" required>
                                     @foreach($persons as $p)
-                                    <option value="{{ $p->id }}" {{ old('person_id', $address->person_id) == $p->id ?
-                                        'selected' : '' }}>
-                                        {{ $p->first_name }} {{ $p->last_name }}
+                                    <option value="{{ $p->person_code }}" {{ old('person_code', $address->person_code)
+                                        == $p->person_code ? 'selected' : '' }}>
+                                        {{ $p->display_name ?? $p->first_name . ' ' . $p->last_name }}
+                                        ({{ $p->person_code }})
                                     </option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Address Type <span class="text-danger">*</span></label>
-                                <select name="type" class="form-control form-select" required>
-                                    <option value="">Select Type</option>
-                                    <option value="residential" {{ old('type', $address->type) == 'residential' ?
-                                        'selected' : '' }}>Residential</option>
-                                    <option value="official" {{ old('type', $address->type) == 'official' ? 'selected' :
-                                        '' }}>Official</option>
-                                    <option value="other" {{ old('type', $address->type) == 'other' ? 'selected' : ''
-                                        }}>Other</option>
+                                <select name="address_type" class="form-control form-select" required>
+                                    <option value="Primary" {{ old('address_type', $address->address_type) == 'Primary'
+                                        ? 'selected' : '' }}>Primary</option>
+                                    <option value="Office" {{ old('address_type', $address->address_type) == 'Office' ?
+                                        'selected' : '' }}>Office</option>
+                                    <option value="Home" {{ old('address_type', $address->address_type) == 'Home' ?
+                                        'selected' : '' }}>Home</option>
+                                    <option value="Alternate" {{ old('address_type', $address->address_type) ==
+                                        'Alternate' ? 'selected' : '' }}>Alternate</option>
+                                    <option value="Permanent" {{ old('address_type', $address->address_type) ==
+                                        'Permanent' ? 'selected' : '' }}>Permanent</option>
                                 </select>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-5 mb-3">
                                 <label>Address Line 1 <span class="text-danger">*</span></label>
                                 <input type="text" name="address_line_1" class="form-control"
                                     value="{{ old('address_line_1', $address->address_line_1) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-5 mb-3">
                                 <label>Address Line 2</label>
                                 <input type="text" name="address_line_2" class="form-control"
                                     value="{{ old('address_line_2', $address->address_line_2) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
+                                <label>Landmark</label>
+                                <input type="text" name="landmark" class="form-control"
+                                    value="{{ old('landmark', $address->landmark) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
                                 <label>City <span class="text-danger">*</span></label>
                                 <input type="text" name="city" class="form-control"
                                     value="{{ old('city', $address->city) }}" required>
                             </div>
+                            <div class="col-md-3 mb-3">
+                                <label>Taluka</label>
+                                <input type="text" name="taluka" class="form-control"
+                                    value="{{ old('taluka', $address->taluka) }}">
+                            </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
+                                <label>District</label>
+                                <input type="text" name="district" class="form-control"
+                                    value="{{ old('district', $address->district) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Latitude</label>
+                                <input type="text" name="latitude" class="form-control"
+                                    value="{{ old('latitude', $address->latitude) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Longitude</label>
+                                <input type="text" name="longitude" class="form-control"
+                                    value="{{ old('longitude', $address->longitude) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
                                 <label>State <span class="text-danger">*</span></label>
                                 <input type="text" name="state" class="form-control"
                                     value="{{ old('state', $address->state) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Pincode <small class="text-muted">(6 digits)</small></label>
+                            <div class="col-md-3 mb-3">
+                                <label>Pincode</label>
                                 <input type="text" name="pincode" class="form-control"
-                                    value="{{ old('pincode', $address->pincode) }}" maxlength="6" pattern="[0-9]{6}"
-                                    title="Please enter exactly 6 digits Numberical Number">
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>Country</label>
-                                <input type="text" name="country" class="form-control"
-                                    value="{{ old('country', $address->country ?? 'India') }}">
+                                    value="{{ old('pincode', $address->pincode) }}" maxlength="6">
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label class="form-label">Is Primary Address?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_primary" value="0">
-                                    <input type="checkbox" name="is_primary" value="1" class="form-check-input" {{
-                                        old('is_primary', $address->is_primary) ? 'checked' : '' }}>
-                                </div>
+                                <label>Country</label>
+                                <input type="text" name="country" class="form-control"
+                                    value="{{ old('country', $address->country ?? 'India') }}">
                             </div>
                         </div>
 

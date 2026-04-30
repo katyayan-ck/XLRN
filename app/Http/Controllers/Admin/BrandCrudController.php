@@ -7,13 +7,11 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use App\Models\Vehicle\Brand;
 
-
 class BrandCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
-    use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
 
     public function setup()
     {
@@ -27,10 +25,9 @@ class BrandCrudController extends CrudController
         $this->crud->setListView('admin.brand.list');
     }
 
+    // ====================== LIST ======================
     public function index()
     {
-        $this->crud->setListView('admin.brand.list');
-
         $brands = Brand::select([
             'id',
             'code',
@@ -49,8 +46,7 @@ class BrandCrudController extends CrudController
             $mapped['action'] = '
                 <div class="d-flex gap-2 justify-content-center">
                     <a href="' . $editUrl . '"
-                       class="btn btn-sm btn-primary py-1 px-2"
-                       title="Edit">
+                       class="btn btn-sm btn-primary py-1 px-2" title="Edit">
                          Edit
                     </a>
                 </div>
@@ -74,10 +70,37 @@ class BrandCrudController extends CrudController
         ]);
     }
 
+    // ====================== CREATE ======================
+    public function create()
+    {
+        $this->crud->setCreateView('admin.brand.create');
+        return view('admin.brand.create', ['title' => 'Add New Brand']);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name'        => 'required|string|max:255',
+            'code'        => 'required|string|size:5|unique:xlr8_vehicle_brand,code',
+            'description' => 'nullable|string',
+            'is_active'   => 'boolean',
+        ], [
+            'code.required' => 'Brand Code is required.',
+            'code.size'     => 'Brand Code must be exactly 5 characters long.',
+            'code.unique'   => 'This Brand Code is already taken. Please choose another one.',
+            'name.required' => 'Brand Name is required.',
+        ]);
+
+        Brand::create($validated);
+
+        \Alert::success('Brand created successfully!')->flash();
+        return redirect(backpack_url('brand'));
+    }
+
+    // ====================== EDIT ======================
     public function edit($id)
     {
         $this->crud->setEditView('admin.brand.edit');
-
         $brand = Brand::findOrFail($id);
 
         return view('admin.brand.edit', [
@@ -95,21 +118,16 @@ class BrandCrudController extends CrudController
             'code'        => 'required|string|size:5|unique:xlr8_vehicle_brand,code,' . $id,
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
+        ], [
+            'code.required' => 'Brand Code is required.',
+            'code.size'     => 'Brand Code must be exactly 5 characters long.',
+            'code.unique'   => 'This Brand Code is already taken. Please choose another one.',
+            'name.required' => 'Brand Name is required.',
         ]);
 
         $brand->update($validated);
 
         \Alert::success('Brand updated successfully!')->flash();
-
         return redirect(backpack_url('brand'));
-    }
-
-    public function create()
-    {
-        $this->crud->setCreateView('admin.brand.create');
-
-        return view('admin.brand.create', [
-            'title' => 'Add New Brand',
-        ]);
     }
 }

@@ -5,15 +5,15 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use \App\Models\Vehicle\SubSegment;
-use \App\Models\Vehicle\Segment;
+use App\Models\Vehicle\SubSegment;
+use App\Models\Vehicle\Segment;
 
 class SubSegmentCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
-    use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
+    // use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
 
     public function setup()
     {
@@ -27,10 +27,9 @@ class SubSegmentCrudController extends CrudController
         $this->crud->setListView('admin.sub-segment.list');
     }
 
+    // ====================== LIST ======================
     public function index()
     {
-        $this->crud->setListView('admin.sub-segment.list');
-
         $subsegments = SubSegment::with(['segment.brand'])
             ->orderBy('id', 'desc')
             ->get();
@@ -40,20 +39,18 @@ class SubSegmentCrudController extends CrudController
             $mapped['serial_no'] = $index + 1;
             $mapped['brand']     = $item->segment?->brand?->name ?? '—';
             $mapped['segment']   = $item->segment?->name ?? '—';
+            $mapped['is_active'] = $item->is_active ? 'Active' : 'Inactive';
 
             $editUrl = backpack_url("sub-segment/{$item->id}/edit");
 
             $mapped['action'] = '
                 <div class="d-flex gap-2 justify-content-center">
                     <a href="' . $editUrl . '"
-                       class="btn btn-sm btn-primary py-1 px-2"
-                       title="Edit">
+                       class="btn btn-sm btn-primary py-1 px-2" title="Edit">
                          Edit
                     </a>
                 </div>
             ';
-
-            $mapped['is_active'] = $item->is_active ? 'Active' : 'Inactive';
 
             return $mapped;
         })->values();
@@ -76,11 +73,50 @@ class SubSegmentCrudController extends CrudController
         ]);
     }
 
+    // ====================== CREATE ======================
+    public function create()
+    {
+        $this->crud->setCreateView('admin.sub-segment.create');
+
+        return view('admin.sub-segment.create', [
+            'title'    => 'Add New Sub Segment',
+            'segments' => Segment::with('brand')->orderBy('name')->get()
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'segment_id'  => 'required|exists:xlr8_vehicle_segment,id',
+            'name'        => 'required|string|max:255',
+            'code'        => 'required|string|size:5',
+            'description' => 'nullable|string',
+            'is_active'   => 'boolean',
+        ], [
+            'code.size'   => 'Sub Segment Code must be exactly 5 characters long.',
+        ]);
+
+        $segment = Segment::with('brand')->findOrFail($validated['segment_id']);
+
+        $subsegment = new SubSegment();
+        $subsegment->brand_code   = $segment->brand_code;     // ← Important
+        $subsegment->segment_code = $segment->code;           // ← Important
+        $subsegment->code         = strtoupper($validated['code']);
+        $subsegment->name         = $validated['name'];
+        $subsegment->description  = $validated['description'] ?? null;
+        $subsegment->is_active    = $validated['is_active'] ?? true;
+        $subsegment->save();
+
+        \Alert::success('Sub Segment created successfully!')->flash();
+        return redirect(backpack_url('sub-segment'));
+    }
+
+    // ====================== EDIT ======================
     public function edit($id)
     {
         $this->crud->setEditView('admin.sub-segment.edit');
 
-        $subsegment = SubSegment::with('segment.brand')->findOrFail($id);
+        $subsegment = SubSegment::with(['segment.brand'])->findOrFail($id);
 
         return view('admin.sub-segment.edit', [
             'title'      => 'Edit Sub Segment - ' . $subsegment->name,
@@ -96,25 +132,25 @@ class SubSegmentCrudController extends CrudController
         $validated = $request->validate([
             'segment_id'  => 'required|exists:xlr8_vehicle_segment,id',
             'name'        => 'required|string|max:255',
-            'code'        => 'required|string|size:5|unique:xlr8_vehicle_subsegment,code,' . $id . ',id,segment_id,' . $request->segment_id,
+            'code'        => 'required|string|size:5',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
+        ], [
+            'code.size'   => 'Sub Segment Code must be exactly 5 characters long.',
         ]);
 
-        $subsegment->update($validated);
+        $segment = Segment::with('brand')->findOrFail($validated['segment_id']);
+
+        $subsegment->update([
+            'brand_code'   => $segment->brand_code,
+            'segment_code' => $segment->code,
+            'code'         => strtoupper($validated['code']),
+            'name'         => $validated['name'],
+            'description'  => $validated['description'] ?? null,
+            'is_active'    => $validated['is_active'] ?? true,
+        ]);
 
         \Alert::success('Sub Segment updated successfully!')->flash();
-
         return redirect(backpack_url('sub-segment'));
-    }
-
-    public function create()
-    {
-        $this->crud->setCreateView('admin.sub-segment.create');
-
-        return view('admin.sub-segment.create', [
-            'title'    => 'Add New Sub Segment',
-            'segments' => Segment::with('brand')->orderBy('name')->get()
-        ]);
     }
 }

@@ -60,23 +60,22 @@
                                 </div>
                             </div>
 
-                            <!-- Editable Fields -->
                             <div class="col-md-4 mb-3">
                                 <label>Segment <span class="text-danger">*</span></label>
                                 <select name="segment_id" class="form-control form-select" required>
                                     <option value="">Select Segment</option>
                                     @foreach($segments as $segment)
-                                    <option value="{{ $segment->id }}" {{ old('segment_id', $subsegment->segment_id) ==
-                                        $segment->id ? 'selected' : '' }}>
+                                    <option value="{{ $segment->id }}" {{ old('segment_id', $subsegment->segment?->id)
+                                        == $segment->id ? 'selected' : '' }}>
                                         {{ $segment->name }}
-                                        <small class="text-muted">({{ $segment->brand->name ?? '' }})</small>
+                                        <small class="text-muted">({{ $segment->brand?->name ?? '' }})</small>
                                     </option>
                                     @endforeach
                                 </select>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Sub Segment Code <span class="text-danger">*</span></label>
+                                <label>Sub Segment Code (5 Characters)<span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control text-uppercase"
                                     value="{{ old('code', $subsegment->code) }}" maxlength="5" required
                                     style="text-transform: uppercase;">

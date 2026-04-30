@@ -30,62 +30,55 @@
                         @csrf
 
                         <div class="row">
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label>Person <span class="text-danger">*</span></label>
-                                <select name="person_id" class="form-control form-select" required>
+                                <select name="person_code" class="form-control form-select" required>
                                     <option value="">Select Person</option>
                                     @foreach($persons as $p)
-                                    <option value="{{ $p->id }}" {{ old('person_id')==$p->id ? 'selected' : '' }}>
-                                        {{ $p->first_name }} {{ $p->last_name }}
+                                    <option value="{{ $p->person_code }}" {{ old('person_code')==$p->person_code ?
+                                        'selected' : '' }}>
+                                        {{ $p->display_name ?? $p->first_name . ' ' . $p->last_name }}
+                                        ({{ $p->person_code }})
                                     </option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Contact Type <span class="text-danger">*</span></label>
-                                <select name="type" id="type" class="form-control form-select" required>
+                            <div class="col-md-4 mb-3">
+                                <label>Data Type <span class="text-danger">*</span></label>
+                                <select name="data_type" id="data_type" class="form-control form-select" required>
                                     <option value="">Select Type</option>
-                                    <option value="mobile" {{ old('type')=='mobile' ? 'selected' : '' }}>Mobile</option>
-                                    <option value="email" {{ old('type')=='email' ? 'selected' : '' }}>Email</option>
+                                    <option value="Mobile" {{ old('data_type')=='Mobile' ? 'selected' : '' }}>Mobile
+                                    </option>
+                                    <option value="Email" {{ old('data_type')=='Email' ? 'selected' : '' }}>Email
+                                    </option>
+                                    <option value="Landline" {{ old('data_type')=='Landline' ? 'selected' : '' }}>
+                                        Landline</option>
+                                    <option value="Fax" {{ old('data_type')=='Fax' ? 'selected' : '' }}>Fax</option>
                                 </select>
                             </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Name <span class="text-danger">*</span></label>
-                                <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
+                            <div class="col-md-4 mb-3">
+                                <label>Contact Type</label>
+                                <select name="contact_type" class="form-control form-select">
+                                    <option value="">Select</option>
+                                    <option value="Primary" {{ old('contact_type')=='Primary' ? 'selected' : '' }}>
+                                        Primary</option>
+                                    <option value="Alternate" {{ old('contact_type')=='Alternate' ? 'selected' : '' }}>
+                                        Alternate</option>
+                                    <option value="Office" {{ old('contact_type')=='Office' ? 'selected' : '' }}>Office
+                                    </option>
+                                    <option value="Home" {{ old('contact_type')=='Home' ? 'selected' : '' }}>Home
+                                    </option>
+                                    <option value="Emergency" {{ old('contact_type')=='Emergency' ? 'selected' : '' }}>
+                                        Emergency</option>
+                                </select>
                             </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Mobile <span id="mobile_star" class="text-danger">*</span></label>
-                                <input type="text" name="mobile" id="mobile" class="form-control"
-                                    value="{{ old('mobile') }}" maxlength="10" pattern="[0-9]{10}">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Email <span id="email_star" class="text-danger">*</span></label>
-                                <input type="email" name="email" id="email" class="form-control"
-                                    value="{{ old('email') }}">
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Relationship</label>
-                                <input type="text" name="relationship" class="form-control"
-                                    value="{{ old('relationship') }}">
-                            </div>
-
-                            <div class="col-md-11 mb-3">
-                                <label>Notes</label>
-                                <textarea name="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
-                            </div>
-
-                            <div class="col-md-1 mb-3">
-                                <label class="form-label">Is Primary?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_primary" value="0">
-                                    <input type="checkbox" name="is_primary" value="1" class="form-check-input" {{
-                                        old('is_primary') ? 'checked' : '' }}>
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Contact Detail <span class="text-danger">*</span></label>
+                                <input type="text" name="contact_detail" id="contact_detail" class="form-control"
+                                    value="{{ old('contact_detail') }}" required>
                             </div>
                         </div>
 
@@ -105,31 +98,23 @@
 
 @push('after_scripts')
 <script>
-    function toggleRequiredFields() {
-        const type = document.getElementById('type').value;
-        const mobileInput = document.getElementById('mobile');
-        const emailInput = document.getElementById('email');
-        const mobileStar = document.getElementById('mobile_star');
-        const emailStar = document.getElementById('email_star');
-
-        if (type === 'mobile') {
-            mobileInput.required = true;
-            emailInput.required = false;
-            mobileStar.style.display = 'inline';
-            emailStar.style.display = 'none';
-        } else if (type === 'email') {
-            mobileInput.required = false;
-            emailInput.required = true;
-            mobileStar.style.display = 'none';
-            emailStar.style.display = 'inline';
-        }
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
-        const typeSelect = document.getElementById('type');
-        typeSelect.addEventListener('change', toggleRequiredFields);
-        // Run once on load
-        toggleRequiredFields();
+        const dataTypeSelect = document.getElementById('data_type');
+        const contactDetailInput = document.getElementById('contact_detail');
+
+        dataTypeSelect.addEventListener('change', function() {
+            const type = this.value;
+            if (type === 'Mobile' || type === 'Landline') {
+                contactDetailInput.placeholder = 'Enter phone number';
+                contactDetailInput.type = 'tel';
+            } else if (type === 'Email') {
+                contactDetailInput.placeholder = 'Enter email address';
+                contactDetailInput.type = 'email';
+            } else {
+                contactDetailInput.placeholder = 'Enter contact detail';
+                contactDetailInput.type = 'text';
+            }
+        });
     });
 </script>
 @endpush

@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Admin;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
-use \App\Models\Vehicle\Color;
-use \App\Models\Vehicle\Brand;
+use App\Models\Vehicle\Color;
+use App\Models\Vehicle\Brand;
+use App\Models\Vehicle\Segment;
+use App\Models\Vehicle\SubSegment;
+use App\Models\Vehicle\VehicleModel;
 
 class ColorCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
-    use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
+    // use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
 
     public function setup()
     {
@@ -27,10 +30,9 @@ class ColorCrudController extends CrudController
         $this->crud->setListView('admin.color.list');
     }
 
+    // ====================== LIST ======================
     public function index()
     {
-        $this->crud->setListView('admin.color.list');
-
         $colors = Color::with('brand')
             ->orderBy('id', 'desc')
             ->get();
@@ -45,8 +47,7 @@ class ColorCrudController extends CrudController
             $mapped['action'] = '
                 <div class="d-flex gap-2 justify-content-center">
                     <a href="' . $editUrl . '"
-                       class="btn btn-sm btn-primary py-1 px-2"
-                       title="Edit">
+                       class="btn btn-sm btn-primary py-1 px-2" title="Edit">
                          Edit
                     </a>
                 </div>
@@ -74,6 +75,46 @@ class ColorCrudController extends CrudController
         ]);
     }
 
+    // ====================== CREATE ======================
+    public function create()
+    {
+        $this->crud->setCreateView('admin.color.create');
+
+        return view('admin.color.create', [
+            'title'  => 'Add New Color',
+            'brands' => Brand::orderBy('name')->get()
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'brand_id' => 'required|exists:xlr8_vehicle_brand,id',
+            'name'     => 'required|string|max:255',
+            'code'     => 'required|string|max:50|regex:/^[A-Za-z]+$/|unique:xlr8_vehicle_color,code',
+            'hex_code' => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
+            'is_active' => 'boolean',
+        ], [
+            'code.regex' => 'Color Code must contain only alphabets (A-Z, a-z).',
+            'hex_code.regex' => 'Hex Code must be valid like #FF0000',
+        ]);
+
+        $brand = Brand::findOrFail($validated['brand_id']);
+
+        $color = new Color();
+        $color->brand_code = $brand->code;
+        $color->model_code = 'DEFAULT'; // ya actual model_code
+        $color->code       = strtoupper($validated['code']);
+        $color->name       = $validated['name'];
+        $color->hex_code   = strtoupper($validated['hex_code']);
+        $color->is_active  = $validated['is_active'] ?? true;
+        $color->save();
+
+        \Alert::success('Color created successfully!')->flash();
+        return redirect(backpack_url('color'));
+    }
+
+    // ====================== EDIT ======================
     public function edit($id)
     {
         $this->crud->setEditView('admin.color.edit');
@@ -93,41 +134,26 @@ class ColorCrudController extends CrudController
 
         $validated = $request->validate([
             'brand_id' => 'required|exists:xlr8_vehicle_brand,id',
-
-            'name' => 'required|string|max:255',
-
-            // ✅ Only alphabets (no special char, no number)
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'regex:/^[A-Za-z]+$/', // 🔥 only text allowed
-                'unique:xlr8_vehicle_color,code,' . $id
-            ],
-
-            // ✅ Must start with # and exactly 7 chars (# + 6 hex digits)
-            'hex_code' => [
-                'required',
-                'regex:/^#[0-9A-Fa-f]{6}$/'
-            ],
-
+            'name'     => 'required|string|max:255',
+            'code'     => 'required|string|max:50|regex:/^[A-Za-z]+$/|unique:xlr8_vehicle_color,code,' . $id,
+            'hex_code' => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
             'is_active' => 'boolean',
+        ], [
+            'code.regex' => 'Color Code must contain only alphabets (A-Z, a-z).',
+            'hex_code.regex' => 'Hex Code must be valid like #FF0000',
         ]);
 
-        $color->update($validated);
+        $brand = Brand::findOrFail($validated['brand_id']);
+
+        $color->update([
+            'brand_code' => $brand->code,
+            'code'       => strtoupper($validated['code']),
+            'name'       => $validated['name'],
+            'hex_code'   => strtoupper($validated['hex_code']),
+            'is_active'  => $validated['is_active'] ?? true,
+        ]);
 
         \Alert::success('Color updated successfully!')->flash();
-
         return redirect(backpack_url('color'));
-    }
-
-    public function create()
-    {
-        $this->crud->setCreateView('admin.color.create');
-
-        return view('admin.color.create', [
-            'title'  => 'Add New Color',
-            'brands' => Brand::orderBy('name')->get()
-        ]);
     }
 }
