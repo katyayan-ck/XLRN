@@ -2,736 +2,381 @@
 
 namespace App\Models;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use App\Models\Core\Employee;
-use App\Models\Admin\Person;
-use App\Models\Core\UserType;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\{
-    HasMany,
-    HasOne,
-    BelongsToMany,
-    BelongsTo
-};
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\Core\ReportingHierarchy;
-use App\Models\Core\ApprovalHierarchy;
-use App\Models\Core\GraphNode;
-use App\Models\Core\NotificationsMaster;
-use App\Models\Core\Alert;
-use App\Models\Core\Notification;
-use App\Models\Core\Message;
-use App\Models\Core\UserDeviceToken;
+use App\Models\Admin\Person;
+use App\Models\Admin\Employee;
+use App\Models\Admin\UserType;
+use App\Models\Core\UserRoleAssignment;
+use App\Models\Core\UserDivisionAssignment;
+use App\Models\UserDataScope;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-
-/**
- * User Model
- * 
- * Application user authentication and authorization
- * Extended with person linkage, employee linkage, role management, and hierarchical data scoping
- */
-class User extends Authenticatable implements Auditable
+class User extends Authenticatable
 {
-    use HasFactory;
-    use Notifiable;
-    use HasApiTokens;
-    use HasRoles;
-    use SoftDeletes;
-    use AuditableTrait;
-    use CrudTrait;
+    use Notifiable, HasRoles, SoftDeletes;
+
+    protected $table = 'users';
+
+    // ── Fillable ──────────────────────────────────────────────────────────────
+    // REMOVED: person_id, employee_id, mile_id, code, mobile, name, email,
+    //          email_verified_at, remember_token
+    // ADDED:   person_code (natural FK), employee_code (optional natural FK),
+    //          username, user_type (enum), created_by, updated_by, deleted_by
 
     protected $fillable = [
-        'person_id',
-        'employee_id',
-        'user_type_id',
-        'code',
-        'name',
-        'email',
-        'password',
+        'user_type_id',     // legacy FK kept during transition; will be phased out
+        'user_type',        // hardcoded enum: Emp|Cust|DSA|Insurer|Associate
+        'username',         // immutable after first set
+        'person_code',      // FK → xlr8_admin_person.person_code (natural key)
+        'employee_code',    // nullable FK → xlr8_admin_employee.code (Emp type only)
         'avatar',
-        'phone',
+        'password',
         'is_active',
         'last_login_at',
-        'email_verified_at',
-        'remember_token',
-        'mile_id',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password'];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'is_active' => 'boolean',
+        'password'      => 'hashed',
+        'is_active'     => 'boolean',
         'last_login_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'created_at'    => 'datetime',
+        'updated_at'    => 'datetime',
+        'deleted_at'    => 'datetime',
     ];
 
-    /**
-     * Guard for roles/permissions
-     */
-    protected $guard_name = 'web';
+    protected string $guard_name = 'web';
 
-    /**
-     * Boot: Auto-set audit fields
-     */
-    public static function boot()
+    // ── Boot ──────────────────────────────────────────────────────────────────
+
+    protected static function boot(): void
     {
         parent::boot();
 
-        static::creating(function ($model) {
-            if (auth()->check() && !$model->created_by) {
-                $model->created_by = auth()->id();
+        static::creating(function (User $user) {
+            if (auth()->check() && empty($user->created_by)) {
+                $user->created_by = auth()->id();
             }
         });
 
-        static::updating(function ($model) {
+        static::updating(function (User $user) {
+            // username is IMMUTABLE after first set
+            if ($user->isDirty('username') && !empty($user->getOriginal('username'))) {
+                $user->username = $user->getOriginal('username');
+            }
             if (auth()->check()) {
-                $model->updated_by = auth()->id();
+                $user->updated_by = auth()->id();
             }
         });
 
-        static::deleting(function ($model) {
-            if (!$model->isForceDeleting()) {
-                if (auth()->check()) {
-                    $model->deleted_by = auth()->id();
-                    $model->save();
-                }
+        static::deleting(function (User $user) {
+            if (!$user->isForceDeleting() && auth()->check()) {
+                $user->deleted_by = auth()->id();
+                $user->saveQuietly();
             }
         });
     }
 
+    // ── Core relationships ─────────────────────────────────────────────────────
+    // FIX: person() now uses person_code ↔ person_code (natural key, not person_id)
+    // FIX: employee() now uses employee_code ↔ code (natural key, not employee_id)
 
-    // ╔════════════════════════════════════════════════════════╗
-    // ║        Notifications RELATIONSHIPS       
-    // ╚════════════════════════════════════════════════════════╝
-
-
-    public function notifications(): HasMany
+    public function person(): BelongsTo
     {
-        return $this->hasMany(Notification::class);
+        return $this->belongsTo(Person::class, 'person_code', 'person_code');
     }
 
-    public function alerts(): HasMany
+    public function employee(): BelongsTo
     {
-        return $this->hasMany(Alert::class);
+        return $this->belongsTo(Employee::class, 'employee_code', 'code');
     }
 
-    public function sentNotifications(): HasMany
+    public function userType(): BelongsTo
     {
-        return $this->hasMany(Notification::class, 'sender_id');
+        return $this->belongsTo(UserType::class, 'user_type_id');
     }
 
-    public function sentAlerts(): HasMany
-    {
-        return $this->hasMany(Alert::class, 'sender_id');
-    }
+    // ── Notifications / messaging (preserved) ─────────────────────────────────
 
-    public function messagesSent(): HasMany
-    {
-        return $this->hasMany(Message::class, 'sender_id');
-    }
-
-    public function messagesReceived(): HasMany
-    {
-        return $this->hasMany(Message::class, 'receiver_id');
-    }
-
-    public function deviceTokens(): HasMany
-    {
-        return $this->hasMany(UserDeviceToken::class);
-    }
+    public function notifications(): HasMany { return $this->hasMany(Notification::class); }
+    public function alerts(): HasMany { return $this->hasMany(Alert::class); }
+    public function sentNotifications(): HasMany { return $this->hasMany(Notification::class, 'sender_id'); }
+    public function sentAlerts(): HasMany { return $this->hasMany(Alert::class, 'sender_id'); }
+    public function messagesSent(): HasMany { return $this->hasMany(Message::class, 'sender_id'); }
+    public function messagesReceived(): HasMany { return $this->hasMany(Message::class, 'receiver_id'); }
+    public function deviceTokens(): HasMany { return $this->hasMany(UserDeviceToken::class); }
 
     public function notificationsMaster(): HasOne
     {
         return $this->hasOne(NotificationsMaster::class);
     }
 
-    // Helper method to get or create notifications master
     public function getOrCreateNotificationsMaster(): NotificationsMaster
     {
         return $this->notificationsMaster ?? NotificationsMaster::create([
-            'user_id' => $this->id,
+            'user_id'     => $this->id,
             'total_count' => 0,
-            'unread_count' => 0,
-            'created_by' => $this->id,
+            'unread_count'=> 0,
+            'created_by'  => $this->id,
         ]);
     }
 
-    // ╔════════════════════════════════════════════════════════╗
-    // ║        EXISTING RELATIONSHIPS (Preserved)              ║
-    // ╚════════════════════════════════════════════════════════╝
+    // ── RBAC (preserved) ──────────────────────────────────────────────────────
 
-    /**
-     * Relationship: Person record
-     */
-    public function person(): BelongsTo
+    public function roleAssignments(): HasMany
     {
-        return $this->belongsTo(Person::class);
+        return $this->hasMany(UserRoleAssignment::class);
     }
 
-    /**
-     * Relationship: Employee record
-     */
-    public function employee(): BelongsTo
+    public function divisionAssignments(): HasMany
     {
-        return $this->belongsTo(Employee::class);
+        return $this->hasMany(UserDivisionAssignment::class);
     }
 
-    /**
-     * Relationship: User type
-     */
-    public function userType(): BelongsTo
-    {
-        return $this->belongsTo(UserType::class);
-    }
-
-    /**
-     * Relationship: Role assignments
-     */
-    public function roleAssignments()
-    {
-        return $this->hasMany(\App\Models\Core\UserRoleAssignment::class);
-    }
-
-    /**
-     * Relationship: Division assignments
-     */
-    public function divisionAssignments()
-    {
-        return $this->hasMany(\App\Models\Core\UserDivisionAssignment::class);
-    }
-
-    /**
-     * Relationship: Current roles
-     */
     public function currentRoles()
     {
         return $this->roles()
-            ->whereIn('roles.id', function ($query) {
-                $query->selectRaw('role_id')
+            ->whereIn('roles.id', function ($q) {
+                $q->selectRaw('role_id')
                     ->from('user_role_assignments')
                     ->where('user_id', $this->id)
                     ->where('is_current', true)
-                    ->where(function ($q) {
-                        $q->whereNull('to_date')
-                            ->orWhere('to_date', '>=', now());
-                    });
+                    ->where(fn($s) => $s->whereNull('to_date')->orWhere('to_date', '>=', now()));
             });
     }
 
-    /**
-     * Relationship: Current divisions
-     */
-    public function currentDivisions()
+    public function currentDivisions(): HasMany
     {
         return $this->divisionAssignments()
             ->where('is_current', true)
-            ->where(function ($q) {
-                $q->whereNull('to_date')
-                    ->orWhere('to_date', '>=', now());
-            });
+            ->where(fn($q) => $q->whereNull('to_date')->orWhere('to_date', '>=', now()));
     }
 
-    /**
-     * Relationship: Enquiries
-     */
-    public function enquiries()
-    {
-        return $this->hasMany(Enquiry::class, 'mile_id');
-    }
+    // ── Data scoping (preserved) ───────────────────────────────────────────────
 
-    /**
-     * Relationship: Quotes
-     */
-    public function quotes()
-    {
-        return $this->hasMany(Quote::class, 'mile_id');
-    }
-
-    /**
-     * Relationship: Bookings
-     */
-    public function bookings()
-    {
-        return $this->hasMany(Booking::class, 'mile_id');
-    }
-
-    /**
-     * Relationship: Sales
-     */
-    public function sales()
-    {
-        return $this->hasMany(Sale::class, 'mile_id');
-    }
-
-    /**
-     * Relationship: GraphNode
-     */
-    public function graphNode()
-    {
-        return $this->hasOne(\App\Models\Core\GraphNode::class);
-    }
-
-    // ╔════════════════════════════════════════════════════════╗
-    // ║     NEW: HIERARCHICAL DATA SCOPING (Added Methods)     ║
-    // ║     Does NOT break any existing functionality           ║
-    // ╚════════════════════════════════════════════════════════╝
-
-    /**
-     * Relationship: User's assigned data scopes
-     * 
-     * Table: user_data_scopes
-     * Stores: user_id, scope_type (branch|location|dept|etc), scope_value (ID or NULL for wildcard)
-     * 
-     * @return HasMany
-     */
     public function userDataScopes(): HasMany
     {
-        return $this->hasMany(\App\Models\UserDataScope::class);
+        return $this->hasMany(UserDataScope::class);
     }
 
-    /**
-     * Get active scopes only
-     * 
-     * @return HasMany
-     */
-    public function getActiveScopes(): HasMany
+    public function getActiveScopes()
     {
         return $this->userDataScopes()->where('status', 'active');
     }
 
-    /**
-     * Get user's scope access for a specific type
-     * 
-     * Returns:
-     *   null        → Wildcard (all instances of this type)
-     *   []          → No access to this type
-     *   [1, 5, 10]  → Specific IDs only
-     * 
-     * @param string $scopeType (branch, location, department, etc.)
-     * @return array|null
-     */
-    // User.php
     public function getScopeAccess(string $scopeType): array|null
     {
-        // Not strictly required anymore for scoping, but safe:
-        if ($this->isSuperAdmin()) {
-            return null; // wildcard, but scope will not be attached anyway
-        }
+        if ($this->isSuperAdmin()) return null;
 
         $scopes = $this->getActiveScopes()
             ->where('scope_type', $scopeType)
             ->pluck('scope_value')
             ->all();
 
-        if (empty($scopes)) {
-            return [];          // no access for that type
-        }
-
-        if (in_array(null, $scopes, true)) {
-            return null;        // wildcard
-        }
-
-        return array_filter($scopes); // specific IDs
+        if (empty($scopes)) return [];
+        if (in_array(null, $scopes)) return null;
+        return array_filter($scopes);
     }
 
-
-    /**
-     * Check if user has access to specific entity
-     * SuperAdmin automatically has access to everything
-     * 
-     * @param string $scopeType
-     * @param int|null $entityId
-     * @return bool
-     */
-    public function hasAccessTo(string $scopeType, int|null $entityId = null): bool
+    public function hasAccessTo(string $scopeType, ?int $entityId = null): bool
     {
-        // ✅ SuperAdmin has access to everything
-        if ($this->isSuperAdmin()) {
-            return true;
-        }
-
-        $allowedValues = $this->getScopeAccess($scopeType);
-
-        // No scope assigned = no access
-        if ($allowedValues === []) {
-            return false;
-        }
-
-        // Wildcard (null in database) = access to everything
-        if ($allowedValues === null) {
-            return true;
-        }
-
-        // Check if user's entity ID is in allowed list
-        if ($entityId === null) {
-            return false;
-        }
-
-        return in_array($entityId, $allowedValues);
+        if ($this->isSuperAdmin()) return true;
+        $allowed = $this->getScopeAccess($scopeType);
+        if ($allowed === []) return false;
+        if ($allowed === null) return true;
+        if ($entityId === null) return false;
+        return in_array($entityId, $allowed);
     }
 
+    public function getAccessibleBranches(): ?array     { return $this->isSuperAdmin() ? null : $this->getScopeAccess('branch'); }
+    public function getAccessibleLocations(): ?array    { return $this->isSuperAdmin() ? null : $this->getScopeAccess('location'); }
+    public function getAccessibleDepartments(): ?array  { return $this->isSuperAdmin() ? null : $this->getScopeAccess('department'); }
+    public function getAccessibleDivisions(): ?array    { return $this->isSuperAdmin() ? null : $this->getScopeAccess('division'); }
+    public function getAccessibleVerticals(): ?array    { return $this->isSuperAdmin() ? null : $this->getScopeAccess('vertical'); }
+    public function getAccessibleBrands(): ?array       { return $this->isSuperAdmin() ? null : $this->getScopeAccess('brand'); }
+    public function getAccessibleSegments(): ?array     { return $this->isSuperAdmin() ? null : $this->getScopeAccess('segment'); }
+    public function getAccessibleSubSegments(): ?array  { return $this->isSuperAdmin() ? null : $this->getScopeAccess('sub_segment'); }
+    public function getAccessibleVehicleModels(): ?array{ return $this->isSuperAdmin() ? null : $this->getScopeAccess('vehicle_model'); }
+    public function getAccessibleVariants(): ?array     { return $this->isSuperAdmin() ? null : $this->getScopeAccess('variant'); }
+    public function getAccessibleColors(): ?array       { return $this->isSuperAdmin() ? null : $this->getScopeAccess('color'); }
 
-    // ╔════════════════════════════════════════════════════════╗
-    // ║        SCOPE ACCESS HELPERS (by entity type)           ║
-    // ╚════════════════════════════════════════════════════════╝
+    // ── Business relationships ─────────────────────────────────────────────────
+    // FIX: enquiries/quotes/bookings/sales still use mile_id for legacy foreign key
+    //      These should be refactored to employee_code when those tables are updated.
 
-    /**
-     * Get all branch IDs user has access to
-     * @return array|null  → array of IDs, null for wildcard, empty for no access
-     */
-    public function getAccessibleBranches(): array|null
+    public function enquiries(): HasMany { return $this->hasMany(Enquiry::class, 'mile_id'); }
+    public function quotes(): HasMany    { return $this->hasMany(Quote::class,   'mile_id'); }
+    public function bookings(): HasMany  { return $this->hasMany(Booking::class, 'mile_id'); }
+    public function sales(): HasMany     { return $this->hasMany(Sale::class,    'mile_id'); }
+
+    public function graphNode(): HasOne
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-
-        return $this->getScopeAccess('branch');
+        return $this->hasOne(\App\Models\Core\GraphNode::class);
     }
 
-    /**
-     * Get all location IDs user has access to
-     */
-    public function getAccessibleLocations(): array|null
+    public function approvalHierarchies(): HasMany
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('location');
+        return $this->hasMany(ApprovalHierarchy::class, 'approver_id');
     }
 
-    /**
-     * Get all department IDs user has access to
-     */
-    public function getAccessibleDepartments(): array|null
+    public function reportingHierarchies(): HasMany
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('department');
+        return $this->hasMany(ReportingHierarchy::class);
     }
 
-    /**
-     * Get all division IDs user has access to
-     */
-    public function getAccessibleDivisions(): array|null
+    // FIX: renamed from subordinates() to avoidconflict with Employee::subordinates()
+    //      on User; the User-level subordinate chain is via ReportingHierarchy.
+    public function reportingSubordinates(): HasMany
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('division');
+        return $this->hasMany(ReportingHierarchy::class, 'supervisor_id');
     }
 
-    /**
-     * Get all vertical IDs user has access to
-     */
-    public function getAccessibleVerticals(): array|null
+    // ── Accessors ─────────────────────────────────────────────────────────────
+    // FIX: name/email/mobile are no longer columns — always proxy via person
+
+    public function getDisplayNameAttribute(): string
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('vertical');
+        return $this->person?->display_name
+            ?? $this->person?->full_name
+            ?? $this->username;
     }
 
-    /**
-     * Get all brand IDs user has access to
-     */
-    public function getAccessibleBrands(): array|null
+    // FIX: getPrimaryEmailAttribute proxies person — not a DB column on users
+    public function getPrimaryEmailAttribute(): ?string
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('brand');
+        return $this->person?->primary_email;
     }
 
-    /**
-     * Get all segment IDs user has access to
-     */
-    public function getAccessibleSegments(): array|null
+    // FIX: getPrimaryMobileAttribute proxies person — not a DB column on users
+    public function getPrimaryMobileAttribute(): ?string
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('segment');
+        return $this->person?->primary_mobile;
     }
 
-    /**
-     * Get all sub-segment IDs user has access to
-     */
-    public function getAccessibleSubSegments(): array|null
+    // NEW: official_email/mobile for Emp users come from employee record
+    public function getOfficialEmailAttribute(): ?string
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('sub_segment');
+        return $this->employee?->official_email;
     }
 
-    /**
-     * Get all vehicle model IDs user has access to
-     */
-    public function getAccessibleVehicleModels(): array|null
+    public function getOfficialMobileAttribute(): ?string
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('vehicle_model');
+        return $this->employee?->official_mobile;
     }
 
-    /**
-     * Get all variant IDs user has access to
-     */
-    public function getAccessibleVariants(): array|null
+    public function getAvatarUrlAttribute(): string
     {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('variant');
+        return $this->avatar
+            ? asset('storage/' . $this->avatar)
+            : asset('images/default-avatar.png');
     }
 
-    /**
-     * Get all color IDs user has access to
-     */
-    public function getAccessibleColors(): array|null
-    {
-        if ($this->isSuperAdmin()) {
-            return null;  // wildcard
-        }
-        return $this->getScopeAccess('color');
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // ╔════════════════════════════════════════════════════════╗
-    // ║     EXISTING METHODS (Preserved & Enhanced)            ║
-    // ╚════════════════════════════════════════════════════════╝
-
-    /**
-     * Get user scope (branches, departments, locations, etc.)
-     * 
-     * UPDATED: Now includes data scoping information
-     * BACKWARD COMPATIBLE: Existing logic still works
-     */
-    public function getScope()
-    {
-        if ($this->hasRole('super_admin|admin')) {
-            return [
-                'all_access' => true,
-            ];
-        }
-
-        if ($this->employee) {
-            $scope = $this->employee->getCurrentScope();
-
-            // Merge with data scopes if any
-            $dataScopes = [
-                'branches' => $this->getAccessibleBranches(),
-                'locations' => $this->getAccessibleLocations(),
-                'departments' => $this->getAccessibleDepartments(),
-                'divisions' => $this->getAccessibleDivisions(),
-                'verticals' => $this->getAccessibleVerticals(),
-                'brands' => $this->getAccessibleBrands(),
-                'segments' => $this->getAccessibleSegments(),
-            ];
-
-            return array_merge($scope, ['data_scopes' => $dataScopes]);
-        }
-
-        return [];
-    }
-
-    /**
-     * Check if user has all required permissions
-     */
-    public function hasAllPermissions($permissions)
-    {
-        if (is_string($permissions)) {
-            $permissions = [$permissions];
-        }
-
-        foreach ($permissions as $permission) {
-            if (!$this->hasPermissionTo($permission)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Check if user has any of the permissions
-     */
-    public function hasAnyPermission($permissions)
-    {
-        if (is_string($permissions)) {
-            $permissions = [$permissions];
-        }
-
-        foreach ($permissions as $permission) {
-            if ($this->hasPermissionTo($permission)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if user is super admin
-     * UPDATED: Now supports both 'super_admin' and 'super-admin' naming conventions
-     */
     public function isSuperAdmin(): bool
     {
         return $this->hasRole(['super_admin', 'super-admin', 'SuperAdmin']);
     }
 
-    /**
-     * Check if user is sales consultant
-     */
     public function isSalesConsultant(): bool
     {
         return $this->hasRole('Sales_Consultant');
     }
 
-    /**
-     * Enhanced permission check with SuperAdmin bypass
-     * 
-     * SuperAdmin automatically gets true, others checked against permissions
-     */
+    public function isEmployee(): bool
+    {
+        return $this->user_type === 'Emp' && !empty($this->employee_code);
+    }
+
     public function can($abilities, $arguments = []): bool
     {
-        // SuperAdmin bypass - can do anything
-        if ($this->isSuperAdmin()) {
-            return true;
-        }
-
-        // Default: use parent class implementation (Spatie permissions)
+        if ($this->isSuperAdmin()) return true;
         return parent::can($abilities, $arguments);
     }
 
-    // ╔════════════════════════════════════════════════════════╗
-    // ║         EXISTING SCOPES (Preserved)                    ║
-    // ╚════════════════════════════════════════════════════════╝
-
-    /**
-     * Scope: Only active users
-     */
-    public function scopeActive($query)
+    public function hasAllPermissions($permissions): bool
     {
-        return $query->where('is_active', true)->whereNull('deleted_at');
-    }
-
-    /**
-     * Scope: Only employees
-     */
-    public function scopeEmployees($query)
-    {
-        return $query->whereNotNull('employee_id');
-    }
-
-    /**
-     * Scope: Only admins
-     */
-    public function scopeAdmins($query)
-    {
-        return $query->whereHas('roles', function ($q) {
-            $q->whereIn('name', ['super_admin', 'admin']);
-        });
-    }
-
-    /**
-     * Scope: Search users
-     */
-    public function scopeSearch($query, $term)
-    {
-        return $query->where('name', 'like', "%{$term}%")
-            ->orWhere('email', 'like', "%{$term}%")
-            ->orWhere('code', 'like', "%{$term}%");
-    }
-
-    // ╔════════════════════════════════════════════════════════╗
-    // ║         EXISTING HELPER METHODS (Preserved)            ║
-    // ╚════════════════════════════════════════════════════════╝
-
-    /**
-     * Update last login timestamp
-     */
-    public function recordLogin()
-    {
-        $this->update(['last_login_at' => now()]);
-    }
-
-    /**
-     * Generate auto code
-     */
-    public static function generateCode()
-    {
-        $lastId = self::withTrashed()->max('id') ?? 0;
-        return 'USR-' . str_pad($lastId + 1, 6, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Get user display name
-     */
-    public function getDisplayNameAttribute()
-    {
-        return $this->person?->display_name ?? $this->name;
-    }
-
-    /**
-     * Get user avatar URL
-     */
-    public function getAvatarUrlAttribute()
-    {
-        if ($this->avatar) {
-            return asset('storage/' . $this->avatar);
+        foreach ((array) $permissions as $p) {
+            if (!$this->hasPermissionTo($p)) return false;
         }
-
-        return asset('images/default-avatar.png');
+        return true;
     }
 
-
-    // In User.php, add:
-    public function approvalHierarchies()
+    public function hasAnyPermission($permissions): bool
     {
-        return $this->hasMany(ApprovalHierarchy::class, 'approver_id');
+        foreach ((array) $permissions as $p) {
+            if ($this->hasPermissionTo($p)) return true;
+        }
+        return false;
     }
 
-    public function reportingHierarchies()
+    public function recordLogin(): void
     {
-        return $this->hasMany(ReportingHierarchy::class);
+        $this->timestamps = false;
+        $this->update(['last_login_at' => now()]);
+        $this->timestamps = true;
     }
 
-    public function subordinates()
+    // FIX: getScope() now resolves scope via employee → person chain (not direct columns)
+    public function getScope(): array
     {
-        return $this->hasMany(ReportingHierarchy::class, 'supervisor_id');
+        if ($this->isSuperAdmin()) return ['all_access' => true];
+        return $this->employee?->getCurrentScope() ?? [];
     }
 
-    // Performance aggregate
-    public function aggregatePerformance(string $topic, array $combo, string $metric, $from = null, $to = null): float
+    // ── Auth username (Fortify / custom guard) ────────────────────────────────
+    // FIX: getEmailForPasswordReset() and findForPassport() must use person proxy
+    //      since `email` column is removed from users table.
+
+    public function getEmailForPasswordReset(): string
     {
-        $reportingRoot = $this->reportingHierarchies()->where('topic', $topic)->whereJsonContains('combo_json', $combo)->first();
-        if (!$reportingRoot) return 0.0;
+        return $this->person?->primary_email ?? '';
+    }
 
-        $userIds = $reportingRoot->getSubtreeUserIds($topic, $combo);
+    public function routeNotificationForMail(): string
+    {
+        return $this->person?->primary_email ?? '';
+    }
 
-        // Example for bookings (adapt for quotes/enquiries)
-        //$query = Booking::whereIn('created_by', $userIds)->where('topic', $topic)->whereJsonContains('combo_json', $combo);
-        // if ($from && $to) $query->whereBetween('created_at', [$from, $to]);
+    // ── Scopes ────────────────────────────────────────────────────────────────
 
-        // return match ($metric) {
-        //     'count' => $query->count(),
-        //     'value' => $query->sum('amount'),
-        //     default => 0.0,
-        // };
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true)->whereNull('deleted_at');
+    }
+
+    // FIX: search no longer checks name/email/mobile columns directly on users
+    public function scopeSearch($q, string $term)
+    {
+        return $q->where('username', 'like', "%{$term}%")
+            ->orWhereHas('person', fn($p) => $p
+                ->where('first_name',   'like', "%{$term}%")
+                ->orWhere('last_name',  'like', "%{$term}%")
+                ->orWhere('display_name','like', "%{$term}%")
+                ->orWhere('person_code','like', "%{$term}%")
+            )
+            ->orWhereHas('employee', fn($e) => $e
+                ->where('official_email',  'like', "%{$term}%")
+                ->orWhere('official_mobile','like', "%{$term}%")
+            );
+    }
+
+    public function scopeByType($q, string $type)
+    {
+        return $q->where('user_type', $type);
+    }
+
+    public function scopeEmployees($q)
+    {
+        return $q->where('user_type', 'Emp')->whereNotNull('employee_code');
     }
 }

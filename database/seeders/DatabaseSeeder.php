@@ -17,10 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(
             [
-                ProductionRBACSeeder::class,
-                SiteSettingSeeder::class,
-                KeywordKeyvalueSeeder::class,
-                SystemSettingSeeder::class
+                SuperAdminSeeder::class;
             ]
         );
     }

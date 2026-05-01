@@ -1,41 +1,55 @@
 <?php
-
 namespace App\Models\Vehicle;
 
 use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SubSegment extends BaseModel
 {
     use CrudTrait;
-    use HasFactory;
-     protected $table = 'xlr8_vehicle_subsegment';
-    protected $fillable = ['segment_id', 'name', 'code', 'description', 'is_active'];
 
-    public $translatable = ['name', 'description'];
+    protected $table = 'xlr8_vehicle_subsegment';
 
-    protected $columnTransformations = [
-        'code' => 'uppercase_alphanumeric_dash',
+    protected $fillable = ['brand_code', 'segment_code', 'code', 'name', 'description', 'is_active', 'created_by', 'updated_by', 'deleted_by'];
+
+    protected $casts = [
+        'is_active'  => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
-
-    public function segment()
-    {
-        return $this->belongsTo(Segment::class);
-    }
 
     public function brand()
     {
-        return $this->belongsTo(Brand::class, 'brand_id');
+        return $this->belongsTo(Brand::class, 'brand_code', 'code');
+    }
+
+    public function segment()
+    {
+        return $this->belongsTo(Segment::class, 'segment_code', 'code');
     }
 
     public function vehicleModels()
     {
-        return $this->hasMany(VehicleModel::class);
+        return $this->hasMany(VehicleModel::class, 'sub_segment_code', 'code');
     }
 
     public function variants()
     {
-        return $this->hasMany(Variant::class);
+        return $this->hasMany(Variant::class, 'sub_segment_code', 'code');
+    }
+
+    /**
+     * XUV → XUV | NON XUV → NXUV
+     */
+    public static function generateCode(string $name): string
+    {
+        $map = [
+            'XUV'     => 'XUV',
+            'NON XUV' => 'NXUV',
+            'NON-XUV' => 'NXUV',
+        ];
+        $upper = strtoupper(trim($name));
+        return $map[$upper] ?? strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $name), 0, 5));
     }
 }

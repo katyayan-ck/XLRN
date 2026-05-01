@@ -2,60 +2,118 @@
 
 namespace App\Models\Admin;
 
-use App\Models\BaseModel;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * PersonContact Model
- * 
- * Emergency and reference contacts for a person
- */
-class PersonContact extends BaseModel
+class PersonContact extends Model
 {
-    use CrudTrait;
-    use HasFactory;
+    use SoftDeletes;
+
     protected $table = 'xlr8_admin_person_contacts';
 
+    /*
+    |--------------------------------------------------------------------------
+    | DESIGN RULES
+    |  - One record per contact detail value
+    |  - data_type: Mobile | Email | Landline | Fax
+    |  - contact_type: Primary | Alternate | Office | Home | Emergency
+    |  - RULE: Only ONE Primary allowed per (person_code, data_type)
+    |  - First entry for a person_code + data_type is auto-set to Primary
+    |  - Use makesPrimary() to promote any entry to Primary
+    |    (auto-demotes the existing Primary to Alternate)
+    |  - NO name, relationship, notes, is_primary, phone, email columns
+    |--------------------------------------------------------------------------
+    */
+
+    const DATA_TYPES    = ['Mobile', 'Email', 'Landline', 'Fax'];
+    const CONTACT_TYPES = ['Primary', 'Alternate', 'Office', 'Home', 'Emergency'];
+
     protected $fillable = [
-        'person_id',
-        'type',
-        'name',
-        'mobile',
-        'email',
-        'relationship',
-        'notes',
-        'is_primary',
+        'person_code',
+        'data_type',
+        'contact_type',
+        'contact_detail',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     protected $casts = [
-        'is_primary' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
-    /**
-     * Relationship: Person
-     */
-    public function person()
+    // ── Boot ──────────────────────────────────────────────────────────────────
+
+    protected static function boot(): void
     {
-        return $this->belongsTo(Person::class);
+        parent::boot();
+
+        static::creating(function (PersonContact $c) {
+            // Auto-assign Primary if this is the first entry of this data_type for this person
+            if (empty($c->contact_type)) {
+                $exists = static::where('person_code', $c->person_code)
+                    ->where('data_type', $c->data_type)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                $c->contact_type = $exists ? 'Alternate' : 'Primary';
+            }
+
+            if (auth()->check() && empty($c->created_by)) {
+                $c->created_by = auth()->id();
+            }
+        });
+
+        static::updating(function (PersonContact $c) {
+            if (auth()->check()) {
+                $c->updated_by = auth()->id();
+            }
+        });
+
+        static::deleting(function (PersonContact $c) {
+            if (!$c->isForceDeleting() && auth()->check()) {
+                $c->deleted_by = auth()->id();
+                $c->saveQuietly();
+            }
+        });
     }
 
-    /**
-     * Scope: Get by type
-     */
-    public function scopeByType($query, $type)
+    // ── Relationships ──────────────────────────────────────────────────────────
+
+    public function person(): BelongsTo
     {
-        return $query->where('type', $type);
+        return $this->belongsTo(Person::class, 'person_code', 'person_code');
     }
 
+    // ── Business logic ────────────────────────────────────────────────────────
+
     /**
-     * Scope: Emergency contacts
+     * Promote this contact to Primary for its data_type.
+     * The existing Primary for this (person_code, data_type) is demoted to Alternate.
+     * DB unique constraint on (person_code, data_type, contact_type='Primary') is respected.
      */
-    public function scopeEmergency($query)
+    public function makesPrimary(): void
     {
-        return $query->where('type', 'emergency');
+        // Demote current Primary
+        static::where('person_code',   $this->person_code)
+              ->where('data_type',     $this->data_type)
+              ->where('contact_type',  'Primary')
+              ->where('id', '!=',      $this->id)
+              ->whereNull('deleted_at')
+              ->update(['contact_type' => 'Alternate', 'updated_by' => auth()->id()]);
+
+        $this->contact_type = 'Primary';
+        $this->save();
     }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    public function scopePrimary($q)           { return $q->where('contact_type', 'Primary'); }
+    public function scopeByDataType($q, $type) { return $q->where('data_type', $type); }
+    public function scopeMobiles($q)           { return $q->where('data_type', 'Mobile'); }
+    public function scopeEmails($q)            { return $q->where('data_type', 'Email'); }
+    public function scopeEmergency($q)         { return $q->where('contact_type', 'Emergency'); }
 }

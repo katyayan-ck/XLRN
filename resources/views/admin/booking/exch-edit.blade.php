@@ -747,12 +747,33 @@
             ]);
             calculatePriceGap();
         }
-        function calculatePriceGap() {
-            const expected = parseFloat($('#expected_price').val()) || 0;
-            const offered = parseFloat($('#offered_price').val()) || 0;
-            const bonus = parseFloat($('#exchange_bonus').val()) || 0;
-            $('#difference').val(Math.round(expected - (offered + bonus)));
+        // Replace the old calculatePriceGap() function in exch-edit.blade.php
+function calculatePriceGap() {
+    const expected = $('#expected_price').val() || 0;
+    const offered = $('#offered_price').val() || 0;
+    const bonus = $('#exchange_bonus').val() || 0;
+
+    // Secure calculation via API
+    $.ajax({
+        url: '/api/v1/pricing/calculate-exchange',
+        method: 'POST',
+        data: {
+            expected_price: expected,
+            offered_price: offered,
+            exchange_bonus: bonus,
+            _token: $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            if(response.success) {
+                // Update the UI with the Server-Validated amount
+                $('#difference').val(response.difference);
+            }
+        },
+        error: function(xhr) {
+            console.error("Pricing Engine Error", xhr);
         }
+    });
+}
         function toggleRequiredMark(selector, show) {
             $(selector).siblings('label').find('.required-mark').css('display', show ? 'inline' : 'none');
         }

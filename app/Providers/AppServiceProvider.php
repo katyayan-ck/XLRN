@@ -46,6 +46,10 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(FirebaseService::class)
             );
         });
+
+        $this->commands([
+    \App\Console\Commands\ImportEmployees::class,
+]);
     }
 
     /**

@@ -22,6 +22,10 @@ Route::prefix('v1')->group(function () {
             ->name('api.auth.verify-otp');
     });
 
+    Route::group(['middleware' => ['auth:api']], function () {
+    Route::post('/pricing/calculate-exchange', [App\Http\Controllers\Api\V1\PricingApiController::class, 'calculateExchange']);
+    Route::post('/pricing/generate-quote', [App\Http\Controllers\Api\V1\PricingApiController::class, 'generateQuote']);
+});
 
     // ╔════════════════════════════════════════════════════════╗
     // ║ PROTECTED ROUTES (Authentication + Device Validation) ║
