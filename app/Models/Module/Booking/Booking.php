@@ -10,6 +10,9 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\Traits\HasHashedMediaTrait;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Models\BaseModel;
+use App\Models\Branches;
+use App\Models\Module\Finance\XlFinancier;
 
 class Booking extends BaseModel  implements HasMedia
 {
@@ -39,12 +42,12 @@ class Booking extends BaseModel  implements HasMedia
 
     public function location()
     {
-        return $this->belongsTo(Location::class, 'location_id', 'id');
+        return $this->belongsTo(Location::class, 'location_code', 'code');
     }
 
     public function branch()
     {
-        return $this->belongsTo(Branches::class, 'branch_id', 'id');
+        return $this->belongsTo(Branches::class, 'branch_code', 'code');
     }
 
     public function finances()

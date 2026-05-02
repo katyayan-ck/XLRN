@@ -24,6 +24,7 @@ Route::group([
     Route::crud('system-settings', 'SystemSettingCrudController');
     Route::crud('branch', 'BranchCrudController');
     Route::crud('brand', 'BrandCrudController');
+    Route::post('brand/import', 'BrandCrudController@import')->name('brand.import');
     Route::crud('color', 'ColorCrudController');
     Route::crud('dashboard-controller', 'DashboardControllerCrudController');
     Route::crud('department', 'DepartmentCrudController');

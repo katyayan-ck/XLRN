@@ -255,6 +255,32 @@
 
             <!-- BODY -->
             <div class="card-body p-0" style="background:#f8fafc">
+                <div class="p-3 border-bottom bg-white">
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <h5 class="mb-2 text-dark">
+                                <i class="la la-file-excel-o"></i> Import Vehicles / Brands from Excel
+                            </h5>
+                            <small class="text-muted">
+                                Upload Excel file containing vehicle data. First row should contain headers.
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <form action="{{ route('brand.import') }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+                                @csrf
+                                <input type="file" 
+                                       name="excel_file" 
+                                       class="form-control form-control-sm" 
+                                       accept=".xlsx,.xls" 
+                                       required>
+                                <button type="submit" 
+                                        class="btn btn-success btn-sm px-4 text-nowrap">
+                                    <i class="la la-upload"></i> Import
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
                 <div
                     class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
                     <div class="d-flex align-items-center gap-2 flex-nowrap">
