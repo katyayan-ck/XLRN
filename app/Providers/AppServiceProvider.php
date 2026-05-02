@@ -47,9 +47,10 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        $this->commands([
-   
-]);
+       $this->app->singleton(\App\Services\IAM\PostService::class);
+$this->app->singleton(\App\Services\HR\HRJourneyService::class);
+$this->app->singleton(\App\Services\IAM\DataScopeService::class);
+$this->app->singleton(\App\Services\IAM\ReportingService::class);
     }
 
     /**
