@@ -48,7 +48,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->commands([
-    \App\Console\Commands\ImportEmployees::class,
+   
 ]);
     }
 

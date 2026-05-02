@@ -25,7 +25,8 @@ class RoleCrudController extends CrudController
 
     protected function setupListOperation()
     {
-        $this->crud->setListView('admin.role.list');
+    $this->crud->addClause('where', 'is_post', false); // To show only non-post roles
+    $this->crud->setListView('admin.role.list');
     }
 
     public function index()
