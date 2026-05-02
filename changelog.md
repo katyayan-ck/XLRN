@@ -36,3 +36,25 @@
 - **No SQL FKs**: All 7 migrations use indexes only. Eloquent enforces integrity.
 - **6 audit columns**: Every new table has created/updated/deleted \_at/\_by.
 - **Pure Eloquent**: All HR journey and reporting queries use named scopes — no raw SQL.
+
+DB Fix:
+
+- Drop all SQL FK-named indexes (project rule: no SQL FKs)
+- Add project-standard idx\_ prefixed indexes to all org tables
+- Add missing UNIQUE constraints (post_code, post_org_scopes, post_vehicle_scopes)
+- Complete 6 audit columns on all pivot tables
+- Add branch_code/dept_code/div_code/vert_code short-code columns
+- Fix scope_value bigint → varchar(20) on xlr8_iam_user_data_scopes
+- Drop xlr8_iam_emp_post_pivot (replaced by emp_post_assignments)
+- Drop xlr8_iam_process (empty skeleton table)
+- Back-fill short code columns from existing code values
+
+Services:
+
+- PostService: CRUD, scope sync, vacancy check, tree resolution
+- HRJourneyService: onboard, transfer, promote, demote, additional charge, separate
+- DataScopeService: org/vehicle scope resolution with wildcard handling
+- ReportingService: 4-level priority resolution, chain traversal, line management
+
+Tests: PostServiceTest, HRJourneyServiceTest, ReportingServiceTest
+Changelog: updated"
