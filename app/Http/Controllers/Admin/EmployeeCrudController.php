@@ -42,10 +42,11 @@ class EmployeeCrudController extends CrudController
                 'desig_code',
                 'primary_branch_code',
                 'primary_dept_code',
-                'joining_date',
-                'separation_date',
-                'employment_type',
-                'employment_status'
+                'primary_div_code',
+                'primary_loc_code',
+                'vertical_code',
+                'segment_code',
+                'sub_segment_code'
             ])
             ->orderBy('id', 'desc')
             ->get();
@@ -59,6 +60,11 @@ class EmployeeCrudController extends CrudController
             $mapped['designation_name'] = $emp->designation?->name ?? '—';
             $mapped['branch_name'] = $emp->primaryBranch?->name ?? '—';
             $mapped['department_name'] = $emp->primaryDepartment?->name ?? '—';
+            $mapped['division'] = $emp->primary_div_code;
+            $mapped['location'] = $emp->primary_loc_code;
+            $mapped['vertical'] = $emp->vertical_code;
+            $mapped['segment'] = $emp->segment_code;
+            $mapped['sub_segment'] = $emp->sub_segment_code;
 
             $editUrl = backpack_url("employee/{$emp->id}/edit");
 
@@ -74,15 +80,20 @@ class EmployeeCrudController extends CrudController
             'title' => 'All Employees',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',         'headerName' => 'S.No'],
-                    ['field' => 'code',              'headerName' => 'Employee Code'],
-                    ['field' => 'person_name',       'headerName' => 'Employee Name'],
-                    ['field' => 'designation_name',  'headerName' => 'Designation'],
-                    ['field' => 'branch_name',       'headerName' => 'Branch'],
-                    ['field' => 'department_name',   'headerName' => 'Department'],
-                    ['field' => 'joining_date',      'headerName' => 'Joining Date'],
-                    ['field' => 'is_active',         'headerName' => 'Active'],
-                    ['field' => 'action',            'headerName' => 'Actions']
+                    ['field' => 'serial_no', 'headerName' => 'S.No'],
+                    ['field' => 'code', 'headerName' => 'Code'],
+                    ['field' => 'person_name', 'headerName' => 'Name'],
+                    ['field' => 'designation_name', 'headerName' => 'Designation'],
+                    ['field' => 'branch_name', 'headerName' => 'Branch'],
+                    ['field' => 'department_name', 'headerName' => 'Department'],
+
+                    ['field' => 'division', 'headerName' => 'Division'],
+                    ['field' => 'location', 'headerName' => 'Location'],
+                    ['field' => 'vertical', 'headerName' => 'Vertical'],
+                    ['field' => 'segment', 'headerName' => 'Segment'],
+                    ['field' => 'sub_segment', 'headerName' => 'Sub Segment'],
+
+                    ['field' => 'action', 'headerName' => 'Actions']
                 ],
                 'data' => $gridData
             ]
@@ -111,10 +122,13 @@ class EmployeeCrudController extends CrudController
             'desig_code' => 'required|exists:xlr8_admin_designation,code',
             'primary_branch_code' => 'required|exists:xlr8_admin_branch,code',
             'primary_dept_code' => 'required|exists:xlr8_admin_department,code',
-            'joining_date' => 'required|date',
-            'resignation_date' => 'nullable|date|after_or_equal:joining_date',
-            'employment_type' => 'required|in:permanent,contract,temporary,probation',
-            'is_active' => 'boolean',
+
+            'primary_div_code' => 'nullable|string',
+            'primary_loc_code' => 'nullable|string',
+
+            'vertical_code' => 'nullable|string',
+            'segment_code' => 'nullable|string',
+            'sub_segment_code' => 'nullable|string|max:5',
         ]);
 
         Employee::create($validated);
@@ -151,8 +165,12 @@ class EmployeeCrudController extends CrudController
             'primary_branch_code' => 'required|exists:xlr8_admin_branch,code',
             'primary_dept_code' => 'required|exists:xlr8_admin_department,code',
 
-            'joining_date' => 'required|date',
-            'employment_type' => 'required|in:permanent,contract,temporary,probation',
+            'primary_div_code' => 'nullable|string',
+            'primary_loc_code' => 'nullable|string',
+
+            'vertical_code' => 'nullable|string',
+            'segment_code' => 'nullable|string',
+            'sub_segment_code' => 'nullable|string|max:5',
         ]);
 
         $employee->update($validated);

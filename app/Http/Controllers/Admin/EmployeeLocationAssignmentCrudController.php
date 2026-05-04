@@ -42,9 +42,8 @@ class EmployeeLocationAssignmentCrudController extends CrudController
                 'employee_name'   => $employeeName,
                 'location_name'   => $assignment->location->name ?? $assignment->location_code ?? '-',
                 'branch_name'     => $assignment->branch->name ?? $assignment->branch_code ?? '-',
-                'from_date'       => $assignment->from_date?->format('d/m/Y'),
-                'to_date'         => $assignment->to_date?->format('d/m/Y') ?? 'Ongoing',
-                'is_current'      => $assignment->is_current ? 'Yes' : 'No',
+
+
                 'action' => '
                 <div class="d-flex gap-2 justify-content-center">
                     <a href="' . backpack_url("employee-location-assignment/{$assignment->id}/edit") . '"
@@ -63,9 +62,8 @@ class EmployeeLocationAssignmentCrudController extends CrudController
                     ['field' => 'employee_name',   'headerName' => 'Employee Name'],
                     ['field' => 'location_name',   'headerName' => 'Location'],
                     ['field' => 'branch_name',     'headerName' => 'Branch'],
-                    ['field' => 'from_date',       'headerName' => 'From Date'],
-                    ['field' => 'to_date',         'headerName' => 'To Date'],
-                    ['field' => 'is_current',      'headerName' => 'Current'],
+
+
                     ['field' => 'action',          'headerName' => 'Actions']
                 ],
                 'data' => $gridData
@@ -100,9 +98,7 @@ class EmployeeLocationAssignmentCrudController extends CrudController
             'employee_id'  => 'required|exists:xlr8_admin_employee,id',
             'location_id'  => 'required|exists:xlr8_admin_location,id',
             'branch_id'    => 'nullable|exists:xlr8_admin_branch,id',
-            'from_date'    => 'required|date',
-            'to_date'      => 'nullable|date|after_or_equal:from_date',
-            'is_current'   => 'boolean',
+
         ]);
 
         $employeeCode = Employee::findOrFail($validated['employee_id'])->code;
@@ -117,9 +113,8 @@ class EmployeeLocationAssignmentCrudController extends CrudController
             'employee_code' => $employeeCode,
             'location_code' => $locationCode,
             'branch_code'   => $branchCode,
-            'from_date'     => $validated['from_date'],
-            'to_date'       => $validated['to_date'],
-            'is_current'    => $validated['is_current'] ?? 1,
+
+
             'created_by'    => $userId,
         ]);
 
@@ -134,9 +129,8 @@ class EmployeeLocationAssignmentCrudController extends CrudController
         $validated = $request->validate([
             'location_id' => 'required|exists:xlr8_admin_location,id',
             'branch_id'   => 'nullable|exists:xlr8_admin_branch,id',
-            'from_date'   => 'required|date',
-            'to_date'     => 'nullable|date|after_or_equal:from_date',
-            'is_current'  => 'boolean',
+
+
         ]);
 
         $locationCode = Location::findOrFail($validated['location_id'])->code;
@@ -159,10 +153,9 @@ class EmployeeLocationAssignmentCrudController extends CrudController
         $assignment->update([
             'location_code' => $locationCode,
             'branch_code'   => $branchCode,           // ← Now safe
-            'from_date'     => $validated['from_date'],
-            'to_date'       => $validated['to_date'],
-            'is_current'    => $validated['is_current'] ?? $assignment->is_current,
-            'updated_by'    => $userId,
+
+
+            
         ]);
 
         \Alert::success('Location assignment updated successfully!')->flash();

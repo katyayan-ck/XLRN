@@ -52,7 +52,7 @@
                             <!-- Person -->
                             <div class="col-md-4 mb-3">
                                 <label>Person</label>
-                                <select name="person_code" class="form-control">
+                                <select name="person_code" class="form-control form-select">
                                     @foreach($persons as $p)
                                     <option value="{{ $p->person_code }}" {{ $employee->person_code == $p->person_code ?
                                         'selected' : '' }}>
@@ -65,7 +65,7 @@
                             <!-- Designation -->
                             <div class="col-md-4 mb-3">
                                 <label>Designation</label>
-                                <select name="desig_code" class="form-control">
+                                <select name="desig_code" class="form-control form-select">
                                     @foreach($designations as $d)
                                     <option value="{{ $d->code }}" {{ $employee->desig_code == $d->code ? 'selected' :
                                         '' }}>
@@ -78,7 +78,7 @@
                             <!-- Branch -->
                             <div class="col-md-4 mb-3">
                                 <label>Primary Branch</label>
-                                <select name="primary_branch_code" class="form-control">
+                                <select name="primary_branch_code" class="form-control form-select">
                                     @foreach($branches as $b)
                                     <option value="{{ $b->code }}" {{ $employee->primary_branch_code == $b->code ?
                                         'selected' : '' }}>
@@ -91,7 +91,7 @@
                             <!-- Department -->
                             <div class="col-md-4 mb-3">
                                 <label>Primary Department</label>
-                                <select name="primary_dept_code" class="form-control">
+                                <select name="primary_dept_code" class="form-control form-select">
                                     @foreach($departments as $d)
                                     <option value="{{ $d->code }}" {{ $employee->primary_dept_code == $d->code ?
                                         'selected' : '' }}>
@@ -124,14 +124,14 @@
 
                             <!-- Segment -->
                             <div class="col-md-4 mb-3">
-                                <label>Segment</label>
+                                <label>Segment (5 Characters)</label>
                                 <input type="text" name="segment_code" class="form-control"
                                     value="{{ $employee->segment_code }}">
                             </div>
 
                             <!-- Sub Segment -->
                             <div class="col-md-4 mb-3">
-                                <label>Sub Segment</label>
+                                <label>Sub Segment (5 Characters)</label>
                                 <input type="text" name="sub_segment_code" class="form-control"
                                     value="{{ $employee->sub_segment_code }}">
                             </div>

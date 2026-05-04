@@ -84,10 +84,10 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Branch (Optional)</label>
-                                <select name="branch_id" class="form-control form-select">
+                                <select name="branch_code" class="form-control form-select">
                                     <option value="">— No Branch —</option>
                                     @foreach(App\Models\Admin\Branch::orderBy('name')->get() as $branch)
-                                    <option value="{{ $branch->id }}" {{ $branch->id == $assignment->branch_id ?
+                                    <option value="{{ $branch->code }}" {{ $branch->code == $assignment->branch_code ?
                                         'selected' : '' }}>
                                         {{ $branch->name }}
                                     </option>
@@ -95,26 +95,9 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>From Date <span class="text-danger">*</span></label>
-                                <input type="date" name="from_date" class="form-control"
-                                    value="{{ old('from_date', $assignment->from_date?->format('Y-m-d')) }}" required>
-                            </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>To Date</label>
-                                <input type="date" name="to_date" class="form-control"
-                                    value="{{ old('to_date', $assignment->to_date?->format('Y-m-d')) }}">
-                            </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Is Current Assignment?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_current" value="0">
-                                    <input type="checkbox" name="is_current" value="1" class="form-check-input" {{
-                                        old('is_current', $assignment->is_current) ? 'checked' : '' }}>
-                                </div>
-                            </div>
+
 
                         </div>
 

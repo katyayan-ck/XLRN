@@ -43,17 +43,9 @@
 
         ...getCols(['designation_name', 'branch_name', 'department_name']),
 
-        ...getCols(['joining_date']),
+        ...getCols(['division', 'location', 'vertical', 'segment', 'sub_segment']),
 
-        ...getCols(['is_active']).map(col => {
-            col.cellRenderer = params => {
-                if (params.value === 1 || params.value === true) {
-                    return `Active`;
-                }
-                return `Inactive`;
-            };
-            return col;
-        }),
+
 
         ...getCols(['action']).map(col => {
             col.pinned = 'right';
@@ -85,7 +77,20 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'code', 'person_name', 'designation_name', 'branch_name', 'joining_date', 'is_active', 'action'];
+            const defaultFields = [
+                'serial_no',
+                'code',
+                'person_name',
+                'designation_name',
+                'branch_name',
+                'department_name',
+                'division',
+                'location',
+                'vertical',
+                'segment',
+                'sub_segment',
+                'action'
+            ];
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
@@ -107,7 +112,7 @@
         const allFlatColumns = [
             ...getCols(['serial_no', 'code', 'person_name']),
             ...getCols(['designation_name', 'branch_name', 'department_name']),
-            ...getCols(['joining_date']),
+            ...getCols(['division', 'location', 'vertical', 'segment', 'sub_segment']),
             ...getCols(['is_active']),
             ...getCols(['action'])
         ];
@@ -195,7 +200,20 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'code', 'person_name', 'designation_name', 'branch_name', 'joining_date', 'is_active', 'action'];
+            const defaultFields = [
+    'serial_no',
+    'code',
+    'person_name',
+    'designation_name',
+    'branch_name',
+    'department_name',
+    'division',
+    'location',
+    'vertical',
+    'segment',
+    'sub_segment',
+    'action'
+];
             const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
 
             gridApi.setColumnsVisible(allCols, false);

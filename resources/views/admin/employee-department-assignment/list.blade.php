@@ -33,35 +33,30 @@
 
     // ==================== FLAT COLUMN DEFINITION ====================
     const columnDefs = [
-        ...getCols(['serial_no', 'employee_name', 'department_name']).map(col => {
-            if (col.field === 'serial_no') {
-                col.pinned = 'left';
-                col.width = 80;
-            }
-            return col;
-        }),
+    ...getCols(['serial_no', 'employee_name', 'department_name']).map(col => {
+        if (col.field === 'serial_no') {
+            col.pinned = 'left';
+            col.width = 80;
+        }
+        return col;
+    }),
 
-        ...getCols(['from_date', 'to_date']),
+    ...getCols(['division', 'from_date', 'to_date']), // ✅ FIXED
 
-        ...getCols(['is_current']).map(col => {
-            col.cellRenderer = params => {
-                if (params.value === 'Active') {
-                    return 'Yes';
-                }
-                return 'No';
-            };
-            return col;
-        }),
+    ...getCols(['is_current']).map(col => {
+        col.cellRenderer = params => params.value === 'Yes' ? 'Yes' : 'No';
+        return col;
+    }),
 
-        ...getCols(['action']).map(col => {
-            col.pinned = 'right';
-            col.width = 140;
-            col.sortable = false;
-            col.filter = false;
-            col.cellRenderer = params => params.value || '';
-            return col;
-        })
-    ];
+    ...getCols(['action']).map(col => {
+        col.pinned = 'right';
+        col.width = 140;
+        col.sortable = false;
+        col.filter = false;
+        col.cellRenderer = params => params.value || '';
+        return col;
+    })
+];
 
     const gridOptions = {
         columnDefs: columnDefs,
@@ -83,7 +78,16 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'employee_name', 'department_name', 'from_date', 'is_current', 'action'];
+            const defaultFields = [
+    'serial_no',
+    'employee_name',
+    'department_name',
+    'division',
+    'from_date',
+    'to_date',
+    'is_current',
+    'action'
+];
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
@@ -103,11 +107,11 @@
         tbody.innerHTML = '';
 
         const allFlatColumns = [
-            ...getCols(['serial_no', 'employee_name', 'department_name']),
-            ...getCols(['from_date', 'to_date']),
-            ...getCols(['is_current']),
-            ...getCols(['action'])
-        ];
+    ...getCols(['serial_no', 'employee_name', 'department_name']),
+    ...getCols(['division', 'from_date', 'to_date']),
+    ...getCols(['is_current']),
+    ...getCols(['action'])
+];
 
         allFlatColumns.forEach(col => {
             if (!col.field) return;
@@ -192,7 +196,16 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'employee_name', 'department_name', 'from_date', 'is_current', 'action'];
+            const defaultFields = [
+    'serial_no',
+    'employee_name',
+    'department_name',
+    'division',
+    'from_date',
+    'to_date',
+    'is_current',
+    'action'
+];
             const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
 
             gridApi.setColumnsVisible(allCols, false);

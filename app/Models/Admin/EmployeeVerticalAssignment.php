@@ -2,13 +2,14 @@
 
 namespace App\Models\Admin;
 
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeVerticalAssignment extends Model
 {
-    use SoftDeletes;
+    use CrudTrait;
 
     protected $table = 'xlr8_admin_emp_vertical_pivot';
 
@@ -20,7 +21,9 @@ class EmployeeVerticalAssignment extends Model
         'is_current',
         'from_date',
         'to_date',
-        'created_by', 'updated_by', 'deleted_by',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     protected $casts = [
@@ -58,5 +61,8 @@ class EmployeeVerticalAssignment extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    public function scopeCurrent($q) { return $q->where('is_current', true)->whereNull('deleted_at'); }
+    public function scopeCurrent($q)
+    {
+        return $q->where('is_current', true)->whereNull('deleted_at');
+    }
 }

@@ -94,12 +94,12 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Segment</label>
+                                <label>Segment (5 Characters)</label>
                                 <input type="text" name="segment_code" class="form-control">
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Sub Segment</label>
+                                <label>Sub Segment (5 Characters)</label>
                                 <input type="text" name="sub_segment_code" class="form-control">
                             </div>
 

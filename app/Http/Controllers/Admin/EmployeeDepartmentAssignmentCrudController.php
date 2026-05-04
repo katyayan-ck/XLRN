@@ -28,6 +28,7 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $this->crud->setListView('admin.employee-department-assignment.list');
     }
 
+    // ================= LIST =================
     public function index()
     {
         $this->crud->setListView('admin.employee-department-assignment.list');
@@ -35,67 +36,58 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $assignments = EmployeeDepartmentAssignment::with(['employee.person', 'department'])
             ->select([
                 'id',
-                'employee_id',
-                'department_id',
+                'employee_code',
+                'dept_code',
+                'division_code', // ✅ FIXED
                 'from_date',
                 'to_date',
+
                 'is_current'
             ])
             ->orderBy('id', 'desc')
             ->get();
 
         $gridData = $assignments->map(function ($assign, $index) {
-            $mapped = $assign->toArray();
-            $mapped['serial_no'] = $index + 1;
-
-            $mapped['employee_name'] = $assign->employee && $assign->employee->person
-                ? trim($assign->employee->person->first_name . ' ' . $assign->employee->person->last_name)
-                : '—';
-
-            $mapped['department_name'] = $assign->department?->name ?? '—';
-
-            // Format dates to dd/mm/yyyy
-            $mapped['from_date'] = $assign->from_date?->format('d/m/Y') ?? '—';
-            $mapped['to_date']   = $assign->to_date?->format('d/m/Y') ?? '—';
-
-            $mapped['is_current'] = $assign->is_current ? 'Active' : 'Inactive';
-
-            $editUrl = backpack_url("employee-department-assignment/{$assign->id}/edit");
-
-            $mapped['action'] = '
-            <div class="d-flex gap-2 justify-content-center">
-                <a href="' . $editUrl . '" class="btn btn-sm btn-primary py-1 px-2" title="Edit">Edit</a>
-            </div>
-        ';
-            return $mapped;
-        })->values();
+            return [
+                'serial_no'       => $index + 1,
+                'employee_name'   => $assign->employee?->display_name ?? '—',
+                'department_name' => $assign->department?->name ?? '—',
+                'division'        => $assign->division_code ?? '—', // ✅ FIXED
+                'from_date'       => $assign->from_date?->format('d/m/Y') ?? '—',
+                'to_date'         => $assign->to_date?->format('d/m/Y') ?? '—',
+                'is_current'      => $assign->is_current ? 'Yes' : 'No',
+                'action'          => '
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="' . backpack_url("employee-department-assignment/{$assign->id}/edit") . '" class="btn btn-sm btn-primary py-1 px-2">Edit</a>
+                    </div>
+                '
+            ];
+        });
 
         return view('admin.employee-department-assignment.list', [
             'title' => 'Employee Department Assignments',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',        'headerName' => 'S.No'],
-                    ['field' => 'employee_name',    'headerName' => 'Employee'],
-                    ['field' => 'department_name',  'headerName' => 'Department'],
-                    ['field' => 'from_date',        'headerName' => 'From Date'],
-                    ['field' => 'to_date',          'headerName' => 'To Date'],
-                    ['field' => 'is_current',       'headerName' => 'Current'],
-                    ['field' => 'action',           'headerName' => 'Actions']
+                    ['field' => 'serial_no',       'headerName' => 'S.No'],
+                    ['field' => 'employee_name',   'headerName' => 'Employee'],
+                    ['field' => 'department_name', 'headerName' => 'Department'],
+                    ['field' => 'division',       'headerName' => 'Division'],
+                    ['field' => 'from_date',      'headerName' => 'From Date'],
+                    ['field' => 'to_date',        'headerName' => 'To Date'],
+                    ['field' => 'is_current',     'headerName' => 'Current'],
+                    ['field' => 'action',         'headerName' => 'Actions'],
                 ],
                 'data' => $gridData
             ]
         ]);
     }
 
+    // ================= CREATE =================
     public function create()
     {
-        $this->crud->setCreateView('admin.employee-department-assignment.create');
-
         return view('admin.employee-department-assignment.create', [
-            'title'       => 'Add New Department Assignment',
-            'employees'   => Employee::with('person')
-                ->orderBy('code')
-                ->get(),
+            'title' => 'Add Department Assignment',
+            'employees' => Employee::with('person')->orderBy('code')->get(),
             'departments' => Department::orderBy('name')->get(),
         ]);
     }
@@ -103,8 +95,9 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_id'   => 'required|exists:xlr8_admin_employee,id',
-            'department_id' => 'required|exists:xlr8_admin_department,id',
+            'employee_code' => 'required|exists:xlr8_admin_employee,code',
+            'dept_code'     => 'required|exists:xlr8_admin_department,code',
+            'division_code' => 'nullable|string', // ✅ FIXED
             'from_date'     => 'required|date',
             'to_date'       => 'nullable|date|after_or_equal:from_date',
             'is_current'    => 'boolean',
@@ -112,22 +105,19 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
 
         EmployeeDepartmentAssignment::create($validated);
 
-        \Alert::success('Department Assignment created successfully!')->flash();
+        \Alert::success('Assignment created successfully')->flash();
         return redirect(backpack_url('employee-department-assignment'));
     }
 
+    // ================= EDIT =================
     public function edit($id)
     {
-        $this->crud->setEditView('admin.employee-department-assignment.edit');
-
-        $assignment = EmployeeDepartmentAssignment::with(['employee.person', 'department'])->findOrFail($id);
+        $assignment = EmployeeDepartmentAssignment::findOrFail($id);
 
         return view('admin.employee-department-assignment.edit', [
-            'title'       => 'Edit Department Assignment',
-            'assignment'  => $assignment,
-            'employees'   => Employee::with('person')
-                ->orderBy('code')
-                ->get(),
+            'title' => 'Edit Assignment',
+            'assignment' => $assignment,
+            'employees' => Employee::with('person')->orderBy('code')->get(),
             'departments' => Department::orderBy('name')->get(),
         ]);
     }
@@ -137,8 +127,9 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $assignment = EmployeeDepartmentAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'employee_id'   => 'required|exists:xlr8_admin_employee,id',
-            'department_id' => 'required|exists:xlr8_admin_department,id',
+            'employee_code' => 'required|exists:xlr8_admin_employee,code',
+            'dept_code'     => 'required|exists:xlr8_admin_department,code',
+            'division_code' => 'nullable|string', // ✅ FIXED
             'from_date'     => 'required|date',
             'to_date'       => 'nullable|date|after_or_equal:from_date',
             'is_current'    => 'boolean',
@@ -146,7 +137,7 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
 
         $assignment->update($validated);
 
-        \Alert::success('Department Assignment updated successfully!')->flash();
+        \Alert::success('Assignment updated successfully')->flash();
         return redirect(backpack_url('employee-department-assignment'));
     }
 }

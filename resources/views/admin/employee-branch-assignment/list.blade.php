@@ -43,23 +43,13 @@
 
         ...getCols(['branch_name', 'from_date', 'to_date']),
 
-        ...getCols(['is_primary', 'is_current']).map(col => {
-            if (col.field === 'is_primary') {
-                col.cellRenderer = params => {
-                    if (params.value === 1 || params.value === true || params.value === 'Yes') {
-                        return `Primary`;
-                    }
-                    return `Secondary`;
-                };
-            }
-            if (col.field === 'is_current') {
-                col.cellRenderer = params => {
-                    if (params.value === 1 || params.value === true || params.value === 'Yes') {
-                        return `Current`;
-                    }
-                    return `Past`;
-                };
-            }
+        ...getCols(['is_current']).map(col => {
+            col.cellRenderer = params => {
+                if (params.value === 1 || params.value === true || params.value === 'Yes') {
+                    return `Current`;
+                }
+                return `Past`;
+            };
             return col;
         }),
 
@@ -93,7 +83,7 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'employee_code', 'employee_name', 'branch_name', 'from_date', 'is_primary', 'action'];
+            const defaultFields = ['serial_no', 'employee_code', 'employee_name', 'branch_name', 'from_date', 'to_date', 'is_current', 'action'];
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
@@ -115,7 +105,7 @@
         const allFlatColumns = [
             ...getCols(['serial_no', 'employee_code', 'employee_name']),
             ...getCols(['branch_name', 'from_date', 'to_date']),
-            ...getCols(['is_primary', 'is_current']),
+            ...getCols(['is_current']),
             ...getCols(['action'])
         ];
 
@@ -202,7 +192,7 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'employee_code', 'employee_name', 'branch_name', 'from_date', 'is_primary', 'action'];
+            const defaultFields = ['serial_no', 'employee_code', 'employee_name', 'branch_name', 'from_date', 'to_date', 'is_current', 'action'];
             const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
 
             gridApi.setColumnsVisible(allCols, false);

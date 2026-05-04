@@ -60,10 +60,11 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Employee</label>
-                                <select name="employee_id" class="form-control form-select" required>
+                                <select name="employee_code" class="form-control form-select" required>
                                     @foreach($employees as $emp)
-                                    <option value="{{ $emp->id }}" {{ old('employee_id', $assignment->employee_id) ==
-                                        $emp->id ? 'selected' : '' }}>
+                                    <option value="{{ $emp->code }}" {{ old('employee_code', $assignment->employee_code)
+                                        ==
+                                        $emp->code ? 'selected' : '' }}>
                                         {{ $emp->code }} - {{ $emp->person ? trim($emp->person->first_name . ' ' .
                                         $emp->person->last_name) : 'No Person' }}
                                     </option>
@@ -73,14 +74,20 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Department</label>
-                                <select name="department_id" class="form-control form-select" required>
+                                <select name="dept_code" class="form-control form-select" required>
                                     @foreach($departments as $dept)
-                                    <option value="{{ $dept->id }}" {{ old('department_id', $assignment->department_id)
-                                        == $dept->id ? 'selected' : '' }}>
+                                    <option value="{{ $dept->code }}" {{ old('dept_code', $assignment->dept_code)
+                                        == $dept->code ? 'selected' : '' }}>
                                         {{ $dept->name }}
                                     </option>
                                     @endforeach
                                 </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label>Division</label>
+                                <input type="text" name="division_code"
+                                    value="{{ old('division_code', $assignment->division_code) }}" class="form-control">
                             </div>
 
                             <div class="col-md-4 mb-3">
