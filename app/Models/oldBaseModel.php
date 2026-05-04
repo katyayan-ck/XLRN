@@ -9,7 +9,6 @@ use OwenIt\Auditing\Contracts\Auditable;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * BaseModel - Foundation for all application models
@@ -337,11 +336,10 @@ abstract class BaseModel extends Model implements Auditable, HasMedia
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
-
-public function scopeActive(Builder $query): Builder
-{
-    return $query->where('is_active', true);
-}
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true)->whereNull('deleted_at');
+    }
 
     /**
      * Scope: Get only inactive records
