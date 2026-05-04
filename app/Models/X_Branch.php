@@ -8,7 +8,7 @@ class X_Branch extends BaseModel
 {
     use SoftDeletes;
 
-    protected $table = 'xcelr8_us_branch';
+    protected $table = 'xlr8_admin_branch';
     protected $fillable = [];
     protected $guarded = ['id'];
 

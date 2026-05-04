@@ -1456,54 +1456,31 @@ class BookingCrudController extends CrudController
 
 
 
-
-
     protected function setupCreateOperation()
     {
         CRUD::setValidation(BookingRequest::class);
-        $this->crud->setCreateView('booking.add');
-
+        $this->crud->setCreateView('admin.booking.add');
+    
         $data = [];
-
-        // Yeh sab object banaye — arrow syntax ke liye
+    
+        // Existing Masters
         $data['branches']       = collect(CommonHelper::getBranches())->map(fn($b) => (object) $b);
-        // $data['allusers']       = collect(XpricingHelper::selectUsers())->map(fn($u) => (object) $u);
-        $data['financiers']     = collect(\App\Models\Module\Finance\XlFinancier::select('id', 'name', 'short_name')->get()->toArray())->map(fn($f) => (object) $f);
-        $data['saleconsultants'] = collect(XpricingHelper::selectfsc())->map(fn($s) => (object) $s);
-
-        // Segments — sirf ek baar, object bana ke
-        // $data['segments']       = collect(XpricingHelper::getSegments())->map(fn($s) => (object) $s);
-
-        // // Yeh initially empty rahenge (AJAX se fill honge)
-        // $data['models']         = [];
-        // $data['variants']       = [];
-        // $data['colors']         = [];
-
-        $data['locations']      = [];
-        $data['person_id']      = backpack_auth()->id();
-
-        // DSA Details — object bana do
-        $data['dsa_details'] = \App\Models\Xl_DSA_Master::all()->map(function ($dsa) {
-            return (object) [
-                'id'       => $dsa->id,
-                'name'     => $dsa->name,
-                'mobile'   => $dsa->mobile,
-                'email'    => $dsa->email,
-                'location' => $dsa->dlocation,
-            ];
-        });
-
-        // Enum Master
-        $data['enum_master'] = \App\Models\EnumMaster::where('master_id', 94)
-            ->where('status', 1)
-            ->orderBy('value')
-            ->get()
-            ->map(fn($em) => (object) ['id' => $em->id, 'value' => $em->value]);
-
-        // Final pass
+        $data['financiers']     = collect(CommonHelper::getFinanciers())->map(fn($f) => (object) $f);
+        $data['dsa_details']    = CommonHelper::getDSAs();
+    
+        // New Vehicle Masters (Code-based)
+        $data['segments'] = CommonHelper::getVehicleSegments();
+    
+        // These will be populated via AJAX
+        $data['models']     = [];
+        $data['variants']   = [];
+        $data['colors']     = [];
+    
+        $data['locations']  = [];
+        $data['person_id']  = backpack_auth()->id();
+    
         $this->data['data'] = $data;
     }
-
 
     public function store(Request $request)
     {
@@ -1893,16 +1870,7 @@ class BookingCrudController extends CrudController
             $data['colors'] = XpricingHelper::getColorX($entry->variant) ?? [];
         }
 
-        // DSA Details
-        $data['dsa_details'] = \App\Models\Xl_DSA_Master::all()->map(function ($dsa) {
-            return (object)[
-                'id'       => $dsa->id,
-                'name'     => $dsa->name,
-                'mobile'   => $dsa->mobile,
-                'email'    => $dsa->email,
-                'location' => $dsa->dlocation,
-            ];
-        });
+        $data['dsa_details'] = CommonHelper::getDSAs();
 
         // Enum Master for OEM makes
         $data['enum_master'] = \App\Models\EnumMaster::where('master_id', 94)
@@ -3011,29 +2979,29 @@ class BookingCrudController extends CrudController
     //     ]);
     // }
 
-    public function getModels($segment_id)
-    {
-        $models = XpricingHelper::getModelsX($segment_id);
-        return response()->json($models);
-    }
+public function getModels($segmentCode)
+{
+    $models = CommonHelper::getVehicleModels($segmentCode);
+    return response()->json($models);
+}
 
-    public function CheckReceipt($rn)
-    {
-        $count = XpricingHelper::checkReceiptX($rn);
-        return response()->json((int)$count > 0 ? 1 : 0);
-    }
+public function getVariants($modelCode)
+{
+    $variants = CommonHelper::getVehicleVariants($modelCode);
+    return response()->json($variants);
+}
 
-    public function getVariants($model)
-    {
-        $variants = XpricingHelper::getVehiclesX($model);
-        return response()->json($variants);
-    }
+public function getColors($variantCode)
+{
+    $colors = CommonHelper::getVehicleColors($variantCode);
+    return response()->json($colors);
+}
 
-    public function getColors($variant)
-    {
-        $colors = XpricingHelper::getColorX($variant);
-        return response()->json($colors);
-    }
+public function CheckReceipt($rn)
+{
+    $count = XpricingHelper::checkReceiptX($rn);
+    return response()->json((int)$count > 0 ? 1 : 0);
+}
 
     public function getChassisNumbers($modelCode)
     {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Finance;
 use App\Models\BaseModel;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,7 +14,7 @@ class XlFinancier extends BaseModel
      * @var string
      */
     use SoftDeletes;
-    protected $table = 'xcelr8_financier';
+    protected $table = 'xlr8_booking_financier';
 
     /**
      * The attributes to be fillable from the model.

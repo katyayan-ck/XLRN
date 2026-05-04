@@ -66,8 +66,8 @@ Route::group([
 
     Route::crud('spare-request', 'SpareRequestCrudController');
 
-    Route::get('get-variants/{model}', 'SpareImportController@getVariants')
-        ->name('get.variants');
+    // Route::get('get-variants/{model}', 'SpareImportController@getVariants')
+    //     ->name('get.variants');
 
     Route::get('check-ro-number/{rn}', 'SpareImportController@checkRoNumber')
         ->name('check-ro-number');

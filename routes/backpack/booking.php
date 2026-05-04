@@ -120,18 +120,17 @@ Route::group([
     Route::get('/branchlocations/{bid}', 'BookingCrudController@getBranchLocation')
         ->name('get.branch');
 
-    Route::get('/get-models/{segment_id}', 'BookingCrudController@getModels')
+    Route::get('/get-models/{segment}', 'BookingCrudController@getModels')
         ->name('get.models');
 
-    Route::get('/check-receipt/{rn}', 'BookingCrudController@CheckReceipt')
-        ->name('check-receipt');
-
-    Route::get('/get-variants/{model}', 'BookingCrudController@getVariants')
+Route::get('/get-variants/{model}', 'BookingCrudController@getVariants')
         ->name('get.variants');
 
-    Route::get('/get-colors/{variant}', 'BookingCrudController@getColors')
+Route::get('/get-colors/{variant}', 'BookingCrudController@getColors')
         ->name('get.colors');
 
+Route::get('/check-receipt/{rn}', 'BookingCrudController@CheckReceipt')
+        ->name('check-receipt');
     Route::get('/get-chassis-numbers/{modelCode}', 'BookingCrudController@getChassisNumbers')
         ->name('get.chasis');
 

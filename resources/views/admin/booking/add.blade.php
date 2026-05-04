@@ -504,7 +504,7 @@
                 </div>
 
                 <!-- Vehicle Details Section -->
-                {{-- <div class="card p-3 mt-3">
+                <div class="card p-3 mt-3">
                     <div class="card-body">
                         <h2 class="mb-3">Vehicle Details</h2>
                         <div class="row">
@@ -512,9 +512,9 @@
                                 <div class="form-group">
                                     <label for="segmentid">Segment <span class="required-mark">*</span></label>
                                     <select name="segmentid" id="segmentid" class="form-control select2" required>
-                                        <option value="0">Please Select...</option>
+                                        <option value="">Please Select Segment...</option>
                                         @foreach($data['segments'] ?? [] as $segment)
-                                        <option value="{{ $segment->id }}">{{ $segment->name }}</option>
+                                            <option value="{{ $segment->code }}">{{ $segment->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -582,7 +582,7 @@
                             </div>
                         </div>
                     </div>
-                </div> --}}
+                </div>
 
                 <!-- Booking Details Section -->
                 <div class="card p-3 mt-3">
@@ -1595,7 +1595,7 @@ $('#financier').on('change', function() {
 $('#model').on('change', function() {
     const modelId = this.value;
     $.ajax({
-        url: '../get-variants/' + modelId,
+        url: '../get-variants/' + encodeURIComponent(modelId),  // ← this
         method: 'GET',
         success: function(data) {
             populateSelect($('#variant'), data, 'name', 'id');
@@ -1604,7 +1604,7 @@ $('#model').on('change', function() {
             resetAccessories();
         },
         error: handleAjaxError('Error fetching variants')
-    });
+    })
 });
 
 $('#variant').on('change', function() {
