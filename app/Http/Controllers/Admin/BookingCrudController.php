@@ -19,7 +19,7 @@ use App\Services\BookingService;             // New service class
 use Illuminate\Http\JsonResponse;
 use App\Models\User;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Models\Booking;
+use App\Models\Module\Booking\Booking;
 use App\Models\Bookingamount;
 use App\Models\XVehicleMaster; // Import the model
 use App\Models\Stock; // Import the Stock model
@@ -43,8 +43,8 @@ use App\Models\XlRto;
 use App\Models\XlDelivery;
 
 use App\Models\XlInsurance;
-use App\Models\XlFinancier;
 
+use App\Models\Module\Finance\XlFinancier;
 use App\Models\XlRtoRules;
 
 use App\Helpers\CommonHelper;
@@ -65,11 +65,13 @@ class BookingCrudController extends CrudController
     use \Backpack\CRUD\app\Http\Controllers\Operations\ShowOperation;
 
     public function setup()
-    {
-        CRUD::setModel(\App\Models\Booking::class);
-        CRUD::setRoute(config('backpack.base.route_prefix') . '/booking');
-        CRUD::setEntityNameStrings('booking', 'bookings');
-    }
+{
+    // FIXED: Correct namespace
+    CRUD::setModel(\App\Models\Module\Booking\Booking::class);
+    
+    CRUD::setRoute(config('backpack.base.route_prefix') . '/booking');
+    CRUD::setEntityNameStrings('booking', 'bookings');
+}
 
 
     /**
@@ -183,10 +185,10 @@ class BookingCrudController extends CrudController
         $data['total_amount'] = $data['receiptLogs']->sum('amount');
 
         // Branch & Location
-        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
+        $data['branch']   = X_Branch::find($booking->branch_code)?->name ?? 'N/A';
         $data['fbranch']  = $data['branch'];
-        $data['location'] = $booking->location_id
-            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+        $data['location'] = $booking->location_code
+            ? (X_Location::find($booking->location_code)?->name ?? 'N/A')
             : ($booking->location_other ?? 'N/A');
         $data['flocation'] = $data['location'];
         $segmentsFromHelper = XpricingHelper::getSegments() ?? [];
@@ -260,7 +262,7 @@ class BookingCrudController extends CrudController
             ])->toArray() ?? [];
 
         // Locations for edit/create
-        $locations = XCommonHelper::getLocations($booking->branch_id) ?? [];
+        $locations = XCommonHelper::getLocations($booking->branch_code) ?? [];
         usort($locations, fn($a, $b) => strcmp(
             ($a['name'] ?? '') . ' - ' . ($a['code'] ?? ''),
             ($b['name'] ?? '') . ' - ' . ($b['code'] ?? '')
@@ -320,7 +322,7 @@ class BookingCrudController extends CrudController
     private function getBaseQuery(array $options = [])
     {
         $query = Booking::withoutGlobalScope(SoftDeletingScope::class)
-            ->from('xcelr8_booking_master as bookings')
+            ->from('xlr8_booking_master as bookings')
             ->select([
                 'bookings.id',
                 'bookings.b_type',
@@ -337,8 +339,8 @@ class BookingCrudController extends CrudController
                 'bookings.receipt_no',
                 'bookings.receipt_date',
                 'bookings.booking_amount',
-                'bookings.branch_id',
-                'bookings.location_id',
+                'bookings.branch_code',
+                'bookings.location_code',
                 'bookings.location_other',
                 'bookings.c_dob',
                 'bookings.gender',
@@ -411,7 +413,7 @@ class BookingCrudController extends CrudController
 
 
             ]);
-        $query->leftJoin('xcelr8_refunds as ref', function ($join) {
+        $query->leftJoin('xlr8_booking_refund as ref', function ($join) {
             $join->on('bookings.id', '=', DB::raw('CAST(ref.entity_id AS UNSIGNED)'))
                 ->where('ref.entity_type', 'booking');
         })->addSelect([
@@ -422,9 +424,9 @@ class BookingCrudController extends CrudController
             // agar aur fields chahiye to add kar sakte ho
         ]);
         // ==================== UNCONDITIONAL JOINS + FIELDS (as requested) ====================
-        $query->leftJoin('xcelr8_booking_insurance as ins', 'bookings.id', '=', 'ins.bid')
-            ->leftJoin('xcelr8_booking_rto as rto', 'bookings.id', '=', 'rto.bid')
-            ->leftJoin('xcelr8_finance as f', 'bookings.id', '=', 'f.bid');
+        $query->leftJoin('xlr8_booking_insurer as ins', 'bookings.id', '=', 'ins.bid')
+            ->leftJoin('xlr8_booking_rto as rto', 'bookings.id', '=', 'rto.bid')
+            ->leftJoin('xlr8_booking_finance as f', 'bookings.id', '=', 'f.bid');
 
         $query->addSelect([
             // Insurance Fields
@@ -1030,156 +1032,7 @@ class BookingCrudController extends CrudController
         return array_merge($columns, $extraColumns);
     }
 
-    // private function getAgGridColumns(array $extraColumns = []): array
-    // {
-    //     $columns = [
-
-
-    //         ['headerName' => 'S.No.',       'field' => 'serial_no',     'width' => 80,  'sortable' => false, 'filter' => false],
-    //         ['headerName' => 'XB No.',      'field' => 'booking_no',     'width' => 140,  'sortable' => true],
-    //         ['headerName' => 'Entry Date',         'field' => 'created_at',            'width' => 110, 'type' => 'date'],
-    //         ['headerName' => 'Booking Date',       'field' => 'booking_date',          'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'Booking Age',       'field' => 'days_count',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-    //         ['headerName' => 'Invoice No.',       'field' => 'inv_no',          'width' => 120],
-    //         ['headerName' => 'Invoice Date',       'field' => 'inv_date',          'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'Dealer Invoice No.',       'field' => 'dealer_inv_no',          'width' => 120],
-    //         ['headerName' => 'Dealer Invoice Date',       'field' => 'dealer_inv_date',          'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'Cancellation Date',        'field' => 'cancel_date',           'width' => 110, 'type' => 'date'],
-    //         ['headerName' => 'Refund Request Date',    'field' => 'refund_request_date',   'width' => 130, 'type' => 'date'],
-    //         ['headerName' => 'Refunded Date',      'field' => 'refund_date',           'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'Refund Reject Date', 'field' => 'refund_rejection_date', 'width' => 140, 'type' => 'date'],
-    //         ['headerName' => 'Customer Type',   'field' => 'b_type',         'width' => 110],
-    //         ['headerName' => 'Customer Category',  'field' => 'b_cat',         'width' => 180, 'filter' => true],
-    //         ['headerName' => 'Collection Type', 'field' => 'col_type',       'width' => 150],
-    //         ['headerName' => 'Collection By', 'field' => 'col_by',       'width' => 150],
-    //         ['headerName' => 'Booking Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
-    //         ['headerName' => 'Amount to Refund', 'field' => 'refund_amount', 'width' => 140, 'type' => 'number', 'cellClass' => 'text-right'],
-    //         ['headerName' => 'Receipt No.',       'field' => 'receipt_no',          'width' => 120],
-    //         ['headerName' => 'Receipt Date',       'field' => 'receipt_date',          'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'Customer Name',  'field' => 'name',         'width' => 180, 'filter' => true],
-    //         ['headerName' => 'Care Of Type',        'field' => 'care_of_type',      'width' => 140],
-    //         ['headerName' => 'Care Of',        'field' => 'care_of',      'width' => 140],
-    //         ['headerName' => 'Mobile No.',         'field' => 'mobile',       'width' => 120],
-    //         ['headerName' => 'Alternate Mobile No.',         'field' => 'alt_mobile',       'width' => 120],
-    //         ['headerName' => 'Gender',  'field' => 'gender',         'width' => 180, 'filter' => true],
-    //         ['headerName' => 'Occupation',        'field' => 'occ',      'width' => 140],
-    //         ['headerName' => 'PAN No.',         'field' => 'pan_no',       'width' => 110],
-    //         ['headerName' => 'Aadhaar No.',     'field' => 'adhar_no',     'width' => 130],
-    //         ['headerName' => 'GSTIN',           'field' => 'gstn',         'width' => 120],
-    //         ['headerName' => 'Customer D.O.B',       'field' => 'c_dob',          'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'Customer Age',      'field' => 'customer_age',  'width' => 110, 'cellClass' => 'text-center'],
-
-    //         ['headerName' => 'Branch',         'field' => 'branch_name',    'width' => 140, 'filter' => true],
-    //         ['headerName' => 'Location',       'field' => 'location_name',  'width' => 160, 'filter' => true],
-    //         ['headerName' => 'Segment',          'field' => 'segment',          'width' => 140],
-    //         ['headerName' => 'Model',          'field' => 'model',          'width' => 140],
-    //         ['headerName' => 'Variant',        'field' => 'variant',        'width' => 150],
-    //         ['headerName' => 'Color',          'field' => 'color',          'width' => 100],
-    //         ['headerName' => 'Seating',        'field' => 'seating',      'width' => 130],
-    //         ['headerName' => 'Chassis No.',        'field' => 'chasis_no',      'width' => 130],
-    //         ['headerName' => 'Booking Status',    'field' => 'status',    'width' => 130],
-    //         ['headerName' => 'Booking Mode',        'field' => 'b_mode',      'width' => 140],
-    //         ['headerName' => 'Online Book Ref No.',     'field' => 'online_bk_ref_no', 'width' => 130],
-    //         ['headerName' => 'Booking Source',  'field' => 'b_source',         'width' => 180, 'filter' => true],
-    //         ['headerName' => 'DSA Name',  'field' => 'dsa_name',         'width' => 180, 'filter' => true],
-
-    //         ['headerName' => 'Sales Consultant',     'field' => 'consultant',     'width' => 140],
-    //         ['headerName' => 'Delivery Date Type',     'field' => 'del_type',     'width' => 140],
-    //         ['headerName' => 'Delivery Date',      'field' => 'del_date',              'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'Finance Mode',   'field' => 'fin_mode',         'width' => 140],
-    //         ['headerName' => 'Financier',          'field' => 'financier',        'width' => 180, 'filter' => true],
-    //         ['headerName' => 'Financier Short',    'field' => 'financier_short_name', 'width' => 150],
-    //         ['headerName' => 'Loan Status',        'field' => 'loan_status',      'width' => 140, 'cellClass' => 'text-center'],
-    //         ['headerName' => 'Purchase Type',   'field' => 'buyer_type',         'width' => 140],
-    //         ['headerName' => 'Brand Make 1',        'field' => 'exist_oem1',      'width' => 130],
-    //         ['headerName' => 'Model Variant 1',        'field' => 'vh1_detail',      'width' => 130],
-    //         ['headerName' => 'Brand Make 2',        'field' => 'exist_oem2',      'width' => 130],
-    //         ['headerName' => 'Model Variant 2',        'field' => 'vh2_detail',      'width' => 130],
-    //         ['headerName' => 'Vehicle Registration No.',        'field' => 'registration_no',      'width' => 130],
-    //         ['headerName' => 'Vehicle Manufacturing Year',        'field' => 'make_year',      'width' => 130],
-    //         ['headerName' => 'Vehicle Odometer Reading',        'field' => 'odo_reading',      'width' => 130],
-    //         ['headerName' => 'Used Vehicle Expected Price',       'field' => 'expected_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-    //         ['headerName' => 'Used Vehicle Offered Price',       'field' => 'offered_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-    //         ['headerName' => 'Used Vehicle Exchange Bonus',       'field' => 'exchange_bonus',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-    //         [
-    //             'headerName' => 'Price Gap',
-    //             'field'      => 'price_gap',
-    //             'width'      => 140,
-    //             'type'       => 'numericColumn',
-    //             'cellClass'  => 'text-right fw-bold',
-    //             'valueFormatter' => "params.value != null ? '₹ ' + Math.round(params.value).toLocaleString('en-IN') : 'N/A'",
-    //         ],
-
-    //         ['headerName' => 'Customer Name',                'field' => 'r_name',                   'width' => 100, 'type' => 'date'],
-    //         ['headerName' => 'Referred Mobile',     'field' => 'r_mobile',          'width' => 130],
-    //         ['headerName' => 'Referred Model',      'field' => 'r_model',           'width' => 140],
-    //         ['headerName' => 'Referred Variant',    'field' => 'r_variant',         'width' => 150],
-    //         ['headerName' => 'Referred Chassis',    'field' => 'r_chassis',         'width' => 140],
-
-    //         ['headerName' => 'DMS Booking No.',         'field' => 'dms_no',         'width' => 110],
-    //         ['headerName' => 'DMS OTF No.',        'field' => 'dms_otf',        'width' => 110],
-    //         ['headerName' => 'DMS OTF Date',      'field' => 'otf_date',              'width' => 120, 'type' => 'date'],
-    //         ['headerName' => 'DMS SO No.',         'field' => 'dms_so',         'width' => 110],
-
-    //         ['headerName' => 'Live Order',     'field' => 'livecount',   'width' => 130, 'type' => 'number'],
-    //         ['headerName' => 'Stock In Hand',    'field' => 'stockcount',  'width' => 130, 'type' => 'number'],
-
-    //         ['headerName' => 'Insurance Source',   'field' => 'insurance_source',  'width' => 160, 'filter' => true],
-    //         ['headerName' => 'Insurance Company',  'field' => 'insurance_company', 'width' => 180, 'filter' => true],
-    //         ['headerName' => 'Insurance Short Name',    'field' => 'insurance_short_name', 'width' => 140, 'filter' => true],
-
-    //         ['headerName' => 'Policy No.',           'field' => 'policy_no',         'width' => 160, 'filter' => true],
-    //         ['headerName' => 'Policy Date',          'field' => 'policy_date',       'width' => 130, 'type' => 'date'],
-    //         ['headerName' => 'Policy Type',          'field' => 'policy_type',       'width' => 180, 'filter' => true],
-    //         ['headerName' => 'Sale Type',        'field' => 'rto_sale_type',     'width' => 160, 'filter' => true],
-    //         ['headerName' => 'RTO Permit',           'field' => 'rto_permit',        'width' => 220, 'filter' => true],
-    //         ['headerName' => 'RTO Body Type',        'field' => 'rto_body_type',     'width' => 160, 'filter' => true],
-
-    //         ['headerName' => 'CPD',                'field' => 'cpd',                   'width' => 100, 'type' => 'date'],
-
-
-
-
-
-    //         // ─── Customer Details ────────────────────────────────────────
-
-
-
-
-
-
-    //         ['headerName' => 'Customer Type',  'field' => 'customer_type',         'width' => 180, 'filter' => true],
-
-
-    //         ['headerName' => 'Care Of Name',        'field' => 'care_of_name',      'width' => 140],
-
-    //         // Vehicle
-
-
-    //         // Amount & Finance
-    //         ['headerName' => 'Loan Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
-    //         ['headerName' => 'Loan Amount(Dealer Entry)',         'field' => 'loan_amount_payout', 'width' => 120, 'type' => 'number'],
-
-    //         ['headerName' => 'Product Category',    'field' => 'finance_payout_category',    'width' => 130],
-
-    //         // People & Source
-    //         ['headerName' => 'Collected By',   'field' => 'col_by',         'width' => 140],
-
-
-
-    //         // DMS / Refs
-    //         ['headerName' => 'SAP Booking No.',         'field' => 'sap_no',         'width' => 110],
-    //         // Yeh do lines update kar do
-    //         ['headerName' => 'Do Number',     'field' => 'do_number', 'width' => 130],
-    //         ['headerName' => 'Expected Payout %',     'field' => 'expected_payout_pct', 'width' => 130],
-
-
-    //         // Action – right pinned
-    //     ];
-
-    //     return array_merge($columns, $extraColumns);
-    // }
-
+   
     private function getStatusBadge($status)
     {
         return match ((int)$status) {
@@ -1614,17 +1467,17 @@ class BookingCrudController extends CrudController
 
         // Yeh sab object banaye — arrow syntax ke liye
         $data['branches']       = collect(CommonHelper::getBranches())->map(fn($b) => (object) $b);
-        $data['allusers']       = collect(XpricingHelper::selectUsers())->map(fn($u) => (object) $u);
-        $data['financiers']     = collect(\App\Models\XlFinancier::select('id', 'name', 'short_name')->get()->toArray())->map(fn($f) => (object) $f);
+        // $data['allusers']       = collect(XpricingHelper::selectUsers())->map(fn($u) => (object) $u);
+        $data['financiers']     = collect(\App\Models\Module\Finance\XlFinancier::select('id', 'name', 'short_name')->get()->toArray())->map(fn($f) => (object) $f);
         $data['saleconsultants'] = collect(XpricingHelper::selectfsc())->map(fn($s) => (object) $s);
 
         // Segments — sirf ek baar, object bana ke
-        $data['segments']       = collect(XpricingHelper::getSegments())->map(fn($s) => (object) $s);
+        // $data['segments']       = collect(XpricingHelper::getSegments())->map(fn($s) => (object) $s);
 
-        // Yeh initially empty rahenge (AJAX se fill honge)
-        $data['models']         = [];
-        $data['variants']       = [];
-        $data['colors']         = [];
+        // // Yeh initially empty rahenge (AJAX se fill honge)
+        // $data['models']         = [];
+        // $data['variants']       = [];
+        // $data['colors']         = [];
 
         $data['locations']      = [];
         $data['person_id']      = backpack_auth()->id();
@@ -1790,8 +1643,8 @@ class BookingCrudController extends CrudController
         $booking->receipt_no = $request->input('receiptno');  // receipt_no → receiptno
         $booking->receipt_date = $request->input('hiddenreceiptdate');  // receipt_date → hiddenreceiptdate
         $booking->booking_amount = $request->input('bookingamount');  // booking_amount → bookingamount
-        $booking->branch_id = $request->input('branch');
-        $booking->location_id = $request->input('location');
+        $booking->branch_code = $request->input('branch');
+        $booking->location_code = $request->input('location');
         $booking->location_other = $request->input('locationother');  // location_other → locationother
         $booking->c_dob = $request->input('hiddencustomerdob');  // c_dob → hiddencustomerdob
         $booking->segment_id = $request->input('segmentid');  // segment_id → segmentid
@@ -2060,8 +1913,8 @@ class BookingCrudController extends CrudController
 
         // === Edit-specific data (jo dropdowns ko pre-populate karne ke liye chahiye) ===
         $data['locations'] = [];
-        if ($entry->branch_id) {
-            $locations = XCommonHelper::getLocations($entry->branch_id) ?? [];
+        if ($entry->branch_code) {
+            $locations = XCommonHelper::getLocations($entry->branch_code) ?? [];
             usort($locations, fn($a, $b) => strcmp(($a['name'] ?? '') . ' - ' . ($a['code'] ?? ''), ($b['name'] ?? '') . ' - ' . ($b['code'] ?? '')));
             $data['locations'] = $locations;
         }
@@ -2302,7 +2155,7 @@ class BookingCrudController extends CrudController
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('xcelr8_booking_amount', 'reciept')
+                Rule::unique('xlr8_booking_amount', 'reciept')
                     ->whereNull('deleted_at')
                     ->ignore($request->input('receipt_id')), // agar edit mode mein ho to ignore
             ],
@@ -2449,7 +2302,7 @@ class BookingCrudController extends CrudController
         // Base validation rules (common for all bookings)
         $rules = [
             'branch'               => 'required|integer',
-            'location_id'          => 'required|integer',
+            'location_code'          => 'required|integer',
             'segment_id'           => 'required|integer',
             'model'                => 'required|string|max:255',
             'variant'              => 'required|string|max:255',
@@ -2599,16 +2452,16 @@ class BookingCrudController extends CrudController
             $booking->booking_amount = $request->booking_amount;
         }
 
-        if ($booking->branch_id != $request->branch) {
-            $oldBranch = X_Branch::find($booking->branch_id)?->name ?? 'null';
+        if ($booking->branch_code != $request->branch) {
+            $oldBranch = X_Branch::find($booking->branch_code)?->name ?? 'null';
             $newBranch = X_Branch::find($request->branch)?->name ?? 'null';
             $rem[] = "Branch Changed from {$oldBranch} to {$newBranch}";
-            $booking->branch_id = $request->branch;
+            $booking->branch_code = $request->branch;
         }
 
-        if ($booking->location_id != $request->location_id) {
-            $rem[] = "Location Changed from " . $booking->location_id . " to " . $request->location_id;
-            $booking->location_id = $request->location_id;
+        if ($booking->location_code != $request->location_code) {
+            $rem[] = "Location Changed from " . $booking->location_code . " to " . $request->location_code;
+            $booking->location_code = $request->location_code;
         }
 
         if ($booking->location_other != $request->location_other) {
@@ -3222,9 +3075,9 @@ class BookingCrudController extends CrudController
         }
     }
 
-    public function getStateByLocation($location_id)
+    public function getStateByLocation($location_code)
     {
-        $location = PinCodes::where('id', $location_id)->first(['id', 'parent', 'level']);
+        $location = PinCodes::where('id', $location_code)->first(['id', 'parent', 'level']);
 
         if (!$location) {
             return response()->json(null);
@@ -3489,9 +3342,9 @@ class BookingCrudController extends CrudController
     {
         $booking = Booking::findOrFail($id);
 
-        $branchName    = X_Branch::find($booking->branch_id)->name ?? 'N/A';
-        $locationName  = !empty($booking->location_id) && $booking->location_id > 0
-            ? (X_Location::find($booking->location_id)->name ?? 'N/A')
+        $branchName    = X_Branch::find($booking->branch_code)->name ?? 'N/A';
+        $locationName  = !empty($booking->location_code) && $booking->location_code > 0
+            ? (X_Location::find($booking->location_code)->name ?? 'N/A')
             : ($booking->location_other ?? 'N/A');
         $collectorName = $booking->col_by
             ? (User::find($booking->col_by)->name ?? 'N/A')
@@ -4097,8 +3950,8 @@ class BookingCrudController extends CrudController
             $row->exist_oem1 = CommonHelper::enumValueById($t->brand_make_1 ?? null);
 
             // Location logic
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -4207,8 +4060,8 @@ class BookingCrudController extends CrudController
             $row->exchange_bonus  = '₹ ' . number_format($t->exchange_bonus ?? 0);
 
             // Location logic (same as Exchange)
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -4319,8 +4172,8 @@ class BookingCrudController extends CrudController
             $row->new_vehicle_exc_bonus  = '₹ ' . number_format($t->new_vehicle_exc_bonus ?? 0);
 
             // Location logic (same as Exchange)
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -4399,7 +4252,7 @@ class BookingCrudController extends CrudController
         $query = $this->getBaseQuery();
 
         // Left join finance table
-        $query->leftJoin('xcelr8_finance as xf', 'bookings.id', '=', 'xf.bid');
+        $query->leftJoin('xlr8_booking_finance as xf', 'bookings.id', '=', 'xf.bid');
 
         // Common conditions
         $query->where('bookings.status', '!=', 2)
@@ -4450,8 +4303,8 @@ class BookingCrudController extends CrudController
             $row->finance_status = $t->finance_status == 1 ? 'Pending' : ($t->finance_status == 2 ? 'Complete' : 'N/A');
 
             // Location logic
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -4552,8 +4405,8 @@ class BookingCrudController extends CrudController
             $row->new_vehicle_exc_bonus  = '₹ ' . number_format($t->new_vehicle_exc_bonus ?? 0);
 
             // Location logic (same as Exchange)
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -4664,8 +4517,8 @@ class BookingCrudController extends CrudController
             // $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
 
             // Location logic
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -4766,8 +4619,8 @@ class BookingCrudController extends CrudController
     //         $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
 
     //         // Location logic
-    //         $location = $t->location_id && $t->location_id > 0
-    //             ? (X_Location::find($t->location_id)->name ?? 'N/A')
+    //         $location = $t->location_code && $t->location_code > 0
+    //             ? (X_Location::find($t->location_code)->name ?? 'N/A')
     //             : ($t->location_other ?? 'N/A');
 
     //         $row->location = $location;
@@ -4858,8 +4711,8 @@ class BookingCrudController extends CrudController
             // $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
 
 
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -4955,8 +4808,8 @@ class BookingCrudController extends CrudController
             $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
             // $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
 
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+            $location = $t->location_code && $t->location_code > 0
+                ? (X_Location::find($t->location_code)->name ?? 'N/A')
                 : ($t->location_other ?? 'N/A');
 
             $row->location = $location;
@@ -5016,8 +4869,8 @@ class BookingCrudController extends CrudController
         // Cache the query for 1 hour
         $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
             // Bulk fetch bookings
-            $bookings = DB::table('xcelr8_booking_master as bm')
-                ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+            $bookings = DB::table('xlr8_booking_master as bm')
+                ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
                 ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
                 ->whereIn('bm.status', [1, 4, 6, 8])
                 ->select(
@@ -5042,7 +4895,7 @@ class BookingCrudController extends CrudController
                 ->groupBy('group_key');
 
             // Bulk fetch booking amounts
-            $bookingAmounts = DB::table('xcelr8_booking_amount')
+            $bookingAmounts = DB::table('xlr8_booking_amount')
                 ->where('status', 1)
                 ->select('bid', DB::raw('SUM(amount) as total_amount'))
                 ->groupBy('bid')
@@ -5052,7 +4905,7 @@ class BookingCrudController extends CrudController
 
 
             // Bulk fetch exchange and scrappage pending statuses
-            $exchanges = DB::table('xcelr8_exchange')
+            $exchanges = DB::table('xlr8_exchange')
                 ->whereIn('verification_status', [0, null])
                 ->select('bid', 'purchase_type')
                 ->get()
@@ -5065,7 +4918,7 @@ class BookingCrudController extends CrudController
                 });
 
             // Bulk fetch finance pending statuses
-            $finances = DB::table('xcelr8_finance')
+            $finances = DB::table('xlr8_booking_finance')
                 ->whereIn('verification_status', [0, null])
                 ->pluck('bid')
                 ->mapWithKeys(fn($bid) => [$bid => 1]);
@@ -5261,7 +5114,7 @@ class BookingCrudController extends CrudController
         $query->where('bookings.status', 2); // Invoiced
 
         // Already insured bookings exclude karo
-        $insuredBookingIds = DB::table('xcelr8_booking_insurance')
+        $insuredBookingIds = DB::table('xlr8_booking_insurance')
             ->pluck('bid')
             ->toArray();
 
@@ -5366,7 +5219,7 @@ class BookingCrudController extends CrudController
         $query->where('bookings.status', 2); // Invoiced
 
         // Already RTO processed bookings exclude karo
-        $rtoDoneIds = DB::table('xcelr8_booking_rto')
+        $rtoDoneIds = DB::table('xlr8_booking_rto')
             ->where('status', 2)   // ← yahan apna table ka status column use karo
             ->pluck('bid')
             ->toArray();
@@ -5473,7 +5326,7 @@ class BookingCrudController extends CrudController
         $query->where('bookings.status', 2); // Invoiced
 
         // Already delivered bookings exclude karo
-        $deliveredIds = DB::table('xcelr8_booking_delivered')
+        $deliveredIds = DB::table('xlr8_booking_delivered')
             ->where('status', 1)
             ->pluck('bid')
             ->toArray();
@@ -5558,10 +5411,10 @@ class BookingCrudController extends CrudController
         $this->data['title'] = 'Pending Registration';
 
         $query = $this->getBaseQuery()
-            ->join('xcelr8_booking_rto', function ($join) {
-                $join->on('xcelr8_booking_rto.bid', '=', 'bookings.id')
-                    ->where('xcelr8_booking_rto.status', 1)
-                    ->whereNull('xcelr8_booking_rto.vh_rgn_no');
+            ->join('xlr8_booking_rto', function ($join) {
+                $join->on('xlr8_booking_rto.bid', '=', 'bookings.id')
+                    ->where('xlr8_booking_rto.status', 1)
+                    ->whereNull('xlr8_booking_rto.vh_rgn_no');
             });
 
         if ($request->has('customer_type') && $request->customer_type !== 'all') {
@@ -6537,9 +6390,9 @@ class BookingCrudController extends CrudController
         $data['models']        = XpricingHelper::getModelsX() ?? [];
         $data['variants']      = XpricingHelper::getVehiclesX() ?? [];
         $data['colors']        = XpricingHelper::getColorX() ?? [];
-        $data['branch']        = optional(X_Branch::find($booking->branch_id))->name ?? 'N/A';
-        $data['location']      = $booking->location_id
-            ? optional(X_Location::find($booking->location_id))->name
+        $data['branch']        = optional(X_Branch::find($booking->branch_code))->name ?? 'N/A';
+        $data['location']      = $booking->location_code
+            ? optional(X_Location::find($booking->location_code))->name
             : ($booking->location_other ?? 'N/A');
         $data['insurances']    = XlInsurance::select('id', 'name', 'short_name')->get()->toArray();
         $data['allusers']      = XpricingHelper::selectUsers() ?? [];
@@ -6728,9 +6581,9 @@ class BookingCrudController extends CrudController
         $data['models']       = XpricingHelper::getModelsX() ?? [];
         $data['variants']     = XpricingHelper::getVehiclesX() ?? [];
         $data['colors']       = XpricingHelper::getColorX() ?? [];
-        $data['branch']       = optional(X_Branch::find($booking->branch_id))->name ?? 'N/A';
-        $data['location']     = $booking->location_id
-            ? optional(X_Location::find($booking->location_id))->name
+        $data['branch']       = optional(X_Branch::find($booking->branch_code))->name ?? 'N/A';
+        $data['location']     = $booking->location_code
+            ? optional(X_Location::find($booking->location_code))->name
             : ($booking->location_other ?? 'N/A');
         $data['rto_rules']    = XlRtoRules::select('sale_type', 'permit', 'body_type', 'reg_no_type', 'trc_number', 'trc_pay', 'trc_copy', 'app_no', 'tax_pay', 'veh_reg', 'tax_copy')
             ->get()
@@ -6981,8 +6834,8 @@ class BookingCrudController extends CrudController
             })
             ->toArray();
 
-        $branch = X_Branch::find($booking->branch_id)->name ?? 'N/A';
-        $location = X_Location::find($booking->location_id)->name ?? $booking->location_other ?? 'N/A';
+        $branch = X_Branch::find($booking->branch_code)->name ?? 'N/A';
+        $location = X_Location::find($booking->location_code)->name ?? $booking->location_other ?? 'N/A';
         $financier = XlFinancier::find($booking->financier)->name ?? 'N/A'; // Assuming financier is ID
         $bchasis = $booking->chasis_no ?? 'N/A'; // Note: Typo in variable name, consistent with blade
 
@@ -7172,8 +7025,8 @@ class BookingCrudController extends CrudController
         // FIXED: Use Backpack's auth helper
         $uid = backpack_user()->id ?? null;  // Safe fallback if no user (though middleware should prevent this)
 
-        $data['branch'] = X_Branch::find($booking->branch_id)->name ?? 'N/A';
-        $data['location'] = ($booking->location_id > 0) ? X_Location::find($booking->location_id)->name : $booking->location_other;
+        $data['branch'] = X_Branch::find($booking->branch_code)->name ?? 'N/A';
+        $data['location'] = ($booking->location_code > 0) ? X_Location::find($booking->location_code)->name : $booking->location_other;
         $acc = explode(',', $booking->accessories);
         foreach ($acc as $a) {
             $accessory = Xessories::find($a);
@@ -7380,9 +7233,9 @@ class BookingCrudController extends CrudController
         // Prepare shared $data array
         $data = [];
 
-        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
-        $data['location'] = $booking->location_id > 0
-            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+        $data['branch']   = X_Branch::find($booking->branch_code)?->name ?? 'N/A';
+        $data['location'] = $booking->location_code > 0
+            ? (X_Location::find($booking->location_code)?->name ?? 'N/A')
             : ($booking->location_other ?? 'N/A');
 
         // Accessories
@@ -7714,9 +7567,9 @@ class BookingCrudController extends CrudController
         // Prepare shared $data array
         $data = [];
 
-        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
-        $data['location'] = $booking->location_id > 0
-            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+        $data['branch']   = X_Branch::find($booking->branch_code)?->name ?? 'N/A';
+        $data['location'] = $booking->location_code > 0
+            ? (X_Location::find($booking->location_code)?->name ?? 'N/A')
             : ($booking->location_other ?? 'N/A');
 
         // Accessories
@@ -7796,9 +7649,9 @@ class BookingCrudController extends CrudController
         // Prepare shared $data array
         $data = [];
 
-        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
-        $data['location'] = $booking->location_id > 0
-            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+        $data['branch']   = X_Branch::find($booking->branch_code)?->name ?? 'N/A';
+        $data['location'] = $booking->location_code > 0
+            ? (X_Location::find($booking->location_code)?->name ?? 'N/A')
             : ($booking->location_other ?? 'N/A');
 
         // Accessories
@@ -8667,7 +8520,7 @@ class BookingCrudController extends CrudController
      */
     public function refundedUpdate(Request $request, $id)
     {
-        // 1. Find the booking (using xcelr8_booking_master table)
+        // 1. Find the booking (using xlr8_booking_master table)
         $booking = Booking::findOrFail($id);
 
         // 2. Security check: only allow if already refunded
@@ -8682,7 +8535,7 @@ class BookingCrudController extends CrudController
             'transaction_details'  => 'nullable|string|max:255',
             'remark'               => 'nullable|string|max:1000',
             'pay_proof'            => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048', // 2MB
-            'booking_id'           => 'required|integer|exists:xcelr8_booking_master,id',
+            'booking_id'           => 'required|integer|exists:xlr8_booking_master,id',
         ]);
 
         if ($validator->fails()) {
@@ -8783,7 +8636,7 @@ class BookingCrudController extends CrudController
         $ovin = "STOCK VIN-" . $py;
         $cvin = "STOCK VIN-" . $cy;
 
-        $locbr = DB::table('xcelr8_us_location')
+        $locbr = DB::table('xlr8_us_location')
             ->whereNotNull('abbr')
             ->where('status', 1)
             ->pluck('abbr')
@@ -8793,14 +8646,14 @@ class BookingCrudController extends CrudController
             ->toArray() ?: ['BKN', 'CHR'];
 
 
-        $stocks = DB::table('xcelr8_stock_master as stock')
-            ->leftJoin('xcelr8_vehicle_master as vm', 'stock.vh_id', '=', 'vm.id')
+        $stocks = DB::table('xlr8_stock_master as stock')
+            ->leftJoin('xlr8_vehicle_master as vm', 'stock.vh_id', '=', 'vm.id')
 
             // If vh_id join gives 0 rows, try this instead (uncomment and comment above line):
-            // ->leftJoin('xcelr8_vehicle_master as vm', 'stock.model_code', '=', 'vm.code')
+            // ->leftJoin('xlr8_vehicle_master as vm', 'stock.model_code', '=', 'vm.code')
 
             ->leftJoin('bmpl_enum_master as seg', 'vm.segment_id', '=', 'seg.id')
-            ->leftJoin('xcelr8_us_location as loc', 'stock.location_id', '=', 'loc.id')
+            ->leftJoin('xlr8_us_location as loc', 'stock.location_code', '=', 'loc.id')
 
             ->selectRaw("
                 stock.id,
@@ -9006,10 +8859,10 @@ class BookingCrudController extends CrudController
         $this->data['title'] = 'Live Order Report';
 
         // Correct table + prevent duplicates with GROUP BY
-        $vehicles = DB::table('xcelr8_vehicle_master as vm')
+        $vehicles = DB::table('xlr8_vehicle_master as vm')
             ->where('vm.lorder', '>', 0)
-            ->leftJoin('xcelr8_stock_master as stock', 'vm.id', '=', 'stock.vh_id')
-            ->leftJoin('xcelr8_us_location as loc', 'stock.location_id', '=', 'loc.id')
+            ->leftJoin('xlr8_stock_master as stock', 'vm.id', '=', 'stock.vh_id')
+            ->leftJoin('xlr8_us_location as loc', 'stock.location_code', '=', 'loc.id')
             ->select(
                 'vm.segment_id',
                 'vm.custom_model',
@@ -9073,8 +8926,8 @@ class BookingCrudController extends CrudController
         // Cache the query for 1 hour
         $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
             // Bulk fetch bookings
-            $bookings = DB::table('xcelr8_booking_master as bm')
-                ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+            $bookings = DB::table('xlr8_booking_master as bm')
+                ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
                 ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
                 ->whereIn('bm.status', [1, 4, 6, 8])
                 ->select(
@@ -9099,34 +8952,34 @@ class BookingCrudController extends CrudController
                 ->groupBy('group_key');
 
             // Bulk fetch booking amounts
-            $bookingAmounts = DB::table('xcelr8_booking_amount')
+            $bookingAmounts = DB::table('xlr8_booking_amount')
                 ->where('status', 1)
                 ->select('bid', DB::raw('SUM(amount) as total_amount'))
                 ->groupBy('bid')
                 ->pluck('total_amount', 'bid');
 
             // Bulk fetch live orders
-            $liveOrders = DB::table('xcelr8_vehicle_master as vm')
+            $liveOrders = DB::table('xlr8_vehicle_master as vm')
                 ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
                 ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
                 ->groupBy('group_key')
                 ->pluck('lorder', 'group_key');
 
             // Bulk fetch stock
-            $stocksRaw = DB::table('xcelr8_stock_master as sm')
-                ->join('xcelr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+            $stocksRaw = DB::table('xlr8_stock_master as sm')
+                ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
                 ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-                ->join('xcelr8_us_location as ul', 'sm.location_id', '=', 'ul.id')
-                ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_id, COUNT(sm.id) as quantity')
-                ->groupBy('group_key', 'ul.branch_id')
+                ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
+                ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_code, COUNT(sm.id) as quantity')
+                ->groupBy('group_key', 'ul.branch_code')
                 ->get();
 
             $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
-                return $group->groupBy('branch_id')->map(fn($bg) => $bg->sum('quantity'));
+                return $group->groupBy('branch_code')->map(fn($bg) => $bg->sum('quantity'));
             });
 
             // Bulk fetch exchange and scrappage pending statuses
-            $exchanges = DB::table('xcelr8_exchange')
+            $exchanges = DB::table('xlr8_exchange')
                 ->whereIn('verification_status', [0, null])
                 ->select('bid', 'purchase_type')
                 ->get()
@@ -9139,7 +8992,7 @@ class BookingCrudController extends CrudController
                 });
 
             // Bulk fetch finance pending statuses
-            $finances = DB::table('xcelr8_finance')
+            $finances = DB::table('xlr8_booking_finance')
                 ->whereIn('verification_status', [0, null])
                 ->pluck('bid')
                 ->mapWithKeys(fn($bid) => [$bid => 1]);
@@ -9318,15 +9171,15 @@ class BookingCrudController extends CrudController
         ];
 
         $stkbr = [
-            'stock_total' => DB::table('xcelr8_stock_master')->count('id'),
-            'stock_bkn' => DB::table('xcelr8_stock_master')
-                ->join('xcelr8_us_location', 'xcelr8_stock_master.location_id', '=', 'xcelr8_us_location.id')
-                ->where('xcelr8_us_location.branch_id', 1)
-                ->count('xcelr8_stock_master.id'),
-            'stock_chr' => DB::table('xcelr8_stock_master')
-                ->join('xcelr8_us_location', 'xcelr8_stock_master.location_id', '=', 'xcelr8_us_location.id')
-                ->where('xcelr8_us_location.branch_id', 2)
-                ->count('xcelr8_stock_master.id'),
+            'stock_total' => DB::table('xlr8_stock_master')->count('id'),
+            'stock_bkn' => DB::table('xlr8_stock_master')
+                ->join('xlr8_us_location', 'xlr8_stock_master.location_code', '=', 'xlr8_us_location.id')
+                ->where('xlr8_us_location.branch_code', 1)
+                ->count('xlr8_stock_master.id'),
+            'stock_chr' => DB::table('xlr8_stock_master')
+                ->join('xlr8_us_location', 'xlr8_stock_master.location_code', '=', 'xlr8_us_location.id')
+                ->where('xlr8_us_location.branch_code', 2)
+                ->count('xlr8_stock_master.id'),
         ];
 
         $title = 'Consolidated Booking Report';
@@ -9460,8 +9313,8 @@ class BookingCrudController extends CrudController
         // ────────────────────────────────────────────────
         // Exact same complex logic jo photo mein data de raha tha
         // ────────────────────────────────────────────────
-        $bookings = DB::table('xcelr8_booking_master as bm')
-            ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+        $bookings = DB::table('xlr8_booking_master as bm')
+            ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
             ->whereIn('bm.status', [1, 4, 6, 8])
             ->select(
@@ -9485,31 +9338,31 @@ class BookingCrudController extends CrudController
             ->get()
             ->groupBy('group_key');
 
-        $bookingAmounts = DB::table('xcelr8_booking_amount')
+        $bookingAmounts = DB::table('xlr8_booking_amount')
             ->where('status', 1)
             ->select('bid', DB::raw('SUM(amount) as total_amount'))
             ->groupBy('bid')
             ->pluck('total_amount', 'bid');
 
-        $liveOrders = DB::table('xcelr8_vehicle_master as vm')
+        $liveOrders = DB::table('xlr8_vehicle_master as vm')
             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
             ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
             ->groupBy('group_key')
             ->pluck('lorder', 'group_key');
 
-        $stocksRaw = DB::table('xcelr8_stock_master as sm')
-            ->join('xcelr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+        $stocksRaw = DB::table('xlr8_stock_master as sm')
+            ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->join('xcelr8_us_location as ul', 'sm.location_id', '=', 'ul.id')
-            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_id, COUNT(sm.id) as quantity')
-            ->groupBy('group_key', 'ul.branch_id')
+            ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
+            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_code, COUNT(sm.id) as quantity')
+            ->groupBy('group_key', 'ul.branch_code')
             ->get();
 
         $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
-            return $group->groupBy('branch_id')->map(fn($bg) => $bg->sum('quantity'));
+            return $group->groupBy('branch_code')->map(fn($bg) => $bg->sum('quantity'));
         });
 
-        $exchanges = DB::table('xcelr8_exchange')
+        $exchanges = DB::table('xlr8_exchange')
             ->whereIn('verification_status', [0, null])
             ->select('bid', 'purchase_type')
             ->get()
@@ -9521,7 +9374,7 @@ class BookingCrudController extends CrudController
                 ];
             });
 
-        $finances = DB::table('xcelr8_finance')
+        $finances = DB::table('xlr8_booking_finance')
             ->whereIn('verification_status', [0, null])
             ->pluck('bid')
             ->mapWithKeys(fn($bid) => [$bid => 1]);
@@ -9740,8 +9593,8 @@ class BookingCrudController extends CrudController
         // ────────────────────────────────────────────────
         // Grouped bookings by vehicle
         // ────────────────────────────────────────────────
-        $bookings = DB::table('xcelr8_booking_master as bm')
-            ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+        $bookings = DB::table('xlr8_booking_master as bm')
+            ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
             ->whereIn('bm.status', [1, 4, 6, 8])
             ->select(
@@ -9765,10 +9618,10 @@ class BookingCrudController extends CrudController
         // ────────────────────────────────────────────────
         // Branch-wise stock (multiple branches as per photo)
         // ────────────────────────────────────────────────
-        $stocksRaw = DB::table('xcelr8_stock_master as sm')
-            ->join('xcelr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+        $stocksRaw = DB::table('xlr8_stock_master as sm')
+            ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->join('xcelr8_us_location as ul', 'sm.location_id', '=', 'ul.id')
+            ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
             ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.name as branch_name, COUNT(sm.id) as quantity')
             ->groupBy('group_key', 'ul.name')
             ->get();
@@ -9803,7 +9656,7 @@ class BookingCrudController extends CrudController
             $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
 
             $payments = $liveGroup->filter(function ($b) {
-                $paid = DB::table('xcelr8_booking_amount')
+                $paid = DB::table('xlr8_booking_amount')
                     ->where('bid', $b->id)
                     ->where('status', 1)
                     ->sum('amount');
@@ -9992,15 +9845,15 @@ class BookingCrudController extends CrudController
         $this->data['title'] = 'Pending Actions Report';
 
         // Quick check if any pending records exist
-        $pendingCount = DB::table('xcelr8_booking_master')->whereIn('status', [1, 6, 8])->count();
+        $pendingCount = DB::table('xlr8_booking_master')->whereIn('status', [1, 6, 8])->count();
         if ($pendingCount === 0) {
             session()->flash('info', 'No pending bookings found (status 1,6,8 not present in table).');
         }
 
-        $query = DB::table('xcelr8_booking_master as b')
-            ->leftJoin('xcelr8_vehicle_master as vm', 'b.vh_id', '=', 'vm.id')
+        $query = DB::table('xlr8_booking_master as b')
+            ->leftJoin('xlr8_vehicle_master as vm', 'b.vh_id', '=', 'vm.id')
             ->leftJoin('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->leftJoin('xcelr8_us_location as loc', 'b.location_id', '=', 'loc.id')
+            ->leftJoin('xlr8_us_location as loc', 'b.location_code', '=', 'loc.id')
             ->whereIn('b.status', [1, 6, 8])
             ->selectRaw('
             COALESCE(em.value, "Unknown") as segment,

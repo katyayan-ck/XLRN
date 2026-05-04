@@ -504,7 +504,7 @@
                 </div>
 
                 <!-- Vehicle Details Section -->
-                <div class="card p-3 mt-3">
+                {{-- <div class="card p-3 mt-3">
                     <div class="card-body">
                         <h2 class="mb-3">Vehicle Details</h2>
                         <div class="row">
@@ -582,7 +582,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> --}}
 
                 <!-- Booking Details Section -->
                 <div class="card p-3 mt-3">
