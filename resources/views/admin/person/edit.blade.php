@@ -37,6 +37,16 @@
                 </div>
                 <div class="card-body">
 
+                    @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+
                     <form method="POST" action="{{ backpack_url('person/' . $person->id) }}">
                         @csrf
                         @method('PUT')
@@ -72,6 +82,20 @@
 
                             <!-- Editable Fields -->
                             <div class="col-md-3 mb-3">
+                                <label>Salutation</label>
+                                <select name="salutation" class="form-control form-select">
+                                    <option value="">Select</option>
+                                    <option value="Mr" {{ old('salutation', $person->salutation) == 'Mr' ? 'selected' :
+                                        '' }}>Mr</option>
+                                    <option value="Mrs" {{ old('salutation', $person->salutation) == 'Mrs' ? 'selected'
+                                        : '' }}>Mrs</option>
+                                    <option value="Ms" {{ old('salutation', $person->salutation) == 'Ms' ? 'selected' :
+                                        '' }}>Ms</option>
+                                    <option value="Dr" {{ old('salutation', $person->salutation) == 'Dr' ? 'selected' :
+                                        '' }}>Dr</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
                                 <label>First Name <span class="text-danger">*</span></label>
                                 <input type="text" name="first_name" class="form-control"
                                     value="{{ old('first_name', $person->first_name) }}" required>
@@ -95,33 +119,19 @@
                                     value="{{ old('display_name', $person->display_name) }}">
                             </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Salutation</label>
-                                <select name="salutation" class="form-control form-select">
-                                    <option value="">Select</option>
-                                    <option value="Mr" {{ old('salutation', $person->salutation) == 'Mr' ? 'selected' :
-                                        '' }}>Mr</option>
-                                    <option value="Mrs" {{ old('salutation', $person->salutation) == 'Mrs' ? 'selected'
-                                        : '' }}>Mrs</option>
-                                    <option value="Ms" {{ old('salutation', $person->salutation) == 'Ms' ? 'selected' :
-                                        '' }}>Ms</option>
-                                    <option value="Dr" {{ old('salutation', $person->salutation) == 'Dr' ? 'selected' :
-                                        '' }}>Dr</option>
-                                </select>
-                            </div>
+
 
                             <div class="col-md-3 mb-3">
                                 <label>Gender</label>
                                 <select name="gender" class="form-control form-select">
-                                    <option value="">Select</option>
-                                    <option value="Male" {{ old('gender', $person->gender) == 'Male' ? 'selected' : ''
+                                    <option value="male" {{ old('gender', $person->gender) == 'male' ? 'selected' : ''
                                         }}>Male</option>
-                                    <option value="Female" {{ old('gender', $person->gender) == 'Female' ? 'selected' :
+                                    <option value="female" {{ old('gender', $person->gender) == 'female' ? 'selected' :
                                         '' }}>Female</option>
-                                    <option value="Other" {{ old('gender', $person->gender) == 'Other' ? 'selected' : ''
+                                    <option value="other" {{ old('gender', $person->gender) == 'other' ? 'selected' : ''
                                         }}>Other</option>
-                                    <option value="Prefer not to say" {{ old('gender', $person->gender) == 'Prefer not
-                                        to say' ? 'selected' : '' }}>Prefer not to say</option>
+                                    <option value="prefer_not_to_say" {{ old('gender', $person->gender) ==
+                                        'prefer_not_to_say' ? 'selected' : '' }}>Prefer not to say</option>
                                 </select>
                             </div>
 
@@ -164,15 +174,14 @@
                             <div class="col-md-3 mb-3">
                                 <label>Marital Status</label>
                                 <select name="marital_status" class="form-control form-select">
-                                    <option value="">Select</option>
-                                    <option value="Single" {{ old('marital_status', $person->marital_status) == 'Single'
+                                    <option value="single" {{ old('marital_status', $person->marital_status) == 'single'
                                         ? 'selected' : '' }}>Single</option>
-                                    <option value="Married" {{ old('marital_status', $person->marital_status) ==
-                                        'Married' ? 'selected' : '' }}>Married</option>
-                                    <option value="Divorced" {{ old('marital_status', $person->marital_status) ==
-                                        'Divorced' ? 'selected' : '' }}>Divorced</option>
-                                    <option value="Widowed" {{ old('marital_status', $person->marital_status) ==
-                                        'Widowed' ? 'selected' : '' }}>Widowed</option>
+                                    <option value="married" {{ old('marital_status', $person->marital_status) ==
+                                        'married' ? 'selected' : '' }}>Married</option>
+                                    <option value="divorced" {{ old('marital_status', $person->marital_status) ==
+                                        'divorced' ? 'selected' : '' }}>Divorced</option>
+                                    <option value="widowed" {{ old('marital_status', $person->marital_status) ==
+                                        'widowed' ? 'selected' : '' }}>Widowed</option>
                                 </select>
                             </div>
 

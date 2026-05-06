@@ -96,27 +96,25 @@
 
     // ==================== COLUMN DEFINITION (Flat - No Grouping) ====================
     const columnDefs = [
-        ...ALL_COLUMNS.filter(col => ['serial_no', 'code', 'name', 'branch'].includes(col.field))
-            .map(col => {
-                if (['serial_no', 'code'].includes(col.field)) {
-                    col.pinned = 'left';
-                }
-                return col;
-            }),
+    ...ALL_COLUMNS.map(col => {
 
-        ...ALL_COLUMNS.filter(col => ['city', 'state', 'pincode'].includes(col.field)),
+        // LEFT PIN
+        if (['serial_no', 'code'].includes(col.field)) {
+            col.pinned = 'left';
+        }
 
-        ...ALL_COLUMNS.filter(col => ['is_active'].includes(col.field)),
-
-        ...ALL_COLUMNS.filter(col => ['action'].includes(col.field)).map(col => {
+        // RIGHT PIN
+        if (col.field === 'action') {
             col.pinned = 'right';
             col.width = 140;
             col.sortable = false;
             col.filter = false;
             col.cellRenderer = 'htmlRenderer';
-            return col;
-        })
-    ];
+        }
+
+        return col;
+    })
+];
 
     const gridOptions = {
         columnDefs: columnDefs,
@@ -138,11 +136,7 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = [
-                'serial_no', 'code', 'name', 'branch',
-                'city', 'state', 'pincode',
-                'is_active', 'action'
-            ];
+            const defaultFields = ALL_COLUMNS.map(col => col.field);
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
@@ -250,11 +244,7 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = [
-                'serial_no', 'code', 'name', 'branch',
-                'city', 'state', 'pincode',
-                'action'
-            ];
+            const defaultFields = ALL_COLUMNS.map(col => col.field);
             const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
 
             gridApi.setColumnsVisible(allCols, false);

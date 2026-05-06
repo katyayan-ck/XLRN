@@ -54,9 +54,7 @@ class PersonBankingDetailCrudController extends CrudController
             $mapped['serial_no'] = $index + 1;
 
             $mapped['is_verified'] = $banking->is_verified;
-            $mapped['person_name'] = $banking->person
-                ? $banking->person->first_name . ' ' . $banking->person->last_name
-                : '—';
+            $mapped['person_code'] = $banking->person_code ?? '—';
 
             $editUrl = backpack_url("person-banking-detail/{$banking->id}/edit");
 
@@ -73,7 +71,7 @@ class PersonBankingDetailCrudController extends CrudController
             'gridConfig' => [
                 'columns' => [
                     ['field' => 'serial_no',           'headerName' => 'S.No'],
-                    ['field' => 'person_name',         'headerName' => 'Person'],
+                    ['field' => 'person_code',         'headerName' => 'Person code'],
 
                     ['field' => 'bank_name',           'headerName' => 'Bank'],
                     ['field' => 'account_holder_name', 'headerName' => 'Holder Name'],

@@ -102,12 +102,19 @@ class ColorCrudController extends CrudController
         $brand = Brand::findOrFail($validated['brand_id']);
 
         $color = new Color();
+
         $color->brand_code = $brand->code;
-        $color->model_code = 'DEFAULT'; // ya actual model_code
+        $color->segment_code = null;
+        $color->sub_segment_code = null;
+        $color->model_code = 'DEFAULT';
+
+        $color->vehicle_variant_code = 'NA'; // 🔥 REQUIRED FIX
+
         $color->code       = strtoupper($validated['code']);
         $color->name       = $validated['name'];
         $color->hex_code   = strtoupper($validated['hex_code']);
         $color->is_active  = $validated['is_active'] ?? true;
+
         $color->save();
 
         \Alert::success('Color created successfully!')->flash();

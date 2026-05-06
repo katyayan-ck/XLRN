@@ -63,7 +63,7 @@
                             </div>
 
                             <!-- Editable Fields -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Person</label>
                                 <select name="person_code" class="form-control form-select" required>
                                     @foreach($persons as $p)
@@ -92,13 +92,13 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-5 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label>Address Line 1 <span class="text-danger">*</span></label>
                                 <input type="text" name="address_line_1" class="form-control"
                                     value="{{ old('address_line_1', $address->address_line_1) }}" required>
                             </div>
 
-                            <div class="col-md-5 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label>Address Line 2</label>
                                 <input type="text" name="address_line_2" class="form-control"
                                     value="{{ old('address_line_2', $address->address_line_2) }}">
@@ -153,8 +153,15 @@
 
                             <div class="col-md-3 mb-3">
                                 <label>Country</label>
-                                <input type="text" name="country" class="form-control"
-                                    value="{{ old('country', $address->country ?? 'India') }}">
+                                <select name="country" class="form-control form-select" required>
+                                    <option value="">Select Country</option>
+                                    <option value="India" {{ old('country', $address->country ?? '') == 'India' ?
+                                        'selected' : '' }}>India</option>
+                                    <option value="USA" {{ old('country', $address->country ?? '') == 'USA' ? 'selected'
+                                        : '' }}>USA</option>
+                                    <option value="UK" {{ old('country', $address->country ?? '') == 'UK' ? 'selected' :
+                                        '' }}>UK</option>
+                                </select>
                             </div>
                         </div>
 

@@ -37,6 +37,16 @@
                                     <option value="legal_entity">Legal Entity (Firm/Company)</option>
                                 </select>
                             </div>
+                            <div class="col-md-3 mb-3">
+                                <label>Salutation</label>
+                                <select name="salutation" class="form-control form-select">
+                                    <option value="">Select</option>
+                                    <option value="Mr">Mr</option>
+                                    <option value="Mrs">Mrs</option>
+                                    <option value="Ms">Ms</option>
+                                    <option value="Dr">Dr</option>
+                                </select>
+                            </div>
 
                             <div class="col-md-3 mb-3">
                                 <label>First Name <span class="text-danger">*</span></label>
@@ -58,16 +68,7 @@
                                 <input type="text" name="display_name" class="form-control">
                             </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Salutation</label>
-                                <select name="salutation" class="form-control form-select">
-                                    <option value="">Select</option>
-                                    <option value="Mr">Mr</option>
-                                    <option value="Mrs">Mrs</option>
-                                    <option value="Ms">Ms</option>
-                                    <option value="Dr">Dr</option>
-                                </select>
-                            </div>
+
 
                             <div class="col-md-3 mb-3">
                                 <label>Gender</label>

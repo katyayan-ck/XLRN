@@ -58,11 +58,7 @@
                                 <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                             </div>
 
-                            <div class="col-md-11 mb-3">
-                                <label>Description</label>
-                                <textarea name="description" class="form-control"
-                                    rows="3">{{ old('description') }}</textarea>
-                            </div>
+                            
 
                             <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>

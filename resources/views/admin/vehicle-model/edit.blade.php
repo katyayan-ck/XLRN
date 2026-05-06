@@ -63,11 +63,11 @@
                             <!-- Editable Fields -->
                             <div class="col-md-3 mb-3">
                                 <label>Brand <span class="text-danger">*</span></label>
-                                <select name="brand_id" class="form-control form-select" required>
+                                <select name="brand_code" class="form-control form-select" required>
                                     <option value="">Select Brand</option>
                                     @foreach($brands as $brand)
-                                    <option value="{{ $brand->id }}" {{ old('brand_id', $vehiclemodel->brand?->id) ==
-                                        $brand->id ? 'selected' : '' }}>
+                                    <option value="{{ $brand->code }}" {{ old('brand_code', $vehiclemodel->brand?->code) ==
+                                        $brand->code ? 'selected' : '' }}>
                                         {{ $brand->name }}
                                     </option>
                                     @endforeach
@@ -76,11 +76,11 @@
 
                             <div class="col-md-3 mb-3">
                                 <label>Segment <span class="text-danger">*</span></label>
-                                <select name="segment_id" class="form-control form-select" required>
+                                <select name="segment_code" class="form-control form-select" required>
                                     <option value="">Select Segment</option>
                                     @foreach($segments as $segment)
-                                    <option value="{{ $segment->id }}" {{ old('segment_id', $vehiclemodel->segment?->id)
-                                        == $segment->id ? 'selected' : '' }}>
+                                    <option value="{{ $segment->code }}" {{ old('segment_code', $vehiclemodel->segment?->code)
+                                        == $segment->code ? 'selected' : '' }}>
                                         {{ $segment->name }}
                                     </option>
                                     @endforeach
@@ -89,11 +89,11 @@
 
                             <div class="col-md-3 mb-3">
                                 <label>Sub Segment (Optional)</label>
-                                <select name="sub_segment_id" class="form-control form-select">
+                                <select name="sub_segment_code" class="form-control form-select">
                                     <option value="">Select Sub Segment</option>
                                     @foreach($subsegments as $subsegment)
-                                    <option value="{{ $subsegment->id }}" {{ old('sub_segment_id', $vehiclemodel->
-                                        subSegment?->id) == $subsegment->id ? 'selected' : '' }}>
+                                    <option value="{{ $subsegment->code }}" {{ old('sub_segment_code', $vehiclemodel->
+                                        subSegment?->code) == $subsegment->code ? 'selected' : '' }}>
                                         {{ $subsegment->name }}
                                     </option>
                                     @endforeach
@@ -101,30 +101,22 @@
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label>OEM Code</label>
-                                <input type="text" name="oem_code" class="form-control text-uppercase"
-                                    value="{{ old('oem_code', $vehiclemodel->oem_code) }}"
+                                <label>OEM Name</label>
+                                <input type="text" name="oem_name" class="form-control text-uppercase"
+                                    value="{{ old('oem_name', $vehiclemodel->oem_name) }}"
                                     style="text-transform: uppercase;">
                                 <small class="text-muted">e.g. BREZ1, EXTER1, NEXON</small>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Model Name <span class="text-danger">*</span></label>
                                 <input type="text" name="name" class="form-control"
                                     value="{{ old('name', $vehiclemodel->name) }}" required>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label>Custom Name (Optional)</label>
-                                <input type="text" name="custom_name" class="form-control"
-                                    value="{{ old('custom_name', $vehiclemodel->custom_name) }}">
-                            </div>
 
-                            <div class="col-md-11 mb-3">
-                                <label>Description</label>
-                                <textarea name="description" class="form-control"
-                                    rows="3">{{ old('description', $vehiclemodel->description) }}</textarea>
-                            </div>
+
+
 
                             <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>

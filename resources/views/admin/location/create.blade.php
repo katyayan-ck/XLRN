@@ -45,19 +45,18 @@
                         <div class="row">
 
                             <!-- Code -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Code <span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control" value="{{ old('code') }}" required>
                             </div>
 
                             <!-- Name -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Name <span class="text-danger">*</span></label>
                                 <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                             </div>
-
                             <!-- Branch -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Branch <span class="text-danger">*</span></label>
                                 <select name="branch_code" class="form-control form-select" required>
                                     <option value="">Select Branch</option>
@@ -70,29 +69,59 @@
                                 </select>
                             </div>
 
+                            <div class="col-md-3 mb-3">
+                                <label>Description</label>
+                                <textarea name="description" class="form-control"></textarea>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Phone</label>
+                                <input type="text" name="phone" class="form-control">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Email</label>
+                                <input type="email" name="email" class="form-control">
+                            </div>
+
+
+
+                            <!-- Address -->
+                            <div class="col-md-6 mb-3">
+                                <label>Address</label>
+                                <textarea name="address" class="form-control" rows="3">{{ old('address') }}</textarea>
+                            </div>
+
                             <!-- City -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>City</label>
                                 <input type="text" name="city" class="form-control" value="{{ old('city') }}">
                             </div>
 
                             <!-- State -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>State</label>
                                 <input type="text" name="state" class="form-control" value="{{ old('state') }}">
                             </div>
 
-                            <!-- Pincode -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <label>Pincode</label>
-                                <input type="text" name="pincode" class="form-control" value="{{ old('pincode') }}">
+                                <input type="text" name="pincode" class="form-control" maxlength="6"
+                                    pattern="[1-9][0-9]{5}" required>
                             </div>
 
-                            <!-- Address -->
-                            <div class="col-md-12 mb-3">
-                                <label>Address</label>
-                                <textarea name="address" class="form-control" rows="3">{{ old('address') }}</textarea>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Latitude</label><small class="text-muted"> (Range: -90 to 90)</small>
+                                <input type="text" name="latitude" class="form-control">
                             </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Longitude</label><small class="text-muted"> (Range: -180 to 180)</small>
+                                <input type="text" name="longitude" class="form-control">
+                            </div>
+
+
 
                             <!-- Status -->
                             <div class="col-md-6 mb-3">

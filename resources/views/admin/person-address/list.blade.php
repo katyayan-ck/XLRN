@@ -32,7 +32,7 @@
     let gridApi;
 
         const columnDefs = [
-        ...getCols(['serial_no', 'person_name']).map(col => {
+        ...getCols(['serial_no', 'person_code', 'person_name']).map(col => {
             if (col.field === 'serial_no') {
                 col.pinned = 'left';
                 col.width = 80;
@@ -41,19 +41,21 @@
         }),
 
         ...getCols([
-            'address_type',
-            'address_line_1',
-            'address_line_2',
-            'landmark',
-            'city',
-            'taluka',
-            'district',
-            'state',
-            'country',
-            'pincode',
-            'latitude',
-            'longitude'
-        ]),
+    'person_code',
+    'person_name',
+    'address_type',
+    'address_line_1',
+    'address_line_2',
+    'landmark',
+    'city',
+    'taluka',
+    'district',
+    'state',
+    'country',
+    'pincode',
+    'latitude',
+    'longitude'
+]),
         ...getCols(['action']).map(col => {
             col.pinned = 'right';
             col.width = 140;
@@ -85,15 +87,23 @@
             gridApi = params.api;
 
             const defaultFields = [
-                'serial_no',
-                'person_name',
-                'address_type',
-                'address_line_1',
-                'city',
-                'state',
-                'pincode',
-                'action'
-            ];
+    'serial_no',
+    'person_code',
+    'person_name',
+    'address_type',
+    'address_line_1',
+    'address_line_2',
+    'landmark',
+    'city',
+    'taluka',
+    'district',
+    'state',
+    'country',
+    'pincode',
+    'latitude',
+    'longitude',
+    'action'
+];
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
             gridApi.setColumnsVisible(allCols, false);
@@ -214,8 +224,24 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-                        const defaultFields = ['serial_no', 'person_name', 'address_type', 'address_line_1', 'city', 'state', 'pincode', 'action'];
-            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
+const defaultFields = [
+    'serial_no',
+    'person_code',
+    'person_name',
+    'address_type',
+    'address_line_1',
+    'address_line_2',
+    'landmark',
+    'city',
+    'taluka',
+    'district',
+    'state',
+    'country',
+    'pincode',
+    'latitude',
+    'longitude',
+    'action'
+];            const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
 
             gridApi.setColumnsVisible(allCols, false);
             gridApi.setColumnsVisible(defaultFields, true);

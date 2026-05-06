@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models\Vehicle;
 
 use App\Models\BaseModel;
@@ -11,9 +12,18 @@ class Color extends BaseModel
     protected $table = 'xlr8_vehicle_color';
 
     protected $fillable = [
-        'brand_code', 'segment_code', 'sub_segment_code', 'model_code',
-        'code', 'name', 'hex_code', 'image', 'description',
-        'is_active', 'created_by', 'updated_by', 'deleted_by',
+        'brand_code',
+        'segment_code',
+        'sub_segment_code',
+        'model_code',
+        'code',
+        'name',
+        'hex_code',
+        'image',
+        'is_active',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     protected $casts = [

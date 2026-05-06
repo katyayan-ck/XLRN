@@ -116,8 +116,15 @@
 
                             <div class="col-md-3 mb-3">
                                 <label>Country</label>
-                                <input type="text" name="country" class="form-control"
-                                    value="{{ old('country', 'India') }}">
+                                <select name="country" class="form-control form-select" required>
+                                    <option value="">Select Country</option>
+                                    <option value="India" {{ old('country', $address->country ?? '') == 'India' ?
+                                        'selected' : '' }}>India</option>
+                                    <option value="USA" {{ old('country', $address->country ?? '') == 'USA' ? 'selected'
+                                        : '' }}>USA</option>
+                                    <option value="UK" {{ old('country', $address->country ?? '') == 'UK' ? 'selected' :
+                                        '' }}>UK</option>
+                                </select>
                             </div>
                         </div>
 

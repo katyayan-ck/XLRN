@@ -62,7 +62,7 @@ class SegmentCrudController extends CrudController
                     ['field' => 'code',        'headerName' => 'Code'],
                     ['field' => 'name',        'headerName' => 'Segment Name'],
                     ['field' => 'brand',       'headerName' => 'Brand'],
-                    ['field' => 'description', 'headerName' => 'Description'],
+
                     ['field' => 'is_active',   'headerName' => 'Active'],
                     ['field' => 'action',      'headerName' => 'Actions']
                 ],
@@ -88,7 +88,7 @@ class SegmentCrudController extends CrudController
             'brand_id'    => 'required|exists:xlr8_vehicle_brand,id',
             'name'        => 'required|string|max:255',
             'code'        => 'required|string|size:5|unique:xlr8_vehicle_segment,code,NULL,id,brand_code,' . Brand::find($request->brand_id)->code,
-            'description' => 'nullable|string',
+
             'is_active'   => 'boolean',
         ], [
             'code.size'   => 'Segment Code must be exactly 5 characters long.',
@@ -101,7 +101,7 @@ class SegmentCrudController extends CrudController
         $segment->brand_code = $brand->code;           // ← Important
         $segment->code       = strtoupper($validated['code']);
         $segment->name       = $validated['name'];
-        $segment->description = $validated['description'] ?? null;
+
         $segment->is_active  = $validated['is_active'] ?? true;
         $segment->save();
 
@@ -131,7 +131,7 @@ class SegmentCrudController extends CrudController
             'brand_id'    => 'required|exists:xlr8_vehicle_brand,id',
             'name'        => 'required|string|max:255',
             'code'        => 'required|string|size:5|unique:xlr8_vehicle_segment,code,' . $id . ',id,brand_code,' . Brand::find($request->brand_id)->code,
-            'description' => 'nullable|string',
+
             'is_active'   => 'boolean',
         ], [
             'code.size'   => 'Segment Code must be exactly 5 characters long.',
@@ -144,7 +144,7 @@ class SegmentCrudController extends CrudController
             'brand_code'  => $brand->code,
             'code'        => strtoupper($validated['code']),
             'name'        => $validated['name'],
-            'description' => $validated['description'] ?? null,
+
             'is_active'   => $validated['is_active'] ?? true,
         ]);
 

@@ -202,6 +202,10 @@ class Person extends Model implements HasMedia
             ->whereNull('deleted_at')
             ->first();
     }
+    public function setPanNoAttribute($value)
+    {
+        $this->attributes['pan_no'] = strtoupper($value);
+    }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 

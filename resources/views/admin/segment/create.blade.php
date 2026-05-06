@@ -34,10 +34,10 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Brand <span class="text-danger">*</span></label>
-                                <select name="brand_id" class="form-control form-select" required>
+                                <select name="brand_code" class="form-control form-select" required>
                                     <option value="">Select Brand</option>
                                     @foreach($brands as $brand)
-                                    <option value="{{ $brand->id }}" {{ old('brand_id')==$brand->id ? 'selected' : ''
+                                    <option value="{{ $brand->code }}" {{ old('brand_code')==$brand->code ? 'selected' : ''
                                         }}>
                                         {{ $brand->name }}
                                     </option>
@@ -57,11 +57,7 @@
                                 <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
                             </div>
 
-                            <div class="col-md-11 mb-3">
-                                <label>Description</label>
-                                <textarea name="description" class="form-control"
-                                    rows="3">{{ old('description') }}</textarea>
-                            </div>
+
 
                             <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>

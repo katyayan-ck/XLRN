@@ -74,11 +74,7 @@
                                 <small class="text-muted">e.g. MARUT, TATAM, HYUND, MGMOT</small>
                             </div>
 
-                            <div class="col-md-11 mb-3">
-                                <label>Description</label>
-                                <textarea name="description" class="form-control"
-                                    rows="3">{{ old('description', $brand->description) }}</textarea>
-                            </div>
+                            
 
                             <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>

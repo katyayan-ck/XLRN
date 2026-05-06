@@ -2,14 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\Core\Keyvalue;
-use App\Models\Core\KeywordMaster;
+use App\Models\Utilities\KeyValue\Keyvalue;
+use App\Models\Utilities\KeyValue\KeywordMaster;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
  * KeywordValueService - Centralized service for Keyword/Keyvalue lookups
- * 
+ *
  * Handles all interactions with the Keyword-Value mechanism
  * - Get value IDs by keyword + key
  * - Get value objects
@@ -24,10 +24,10 @@ class KeywordValueService
 
     /**
      * Get Keyvalue ID by keyword and key
-     * 
+     *
      * Usage: KeywordValueService::getValueId('fuel_type', 'diesel')
      * Returns: Integer ID or null
-     * 
+     *
      * @param string $keyword The keyword name (e.g., 'fuel_type', 'body_type')
      * @param string $key The value key (e.g., 'diesel', 'petrol')
      * @param bool $activeOnly Only search active records
@@ -77,10 +77,10 @@ class KeywordValueService
 
     /**
      * Get Keyvalue object by keyword and key
-     * 
+     *
      * Usage: KeywordValueService::getValue('fuel_type', 'diesel')
      * Returns: Keyvalue model instance or null
-     * 
+     *
      * @param string $keyword
      * @param string $key
      * @param bool $activeOnly
@@ -114,10 +114,10 @@ class KeywordValueService
 
     /**
      * Get all values for a keyword
-     * 
+     *
      * Usage: KeywordValueService::getValues('fuel_type')
      * Returns: ['diesel' => 1, 'petrol' => 2, ...]
-     * 
+     *
      * @param string $keyword
      * @param bool $activeOnly
      * @return array Key-value pairs: ['key' => id, ...]
@@ -161,10 +161,10 @@ class KeywordValueService
 
     /**
      * Get all value objects for a keyword with their data
-     * 
+     *
      * Usage: KeywordValueService::getValueObjects('body_type')
      * Returns: Collection of Keyvalue models
-     * 
+     *
      * @param string $keyword
      * @param bool $activeOnly
      * @param bool $recursive Include child values
@@ -201,10 +201,10 @@ class KeywordValueService
 
     /**
      * Get KeywordMaster ID by keyword
-     * 
+     *
      * Usage: KeywordValueService::getKeywordId('fuel_type')
      * Returns: Integer ID or null
-     * 
+     *
      * @param string $keyword
      * @return int|null
      */
@@ -234,11 +234,11 @@ class KeywordValueService
 
     /**
      * Get value by keyword and value property (instead of key)
-     * 
+     *
      * Usage: KeywordValueService::getValueByValue('fuel_type', 'Diesel')
      * Returns: Keyvalue model or null
      * Note: This searches by 'value' column, not 'key'
-     * 
+     *
      * @param string $keyword
      * @param string $value The value to search for
      * @param bool $activeOnly
@@ -272,7 +272,7 @@ class KeywordValueService
 
     /**
      * Check if a keyword exists
-     * 
+     *
      * @param string $keyword
      * @return bool
      */
@@ -291,7 +291,7 @@ class KeywordValueService
 
     /**
      * Check if a value exists for a keyword
-     * 
+     *
      * @param string $keyword
      * @param string $key
      * @param bool $activeOnly
@@ -325,10 +325,10 @@ class KeywordValueService
 
     /**
      * Get enum array for select dropdowns
-     * 
+     *
      * Usage: KeywordValueService::getEnum('fuel_type')
      * Returns: ['diesel' => 'Diesel', 'petrol' => 'Petrol', ...]
-     * 
+     *
      * @param string $keyword
      * @param bool $activeOnly
      * @return array
@@ -370,7 +370,7 @@ class KeywordValueService
 
     /**
      * Clear all caches for a specific keyword
-     * 
+     *
      * @param string|null $keyword If null, clears all caches
      * @return void
      */
@@ -393,9 +393,9 @@ class KeywordValueService
     /**
      * Get value ID with fallback to value search
      * First tries by key, then by value property
-     * 
+     *
      * Usage: KeywordValueService::findValueId('fuel_type', 'Diesel')
-     * 
+     *
      * @param string $keyword
      * @param string $searchTerm Can be key or value
      * @param bool $activeOnly

@@ -33,16 +33,16 @@
 
     // ==================== COLUMN DEFINITION (Flat - No Grouping) ====================
     const columnDefs = [
-        ...getCols(['serial_no', 'brand', 'segment', 'sub_segment']).map(col => {
+        ...getCols(['serial_no', 'brand_code', 'segment_code', 'sub_segment_code']).map(col => {
             if (['serial_no'].includes(col.field)) {
                 col.pinned = 'left';
             }
             return col;
         }),
 
-        ...getCols(['name', 'oem_code', 'custom_name']),
+        ...getCols(['name', 'oem_name']),
 
-        ...getCols(['description']),
+
 
         ...getCols(['is_active']),
 
@@ -76,7 +76,7 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'brand', 'segment', 'sub_segment', 'name', 'oem_code', 'custom_name', 'description', 'is_active', 'action'];
+            const defaultFields = ['serial_no', 'brand_code', 'segment_code', 'sub_segment_code', 'name', 'oem_name',  'is_active', 'action'];
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
@@ -96,9 +96,9 @@
         tbody.innerHTML = '';
 
         const allFlatColumns = [
-            ...getCols(['serial_no', 'brand', 'segment', 'sub_segment']),
-            ...getCols(['name', 'oem_code', 'custom_name']),
-            ...getCols(['description']),
+            ...getCols(['serial_no', 'brand_code', 'segment_code', 'sub_segment_code']),
+            ...getCols(['name', 'oem_name']),
+
             ...getCols(['is_active']),
             ...getCols(['action'])
         ];
@@ -116,7 +116,7 @@
             checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
 
             // Disable checkboxes for Hierarchy & Model Information fields
-            if (['serial_no', 'brand', 'segment', 'sub_segment', 'name', 'oem_code', 'custom_name'].includes(col.field)) {
+            if (['serial_no', 'brand_code', 'segment_code', 'sub_segment_code', 'name', 'oem_name'].includes(col.field)) {
                 checkbox.disabled = true;
             }
 
@@ -185,7 +185,7 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'brand', 'segment', 'sub_segment', 'name', 'oem_code', 'custom_name', 'description', 'is_active', 'action'];
+            const defaultFields = ['serial_no', 'brand_code', 'segment_code', 'sub_segment_code', 'name', 'oem_name',  'is_active', 'action'];
             const allCols = [];
             gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
             gridApi.setColumnsVisible(allCols, false);

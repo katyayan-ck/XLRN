@@ -36,16 +36,21 @@ class BranchCrudController extends CrudController
     {
         $this->crud->setListView('admin.branch.list');
 
-        $branches = Branch::select([                      // ← Use the imported model
+        $branches = Branch::select([
             'id',
             'code',
             'name',
             'short_name',
+            'description',   // ✅ ADD
             'phone',
             'email',
+            'address',       // ✅ ADD
             'city',
             'state',
             'pincode',
+            'country',       // ✅ ADD
+            'latitude',      // ✅ ADD
+            'longitude',     // ✅ ADD
             'is_head_office',
             'is_active'
         ])->orderBy('id', 'desc')->get();
@@ -75,11 +80,16 @@ class BranchCrudController extends CrudController
                     ['field' => 'code',           'headerName' => 'Code'],
                     ['field' => 'name',           'headerName' => 'Branch Name'],
                     ['field' => 'short_name',     'headerName' => 'Short Name'],
+                    ['field' => 'description',    'headerName' => 'Description'], // ✅
                     ['field' => 'phone',          'headerName' => 'Phone'],
                     ['field' => 'email',          'headerName' => 'Email'],
+                    ['field' => 'address',        'headerName' => 'Address'],     // ✅
                     ['field' => 'city',           'headerName' => 'City'],
                     ['field' => 'state',          'headerName' => 'State'],
                     ['field' => 'pincode',        'headerName' => 'Pincode'],
+                    ['field' => 'country',        'headerName' => 'Country'],     // ✅
+                    ['field' => 'latitude',       'headerName' => 'Latitude'],    // ✅
+                    ['field' => 'longitude',      'headerName' => 'Longitude'],   // ✅
                     ['field' => 'is_head_office', 'headerName' => 'Head Office'],
                     ['field' => 'is_active',      'headerName' => 'Status'],
                     ['field' => 'action',         'headerName' => 'Actions']
@@ -109,11 +119,16 @@ class BranchCrudController extends CrudController
             'code'           => 'required|string|unique:xlr8_admin_branch,code,' . $id,
             'name'           => 'required|string|max:255',
             'short_name'     => 'required|string|max:100',
+            'description'    => 'nullable|string',     // ✅
             'phone'          => 'nullable|string',
             'email'          => 'nullable|email',
+            'address'        => 'nullable|string',     // ✅
             'city'           => 'required|string',
             'state'          => 'required|string',
             'pincode'        => 'required|string',
+            'country'        => 'nullable|string',     // ✅
+            'latitude'  => 'nullable|numeric|between:-90,90',    // ✅
+            'longitude' => 'nullable|numeric|between:-180,180',    // ✅
             'is_head_office' => 'boolean',
             'is_active'      => 'boolean',
         ]);

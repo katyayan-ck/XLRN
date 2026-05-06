@@ -109,7 +109,8 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Contact Detail <span class="text-danger">*</span></label>
-                                <input type="text" name="contact_detail" id="contact_detail" class="form-control"
+                                <input type="text" name="contact_detail" id="contact_detail" pattern="[6-9]{1}[0-9]{9}"
+                                    maxlength="10" class="form-control"
                                     value="{{ old('contact_detail', $contact->contact_detail) }}" required>
                             </div>
                         </div>

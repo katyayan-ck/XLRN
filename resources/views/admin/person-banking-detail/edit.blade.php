@@ -65,7 +65,7 @@
                                         == $p->person_code
                                         ?
                                         'selected' : '' }}>
-                                        {{ $p->first_name }} {{ $p->last_name }}
+                                        {{ $p->person_code }}
                                     </option>
                                     @endforeach
                                 </select>

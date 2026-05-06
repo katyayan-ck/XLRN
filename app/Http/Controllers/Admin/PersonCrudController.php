@@ -72,6 +72,7 @@ class PersonCrudController extends CrudController
                     ['field' => 'serial_no',      'headerName' => 'S.No'],
                     ['field' => 'person_code',    'headerName' => 'Person Code'],
                     ['field' => 'entity_type',    'headerName' => 'Entity Type'],
+                    ['field' => 'salutation', 'headerName' => 'Salutation'],
                     ['field' => 'full_name',      'headerName' => 'Full Name'],
                     ['field' => 'display_name',   'headerName' => 'Display Name'],
                     ['field' => 'gender',         'headerName' => 'Gender'],
@@ -102,13 +103,20 @@ class PersonCrudController extends CrudController
             'middle_name'     => 'nullable|string|max:100',
             'last_name'       => 'nullable|string|max:100',
             'display_name'    => 'nullable|string|max:255',
-            'gender'          => 'nullable|in:male,female,other,prefer_not_to_say',
+            'gender' => 'nullable|in:male,female,other,prefer_not_to_say',
             'dob'             => 'nullable|date',
-            'marital_status'  => 'nullable|in:single,married,divorced,widowed',
+            'marital_status' => 'nullable|in:single,married,divorced,widowed',
             'spouse_name'     => 'nullable|string|max:100',
             'occupation'      => 'nullable|string|max:100',
-            'aadhaar_no'      => 'nullable|string|max:12',
-            'pan_no'          => 'nullable|string|max:10',
+            'aadhaar_no' => [
+                'nullable',
+                'digits:12',
+                'unique:xlr8_admin_person,aadhaar_no,' . $id
+            ],
+            'pan_no' => [
+                'nullable',
+                'regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/'
+            ],
             'tan_no'          => 'nullable|string|max:20',
             'gst_no'          => 'nullable|string|max:15',
         ]);
@@ -137,6 +145,13 @@ class PersonCrudController extends CrudController
     {
         $person = Person::findOrFail($id);
 
+        // ✅ Fix PAN case (important)
+        if ($request->pan_no) {
+            $request->merge([
+                'pan_no' => strtoupper($request->pan_no)
+            ]);
+        }
+
         $validated = $request->validate([
             'salutation'      => 'nullable|in:Mr,Mrs,Ms,Dr',
             'first_name'      => 'required|string|max:100',
@@ -148,15 +163,27 @@ class PersonCrudController extends CrudController
             'marital_status'  => 'nullable|in:single,married,divorced,widowed',
             'spouse_name'     => 'nullable|string|max:100',
             'occupation'      => 'nullable|string|max:100',
-            'aadhaar_no'      => 'nullable|string|max:12',
-            'pan_no'          => 'nullable|string|max:10',
+            'aadhaar_no' => [
+                'nullable',
+                'digits:12',
+                'unique:xlr8_admin_person,aadhaar_no,' . $id
+            ],
+
+            // ✅ FIXED PAN VALIDATION
+            'pan_no' => [
+                'nullable',
+                'regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/'
+            ],
+
             'tan_no'          => 'nullable|string|max:20',
             'gst_no'          => 'nullable|string|max:15',
         ]);
 
+        // ✅ Update data
         $person->update($validated);
 
         \Alert::success('Person updated successfully!')->flash();
+
         return redirect(backpack_url('person'));
     }
 }

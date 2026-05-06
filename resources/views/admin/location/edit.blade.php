@@ -45,7 +45,7 @@
 
                         <div class="row">
 
-                            <!-- 🔹 READ ONLY SECTION (same as branch) -->
+                            <!-- READ ONLY -->
                             <div class="col-md-12 mb-4">
                                 <div class="row">
                                     <div class="col-md-3">
@@ -63,59 +63,99 @@
                                 </div>
                             </div>
 
-                            <!-- 🔹 MAIN FIELDS -->
-                            <div class="col-md-4 mb-3">
+                            <!-- Code -->
+                            <div class="col-md-3 mb-3">
                                 <label>Code <span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control"
                                     value="{{ old('code', $location->code) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <!-- Name -->
+                            <div class="col-md-3 mb-3">
                                 <label>Name <span class="text-danger">*</span></label>
                                 <input type="text" name="name" class="form-control"
                                     value="{{ old('name', $location->name) }}" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <!-- Branch -->
+                            <div class="col-md-3 mb-3">
                                 <label>Branch <span class="text-danger">*</span></label>
                                 <select name="branch_code" class="form-control form-select" required>
                                     <option value="">Select Branch</option>
-
                                     @foreach($branches as $branch)
                                     <option value="{{ $branch->code }}" {{ old('branch_code', $location->branch_code) ==
                                         $branch->code ? 'selected' : '' }}>
-                                        {{ $branch->name }} ({{ $branch->code }})
+                                        {{ $branch->name }}
                                     </option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <!-- 🔹 LOCATION DETAILS -->
-                            <div class="col-md-4 mb-3">
-                                <label>City</label>
-                                <input type="text" name="city" class="form-control"
-                                    value="{{ old('city', $location->city) }}">
+                            <!-- Description -->
+                            <div class="col-md-3 mb-3">
+                                <label>Description</label>
+                                <textarea name="description"
+                                    class="form-control">{{ old('description', $location->description) }}</textarea>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>State</label>
-                                <input type="text" name="state" class="form-control"
-                                    value="{{ old('state', $location->state) }}">
+                            <!-- Phone -->
+                            <div class="col-md-3 mb-3">
+                                <label>Phone</label>
+                                <input type="text" name="phone" class="form-control"
+                                    value="{{ old('phone', $location->phone) }}">
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>Pincode</label>
-                                <input type="text" name="pincode" class="form-control"
-                                    value="{{ old('pincode', $location->pincode) }}">
+                            <!-- Email -->
+                            <div class="col-md-3 mb-3">
+                                <label>Email</label>
+                                <input type="email" name="email" class="form-control"
+                                    value="{{ old('email', $location->email) }}">
                             </div>
 
+                            <!-- Address -->
                             <div class="col-md-6 mb-3">
                                 <label>Address</label>
                                 <textarea name="address" class="form-control"
                                     rows="3">{{ old('address', $location->address) }}</textarea>
                             </div>
 
-                            <!-- 🔹 STATUS -->
+                            <!-- City -->
+                            <div class="col-md-3 mb-3">
+                                <label>City</label>
+                                <input type="text" name="city" class="form-control"
+                                    value="{{ old('city', $location->city) }}">
+                            </div>
+
+                            <!-- State -->
+                            <div class="col-md-3 mb-3">
+                                <label>State</label>
+                                <input type="text" name="state" class="form-control"
+                                    value="{{ old('state', $location->state) }}">
+                            </div>
+
+                            <!-- Pincode -->
+                            <div class="col-md-3 mb-3">
+                                <label>Pincode</label>
+                                <input type="text" name="pincode" class="form-control"
+                                    value="{{ old('pincode', $location->pincode) }}" maxlength="6"
+                                    pattern="[1-9][0-9]{5}" required>
+                            </div>
+
+                            <!-- Latitude -->
+                            <div class="col-md-3 mb-3">
+                                <label>Latitude</label><small class="text-muted"> (Range: -90 to 90)</small>
+                                <input type="text" name="latitude" class="form-control"
+                                    value="{{ old('latitude', $location->latitude) }}">
+                            </div>
+
+                            <!-- Longitude -->
+                            <div class="col-md-3 mb-3">
+                                <label>Longitude</label><small class="text-muted"> (Range: -180 to 180)</small>
+                                <input type="text" name="longitude" class="form-control"
+                                    value="{{ old('longitude', $location->longitude) }}">
+                            </div>
+
+                            <!-- Status -->
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Is Active?</label>
                                 <div class="form-check form-switch">

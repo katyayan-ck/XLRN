@@ -88,11 +88,7 @@
                                     value="{{ old('name', $subsegment->name) }}" required>
                             </div>
 
-                            <div class="col-md-11 mb-3">
-                                <label>Description</label>
-                                <textarea name="description" class="form-control"
-                                    rows="3">{{ old('description', $subsegment->description) }}</textarea>
-                            </div>
+                            
 
                             <div class="col-md-1 mb-3">
                                 <label class="form-label">Is Active?</label>

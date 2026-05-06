@@ -75,7 +75,9 @@ class PersonAddressCrudController extends CrudController
             'gridConfig' => [
                 'columns' => [
                     ['field' => 'serial_no',        'headerName' => 'S.No'],
+                    ['field' => 'person_code', 'headerName' => 'Person Code'],
                     ['field' => 'person_name',      'headerName' => 'Person'],
+
                     ['field' => 'address_type',     'headerName' => 'Address Type'],
 
                     ['field' => 'address_line_1',   'headerName' => 'Address Line 1'],
@@ -123,11 +125,18 @@ class PersonAddressCrudController extends CrudController
             'taluka'         => 'nullable|string|max:60',
             'district'       => 'nullable|string|max:60',
             'state'          => 'required|string|max:60',
-            'country'        => 'nullable|string|max:60',
+            'country'        => 'required|in:India,USA,UK',
             'pincode'        => 'nullable|string|max:10',
             'latitude'       => 'nullable|numeric',
             'longitude'      => 'nullable|numeric',
         ]);
+
+        // ✅ ADD THIS BLOCK HERE
+        if ($request->address_type === 'Primary') {
+            PersonAddress::where('person_code', $request->person_code)
+                ->where('address_type', 'Primary')
+                ->update(['address_type' => 'Alternate']);
+        }
 
         PersonAddress::create($validated);
 
@@ -164,11 +173,19 @@ class PersonAddressCrudController extends CrudController
             'taluka'         => 'nullable|string|max:60',
             'district'       => 'nullable|string|max:60',
             'state'          => 'required|string|max:60',
-            'country'        => 'nullable|string|max:60',
+            'country'        => 'required|in:India,USA,UK',
             'pincode'        => 'nullable|string|max:10',
             'latitude'       => 'nullable|numeric',
             'longitude'      => 'nullable|numeric',
         ]);
+
+        // ✅ ADD THIS BLOCK HERE
+        if ($request->address_type === 'Primary') {
+            PersonAddress::where('person_code', $request->person_code)
+                ->where('address_type', 'Primary')
+                ->where('id', '!=', $id) // IMPORTANT
+                ->update(['address_type' => 'Alternate']);
+        }
 
         $address->update($validated);
 

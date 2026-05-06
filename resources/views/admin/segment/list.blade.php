@@ -40,7 +40,7 @@
             return col;
         }),
 
-        ...getCols(['description']),
+
 
         ...getCols(['is_active']),
 
@@ -74,7 +74,7 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'code', 'name', 'brand', 'description', 'is_active', 'action'];
+            const defaultFields = ['serial_no', 'code', 'name', 'brand', 'is_active', 'action'];
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
@@ -95,7 +95,7 @@
 
         const allFlatColumns = [
             ...getCols(['serial_no', 'code', 'name', 'brand']),
-            ...getCols(['description']),
+
             ...getCols(['is_active']),
             ...getCols(['action'])
         ];
@@ -182,7 +182,7 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'code', 'name', 'brand', 'description', 'is_active', 'action'];
+            const defaultFields = ['serial_no', 'code', 'name', 'brand', 'is_active', 'action'];
             const allCols = [];
             gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
             gridApi.setColumnsVisible(allCols, false);

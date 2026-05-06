@@ -31,15 +31,21 @@ class LocationCrudController extends CrudController
     {
         $this->crud->setListView('admin.location.list');
 
-        $locations = Location::with('branch')   // relationship must work
+        $locations = Location::with('branch')
             ->select([
                 'id',
+                'branch_code',
                 'code',
                 'name',
-                'branch_code',
+                'description',
+                'phone',
+                'email',
+                'address',
                 'city',
                 'state',
                 'pincode',
+                'latitude',
+                'longitude',
                 'is_active'
             ])
             ->orderBy('id', 'desc')
@@ -68,14 +74,21 @@ class LocationCrudController extends CrudController
             'title' => 'All Locations',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no', 'headerName' => 'S.No'],
-                    ['field' => 'code',      'headerName' => 'Code'],
-                    ['field' => 'name',      'headerName' => 'Name'],
-                    ['field' => 'branch',    'headerName' => 'Branch'],
-                    ['field' => 'city',      'headerName' => 'City'],
-                    ['field' => 'state',     'headerName' => 'State'],
-                    ['field' => 'is_active', 'headerName' => 'Active'],
-                    ['field' => 'action',    'headerName' => 'Actions']
+                    ['field' => 'serial_no',   'headerName' => 'S.No'],
+                    ['field' => 'branch',      'headerName' => 'Branch'],
+                    ['field' => 'code',        'headerName' => 'Code'],
+                    ['field' => 'name',        'headerName' => 'Name'],
+                    ['field' => 'description', 'headerName' => 'Description'],
+                    ['field' => 'phone',       'headerName' => 'Phone'],
+                    ['field' => 'email',       'headerName' => 'Email'],
+                    ['field' => 'address',     'headerName' => 'Address'],
+                    ['field' => 'city',        'headerName' => 'City'],
+                    ['field' => 'state',       'headerName' => 'State'],
+                    ['field' => 'pincode',     'headerName' => 'Pincode'],
+                    ['field' => 'latitude',    'headerName' => 'Latitude'],
+                    ['field' => 'longitude',   'headerName' => 'Longitude'],
+                    ['field' => 'is_active',   'headerName' => 'Status'],
+                    ['field' => 'action',      'headerName' => 'Action']
                 ],
                 'data' => $gridData
             ]
@@ -98,11 +111,21 @@ class LocationCrudController extends CrudController
         $validated = $request->validate([
             'code'        => 'required|string|unique:xlr8_admin_location,code',
             'name'        => 'required|string|max:255',
-            'branch_code' => 'required|exists:xlr8_admin_branch,code',   // ← Ye line important hai
+            'branch_code' => 'required|exists:xlr8_admin_branch,code',
+
+            'description' => 'nullable|string',
+            'phone'       => 'nullable|string',
+            'email'       => 'nullable|email',
+            'address'     => 'nullable|string',
+
             'city'        => 'nullable|string',
             'state'       => 'nullable|string',
-            'pincode'     => 'nullable|string',
-            'address'     => 'nullable|string',
+
+            'pincode'     => ['required', 'regex:/^[1-9][0-9]{5}$/'],
+
+            'latitude'    => 'nullable|numeric',
+            'longitude'   => 'nullable|numeric',
+
             'is_active'   => 'boolean',
         ]);
 
@@ -136,11 +159,21 @@ class LocationCrudController extends CrudController
         $validated = $request->validate([
             'code'        => 'required|string|unique:xlr8_admin_location,code,' . $id,
             'name'        => 'required|string|max:255',
-            'branch_code' => 'required|exists:xlr8_admin_branch,code',   // ← Important
+            'branch_code' => 'required|exists:xlr8_admin_branch,code',
+
+            'description' => 'nullable|string',
+            'phone'       => 'nullable|string',
+            'email'       => 'nullable|email',
+            'address'     => 'nullable|string',
+
             'city'        => 'nullable|string',
             'state'       => 'nullable|string',
-            'pincode'     => 'nullable|string',
-            'address'     => 'nullable|string',
+
+            'pincode'     => ['required', 'regex:/^[1-9][0-9]{5}$/'],
+
+            'latitude'    => 'nullable|numeric',
+            'longitude'   => 'nullable|numeric',
+
             'is_active'   => 'boolean',
         ]);
 

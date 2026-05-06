@@ -37,41 +37,51 @@ class VehicleModelCrudController extends CrudController
             ->get();
 
         $gridData = $models->map(function ($model, $index) {
-            $mapped = $model->toArray();
-            $mapped['serial_no'] = $index + 1;
-            $mapped['brand']       = $model->brand?->name ?? '—';
-            $mapped['segment']     = $model->segment?->name ?? '—';
-            $mapped['sub_segment'] = $model->subSegment?->name ?? '—';
-            $mapped['is_active']   = $model->is_active ? 'Active' : 'Inactive';
 
-            $editUrl = backpack_url("vehicle-model/{$model->id}/edit");
+            return [
+                'serial_no' => $index + 1,
 
-            $mapped['action'] = '
+                // ✅ CODE FIELDS (IMPORTANT)
+                'brand_code'       => $model->brand_code ?? '—',
+                'segment_code'     => $model->segment_code ?? '—',
+                'sub_segment_code' => $model->sub_segment_code ?? '—',
+
+                // ✅ MAIN DATA
+                'code'     => $model->code ?? '—',
+                'name'     => $model->name ?? '—',
+                'oem_name' => $model->oem_name ?? '—',
+
+                // ✅ STATUS
+                'is_active' => $model->is_active ? 'Active' : 'Inactive',
+
+                // ✅ ACTION BUTTON
+                'action' => '
                 <div class="d-flex gap-2 justify-content-center">
-                    <a href="' . $editUrl . '"
+                    <a href="' . backpack_url("vehicle-model/{$model->id}/edit") . '"
                        class="btn btn-sm btn-primary py-1 px-2" title="Edit">
-                         Edit
+                        Edit
                     </a>
                 </div>
-            ';
-
-            return $mapped;
+            '
+            ];
         })->values();
 
         return view('admin.vehicle-model.list', [
             'title' => 'All Vehicle Models',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',    'headerName' => 'S.No'],
-                    ['field' => 'brand',        'headerName' => 'Brand'],
-                    ['field' => 'segment',      'headerName' => 'Segment'],
-                    ['field' => 'sub_segment',  'headerName' => 'Sub Segment'],
-                    ['field' => 'name',         'headerName' => 'Model Name'],
-                    ['field' => 'oem_code',     'headerName' => 'OEM Code'],
-                    ['field' => 'custom_name',  'headerName' => 'Custom Name'],
-                    ['field' => 'description',  'headerName' => 'Description'],
-                    ['field' => 'is_active',    'headerName' => 'Active'],
-                    ['field' => 'action',       'headerName' => 'Actions']
+                    ['field' => 'serial_no',        'headerName' => 'S.No'],
+
+                    ['field' => 'brand_code',       'headerName' => 'Brand Code'],
+                    ['field' => 'segment_code',     'headerName' => 'Segment Code'],
+                    ['field' => 'sub_segment_code', 'headerName' => 'Sub Segment Code'],
+
+                    ['field' => 'code',             'headerName' => 'Model Code'],
+                    ['field' => 'name',             'headerName' => 'Model Name'],
+                    ['field' => 'oem_name',         'headerName' => 'OEM Name'],
+
+                    ['field' => 'is_active',        'headerName' => 'Status'],
+                    ['field' => 'action',           'headerName' => 'Actions']
                 ],
                 'data' => $gridData
             ]
@@ -94,32 +104,26 @@ class VehicleModelCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'brand_id'       => 'required|exists:xlr8_vehicle_brand,id',
-            'segment_id'     => 'required|exists:xlr8_vehicle_segment,id',
-            'sub_segment_id' => 'nullable|exists:xlr8_vehicle_subsegment,id',
-            'name'           => 'required|string|max:255',
-            'custom_name'    => 'nullable|string|max:255',
-            'oem_code'       => 'nullable|string|max:255|unique:xlr8_vehicle_model,oem_code',
-            'description'    => 'nullable|string',
-            'is_active'      => 'boolean',
+            'brand_code'       => 'required|exists:xlr8_vehicle_brand,code',
+            'segment_code'     => 'required|exists:xlr8_vehicle_segment,code',
+            'sub_segment_code' => 'nullable|exists:xlr8_vehicle_subsegment,code',
+            'name'             => 'required|string|max:255',
+            'oem_name'         => 'nullable|string|max:255|unique:xlr8_vehicle_model,oem_name',
+            'is_active'        => 'boolean',
         ]);
 
-        $brand     = Brand::findOrFail($validated['brand_id']);
-        $segment   = Segment::findOrFail($validated['segment_id']);
-        $subsegment = $validated['sub_segment_id']
-            ? SubSegment::findOrFail($validated['sub_segment_id'])
-            : null;
-
         $vehiclemodel = new VehicleModel();
-        $vehiclemodel->brand_code      = $brand->code;
-        $vehiclemodel->segment_code    = $segment->code;
-        $vehiclemodel->sub_segment_code = $subsegment?->code;
-        $vehiclemodel->code            = VehicleModel::generateCode($validated['name']); // optional
-        $vehiclemodel->name            = $validated['name'];
-        $vehiclemodel->custom_name     = $validated['custom_name'] ?? null;
-        $vehiclemodel->oem_code        = $validated['oem_code'] ?? null;
-        $vehiclemodel->description     = $validated['description'] ?? null;
-        $vehiclemodel->is_active       = $validated['is_active'] ?? true;
+
+        $vehiclemodel->brand_code       = $validated['brand_code'];
+        $vehiclemodel->segment_code     = $validated['segment_code'];
+        $vehiclemodel->sub_segment_code = $validated['sub_segment_code'] ?? null;
+
+        $vehiclemodel->code = VehicleModel::generateCode($validated['name']);
+        $vehiclemodel->name = $validated['name'];
+
+        $vehiclemodel->oem_name  = $validated['oem_name'] ?? null;
+        $vehiclemodel->is_active = $validated['is_active'] ?? true;
+
         $vehiclemodel->save();
 
         \Alert::success('Vehicle Model created successfully!')->flash();
@@ -147,31 +151,23 @@ class VehicleModelCrudController extends CrudController
         $vehiclemodel = VehicleModel::findOrFail($id);
 
         $validated = $request->validate([
-            'brand_id'       => 'required|exists:xlr8_vehicle_brand,id',
-            'segment_id'     => 'required|exists:xlr8_vehicle_segment,id',
-            'sub_segment_id' => 'nullable|exists:xlr8_vehicle_subsegment,id',
-            'name'           => 'required|string|max:255',
-            'custom_name'    => 'nullable|string|max:255',
-            'oem_code'       => 'nullable|string|max:255|unique:xlr8_vehicle_model,oem_code,' . $id,
-            'description'    => 'nullable|string',
-            'is_active'      => 'boolean',
+            'brand_code'       => 'required|exists:xlr8_vehicle_brand,code',
+            'segment_code'     => 'required|exists:xlr8_vehicle_segment,code',
+            'sub_segment_code' => 'nullable|exists:xlr8_vehicle_subsegment,code',
+            'name'             => 'required|string|max:255',
+            'oem_name'         => 'nullable|string|max:255|unique:xlr8_vehicle_model,oem_name,' . $id,
+            'is_active'        => 'boolean',
         ]);
 
-        $brand     = Brand::findOrFail($validated['brand_id']);
-        $segment   = Segment::findOrFail($validated['segment_id']);
-        $subsegment = $validated['sub_segment_id']
-            ? SubSegment::findOrFail($validated['sub_segment_id'])
-            : null;
-
         $vehiclemodel->update([
-            'brand_code'      => $brand->code,
-            'segment_code'    => $segment->code,
-            'sub_segment_code' => $subsegment?->code,
-            'name'            => $validated['name'],
-            'custom_name'     => $validated['custom_name'] ?? null,
-            'oem_code'        => $validated['oem_code'] ?? null,
-            'description'     => $validated['description'] ?? null,
-            'is_active'       => $validated['is_active'] ?? true,
+            'brand_code'       => $validated['brand_code'],
+            'segment_code'     => $validated['segment_code'],
+            'sub_segment_code' => $validated['sub_segment_code'] ?? null,
+
+            'name'        => $validated['name'],
+            'oem_name'    => $validated['oem_name'] ?? null,
+
+            'is_active'   => $validated['is_active'] ?? true,
         ]);
 
         \Alert::success('Vehicle Model updated successfully!')->flash();

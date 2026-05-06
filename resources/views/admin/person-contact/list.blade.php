@@ -33,7 +33,7 @@
 
         // ==================== FLAT COLUMN DEFINITION ====================
     const columnDefs = [
-        ...getCols(['serial_no', 'person_name']).map(col => {
+        ...getCols(['serial_no', 'person_name','person_code']).map(col => {
             if (col.field === 'serial_no') {
                 col.pinned = 'left';
                 col.width = 80;
@@ -73,7 +73,7 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'person_name', 'data_type', 'contact_type', 'contact_detail', 'action'];
+            const defaultFields = ['serial_no', 'person_name', 'person_code', 'data_type', 'contact_type', 'contact_detail', 'action'];
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
             gridApi.setColumnsVisible(allCols, false);
@@ -111,7 +111,7 @@
             checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
 
             // Disable Primary columns (always visible)
-            if (['serial_no', 'person_name', 'name'].includes(col.field)) {
+            if (['serial_no', 'person_name', 'person_code'].includes(col.field)) {
                 checkbox.disabled = true;
             }
 
@@ -180,7 +180,7 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'person_name', 'name', 'type', 'mobile', 'email', 'action'];
+            const defaultFields = ['serial_no', 'person_name', 'person_code', 'data_type', 'contact_type', 'contact_detail', 'action'];
             const allCols = gridApi.getAllGridColumns().map(c => c.getColId());
 
             gridApi.setColumnsVisible(allCols, false);

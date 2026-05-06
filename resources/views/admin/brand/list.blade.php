@@ -33,7 +33,7 @@
 
     // ==================== COLUMN DEFINITION (Flat - No Grouping) ====================
     const columnDefs = [
-        ...getCols(['serial_no', 'code', 'name', 'description']).map(col => {
+        ...getCols(['serial_no', 'code', 'name']).map(col => {
             if (['serial_no', 'code'].includes(col.field)) {
                 col.pinned = 'left';
             }
@@ -72,7 +72,7 @@
         onGridReady: params => {
             gridApi = params.api;
 
-            const defaultFields = ['serial_no', 'code', 'name', 'description', 'is_active', 'action'];
+            const defaultFields = ['serial_no', 'code', 'name', 'is_active', 'action'];
 
             const allCols = gridApi.getAllGridColumns().map(col => col.getColId());
 
@@ -92,7 +92,7 @@
         tbody.innerHTML = '';
 
         const allFlatColumns = [
-            ...getCols(['serial_no', 'code', 'name', 'description']),
+            ...getCols(['serial_no', 'code', 'name']),
             ...getCols(['is_active']),
             ...getCols(['action'])
         ];
@@ -110,7 +110,7 @@
             checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
 
             // Basic Information fields (Primary columns) disable karo
-            if (['serial_no', 'code', 'name', 'description'].includes(col.field)) {
+            if (['serial_no', 'code', 'name'].includes(col.field)) {
                 checkbox.disabled = true;
             }
 
@@ -177,7 +177,7 @@
 
         // Default Headers
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'code', 'name', 'description', 'is_active', 'action'];
+            const defaultFields = ['serial_no', 'code', 'name', 'is_active', 'action'];
             const allCols = [];
             gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
             gridApi.setColumnsVisible(allCols, false);
@@ -266,15 +266,12 @@
                             </small>
                         </div>
                         <div class="col-md-4">
-                            <form action="{{ route('brand.import') }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+                            <form action="{{ route('brand.import') }}" method="POST" enctype="multipart/form-data"
+                                class="d-flex gap-2">
                                 @csrf
-                                <input type="file" 
-                                       name="excel_file" 
-                                       class="form-control form-control-sm" 
-                                       accept=".xlsx,.xls" 
-                                       required>
-                                <button type="submit" 
-                                        class="btn btn-success btn-sm px-4 text-nowrap">
+                                <input type="file" name="excel_file" class="form-control form-control-sm"
+                                    accept=".xlsx,.xls" required>
+                                <button type="submit" class="btn btn-success btn-sm px-4 text-nowrap">
                                     <i class="la la-upload"></i> Import
                                 </button>
                             </form>

@@ -71,6 +71,7 @@ class PersonContactCrudController extends CrudController
             'gridConfig' => [
                 'columns' => [
                     ['field' => 'serial_no',      'headerName' => 'S.No'],
+                    ['field' => 'person_code',    'headerName' => 'Person Code'],
                     ['field' => 'person_name',    'headerName' => 'Person'],
                     ['field' => 'data_type',      'headerName' => 'Data Type'],
                     ['field' => 'contact_type',   'headerName' => 'Contact Type'],
@@ -100,7 +101,23 @@ class PersonContactCrudController extends CrudController
             'person_code'     => 'required|exists:xlr8_admin_person,person_code',
             'data_type'       => 'required|in:Mobile,Email,Landline,Fax',
             'contact_type'    => 'nullable|in:Primary,Alternate,Office,Home,Emergency',
-            'contact_detail'  => 'required|string|max:100',
+            'contact_detail' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+
+                    if ($request->data_type === 'Mobile') {
+                        if (!preg_match('/^[6-9][0-9]{9}$/', $value)) {
+                            $fail('Mobile number must be valid 10 digit number.');
+                        }
+                    }
+
+                    if ($request->data_type === 'Email') {
+                        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                            $fail('Enter valid email address.');
+                        }
+                    }
+                }
+            ],
         ]);
 
         PersonContact::create($validated);
@@ -132,7 +149,23 @@ class PersonContactCrudController extends CrudController
             'person_code'     => 'required|exists:xlr8_admin_person,person_code',
             'data_type'       => 'required|in:Mobile,Email,Landline,Fax',
             'contact_type'    => 'nullable|in:Primary,Alternate,Office,Home,Emergency',
-            'contact_detail'  => 'required|string|max:100',
+            'contact_detail' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+
+                    if ($request->data_type === 'Mobile') {
+                        if (!preg_match('/^[6-9][0-9]{9}$/', $value)) {
+                            $fail('Mobile number must be valid 10 digit number.');
+                        }
+                    }
+
+                    if ($request->data_type === 'Email') {
+                        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                            $fail('Enter valid email address.');
+                        }
+                    }
+                }
+            ],
         ]);
 
         $contact->update($validated);

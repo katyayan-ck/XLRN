@@ -64,7 +64,7 @@ class SubSegmentCrudController extends CrudController
                     ['field' => 'name',        'headerName' => 'Sub Segment Name'],
                     ['field' => 'brand',       'headerName' => 'Brand'],
                     ['field' => 'segment',     'headerName' => 'Segment'],
-                    ['field' => 'description', 'headerName' => 'Description'],
+
                     ['field' => 'is_active',   'headerName' => 'Active'],
                     ['field' => 'action',      'headerName' => 'Actions']
                 ],
@@ -90,7 +90,7 @@ class SubSegmentCrudController extends CrudController
             'segment_id'  => 'required|exists:xlr8_vehicle_segment,id',
             'name'        => 'required|string|max:255',
             'code'        => 'required|string|size:5',
-            'description' => 'nullable|string',
+
             'is_active'   => 'boolean',
         ], [
             'code.size'   => 'Sub Segment Code must be exactly 5 characters long.',
@@ -103,7 +103,7 @@ class SubSegmentCrudController extends CrudController
         $subsegment->segment_code = $segment->code;           // ← Important
         $subsegment->code         = strtoupper($validated['code']);
         $subsegment->name         = $validated['name'];
-        $subsegment->description  = $validated['description'] ?? null;
+        
         $subsegment->is_active    = $validated['is_active'] ?? true;
         $subsegment->save();
 
@@ -133,7 +133,7 @@ class SubSegmentCrudController extends CrudController
             'segment_id'  => 'required|exists:xlr8_vehicle_segment,id',
             'name'        => 'required|string|max:255',
             'code'        => 'required|string|size:5',
-            'description' => 'nullable|string',
+
             'is_active'   => 'boolean',
         ], [
             'code.size'   => 'Sub Segment Code must be exactly 5 characters long.',
@@ -146,7 +146,7 @@ class SubSegmentCrudController extends CrudController
             'segment_code' => $segment->code,
             'code'         => strtoupper($validated['code']),
             'name'         => $validated['name'],
-            'description'  => $validated['description'] ?? null,
+
             'is_active'    => $validated['is_active'] ?? true,
         ]);
 

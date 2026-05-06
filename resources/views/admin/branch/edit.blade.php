@@ -67,7 +67,7 @@
                             </div>
 
                             <!-- Editable Fields -->
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-2 mb-3">
                                 <label>Branch Code <span class="text-danger">*</span></label>
                                 <input type="text" name="code" class="form-control"
                                     value="{{ old('code', $branch->code) }}" required>
@@ -79,10 +79,16 @@
                                     value="{{ old('name', $branch->name) }}" required>
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-2 mb-3">
                                 <label>Short Name <span class="text-danger">*</span></label>
                                 <input type="text" name="short_name" id="short_name" class="form-control"
                                     value="{{ old('short_name', $branch->short_name) }}" required>
+                            </div>
+
+                            <div class="col-md-5 mb-3">
+                                <label>Description</label>
+                                <textarea name="description"
+                                    class="form-control">{{ old('description', $branch->description) }}</textarea>
                             </div>
 
                             <div class="col-md-3 mb-3">
@@ -95,6 +101,11 @@
                                 <label>Email</label>
                                 <input type="email" name="email" class="form-control"
                                     value="{{ old('email', $branch->email) }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="address">Address</label>
+                                <textarea name="address" class="form-control" id="address"
+                                    rows="3">{{ old('address', $branch->address) }}</textarea>
                             </div>
 
                             <div class="col-md-3 mb-3">
@@ -115,6 +126,24 @@
                                 <input type="text" name="pincode" class="form-control"
                                     value="{{ old('pincode', $branch->pincode) }}" required maxlength="6"
                                     pattern="[0-9]{6}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Country</label>
+                                <input type="text" name="country" class="form-control"
+                                    value="{{ old('country', $branch->country) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Latitude</label><small class="text-muted"> (Range: -90 to 90)</small>
+                                <input type="text" name="latitude" class="form-control"
+                                    value="{{ old('latitude', $branch->latitude) }}">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label>Longitude</label><small class="text-muted"> (Range: -180 to 180)</small>
+                                <input type="text" name="longitude" class="form-control"
+                                    value="{{ old('longitude', $branch->longitude) }}">
                             </div>
 
                             <div class="col-md-1 mb-3">

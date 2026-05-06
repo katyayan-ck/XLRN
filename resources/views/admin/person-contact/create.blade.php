@@ -77,8 +77,8 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Contact Detail <span class="text-danger">*</span></label>
-                                <input type="text" name="contact_detail" id="contact_detail" class="form-control"
-                                    value="{{ old('contact_detail') }}" required>
+                                <input type="text" name="contact_detail" id="contact_detail" pattern="[0-9]{10}"
+                                    maxlength="10" class="form-control" value="{{ old('contact_detail') }}" required>
                             </div>
                         </div>
 
