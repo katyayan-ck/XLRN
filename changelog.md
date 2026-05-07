@@ -58,3 +58,154 @@ Services:
 
 Tests: PostServiceTest, HRJourneyServiceTest, ReportingServiceTest
 Changelog: updated"
+New Tables Added
+
+    xlr8admindesigdepttree — Designation-Department-Division tree with treecode, reportstocode, desigcode, deptcode, divcode, level, full audit columns and indexes
+
+    xlr8adminemppostassignments — Full post assignment history with relievingtype, fromdate, todate, assignmenttype
+
+    xlr8iampostreporting — Post-wise topic reporting with frompostcode, topostcode, topic, paramtype, paramvalue, priority
+
+    xlr8iampostorgscopes — Org-level scoping per post with postcode, scopetype, scopevalue unique constraint
+
+    xlr8iampostvehiclescopes — Vehicle-level scoping per post with postcode, scopetype, scopevalue
+
+    xlr8iamuserdatascopes — User-wise data scoping with scopetype enum (branch, location, dept, division, vertical, brand, segment, subsegment, vehiclemodel, variant, color)
+
+    xlr8iamuserrolepivot — User-role assignment with fromdate and composite unique key
+
+    xlr8iamuserdivisionpivot — User-division assignment pivot
+
+    xlr8iamemppostpivot — Employee-post link pivot with iscurrent, fromdate, todate
+
+    variantcolors — Vehicle variant-color pivot with full audit columns
+
+Existing Tables Modified (Sprint 3 refactors)
+
+    xlr8adminbranch — Added branchcode (short code, varchar10), indexes updated
+
+    xlr8admindesignation — Added desigcode, rank, category columns
+
+    xlr8admindivision — Added divcode (varchar10)
+
+    xlr8adminlocation — Now references branchcode instead of branchid
+
+    xlr8adminemployee — Added primaryloccode, verticalcode, segmentcode, subsegmentcode, oemid, expanded statutory fields (PF, ESI, PT, LWF), shift fields, reportingempcode
+
+    xlr8iamroles — Added postcode (unique), ispost, branchcode, loccode, desigcode, treecode, deptcode, divcode — Post-as-Role pattern fully implemented
+
+    xlr8iampermissions — Added moduleid and processid FK columns
+
+🧩 Features & Modules
+
+Admin — Foundation Module
+
+    Added ScopedCrud trait for Backpack controllers with applyDataScope(), wildcard handling, and hierarchy-based filtering
+
+    All CRUD routes registered: approval-hierarchy, branch, department, designation, division, employee, all pivot assignments (branch, dept, location, post, vertical), location, vertical
+
+IAM — Post & Scoping System
+
+    Post-as-Role pattern complete: xlr8iamroles extended with postcode, org-level and vehicle-level scope tables created
+
+    xlr8iamuserdatascopes fully structured with indexed query paths for scope-type + user lookups
+
+    xlr8iampostreporting and xlr8iampostorgscopes in place for topic-wise reporting assignment
+
+Vehicle System
+
+    New normalized vehicle tables live: xlr8vehiclebrand, xlr8vehiclesegment, xlr8vehiclesubsegment, xlr8vehiclemodel, xlr8vehiclevariant, xlr8vehiclecolor, variantcolors
+
+    CRUD routes registered for: brand, color, segment, sub-segment, variant, vehicle-model
+
+    VehicleDefinitionImport pipeline referenced (via existing vehicledefinition enum in importlogs.importtype)
+
+User Import/Export
+
+    UserImportExportController with showImportForm, import, importHistory, downloadTemplate, showExportForm, export, exportHistory fully implemented
+
+    importlogs and exportlogs tables tracking status, startedat, completedat, errors, warnings, importedcount, skippedcount
+
+    Excel template auto-generator using PhpSpreadsheet
+
+    Routes registered under admin/users prefix
+
+System Settings API
+
+    importSettings and exportSettings API endpoints added to SystemSettingApiController with sanctum guard
+
+    Audit log written on every setting change via logAudit
+
+🛣️ Routes Added (Sprint 3)
+Route Name Method Controller
+users.import GET/POST UserImportExportController
+users.import.history GET UserImportExportController
+users.import.template GET UserImportExportController
+users.export GET/POST UserImportExportController
+users.export.history GET UserImportExportController
+api.settings.import.json POST SystemSettingApiController
+api.settings.export.json GET SystemSettingApiController
+Employee pivots (branch, dept, location, post, vertical) CRUD Multiple Controllers
+
+🐛 Known Issues / Carry-Forward Items
+
+    xlr8iamprocess table exists but has no columns beyond id and timestamps — process definition is incomplete
+
+    xlr8iampost in old schema uses integer FKs (branchid, locationid), but new system uses postcode string pattern — migration reconciliation needed
+
+    graphnodes and graphedges tables exist but no routes or services are wired to them
+
+    xlr8adminbranch branchcode column added in Sprint 3 but old schema still uses plain code — backward compat check needed
+
+Sprint 4 — Proposed Scope
+
+Based on what's built, what's incomplete, and the original FRS order of implementation, Sprint 4 should focus on three tightly related layers.
+🎯 Sprint 4 Goals
+
+S4.1 — Complete IAM: Post, Permission & RBAC wiring
+
+    Complete xlr8iamprocess table with name, code, module_id, description, is_active and link permissions properly
+
+    Wire PostPermission → auto-assign permissions on Employee Post Assignment
+
+    Build PostCrudController and PostPermissionCrudController routes (already registered but controllers need body)
+
+    Implement auto-create Post for Branch Manager when Branch is created (Observer pattern)
+
+    Implement auto-create Division General when Department is created
+
+S4.2 — Data Scoping Enforcement
+
+    Implement ScopedCrud full hierarchy support (branch → location cascade)
+
+    Wire xlr8iamuserdatascopes auto-population from Post assignment
+
+    Middleware/Policy to enforce scoping on API controllers
+
+    SuperAdmin wildcard bypass (isSuperAdmin() check already stubbed in ScopedCrud)
+
+S4.3 — Vehicle Definition Import (MaatWebsite Excel)
+
+    Build VehicleDefinitionImport class using the existing vehicleinfo.csv format
+
+    Wire into importlogs with importtype = vehicledefinition
+
+    Auto-create Brand → Segment → SubSegment → Model → Variant → Color chain if not exists
+
+    Add import route + form + history view (mirror User import pattern already built)
+
+S4.4 — Accessory Import Service (carry forward from Sprint 3 discussion)
+
+    Build AccessoryImportService + VehicleAccessoriesImport class
+
+    Add vehicleaccessory to importtype enum via migration
+
+    Wire controller, request, route, and CLI command
+
+S4.5 — Schema Cleanup Migrations
+
+    Reconcile xlr8iampost integer FK → postcode string pattern
+
+    Add missing columns to xlr8iamprocess
+
+    Backfill branchcode short-code on existing xlr8adminbranch rows

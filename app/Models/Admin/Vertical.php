@@ -1,55 +1,51 @@
 <?php
-
 namespace App\Models\Admin;
 
-use App\Models\BaseModel;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Vertical Model
- * 
- * Business segments (Personal, Commercial, Fleet, etc.)
+ * Table: xlr8_admin_vertical
+ * Schema has BOTH `code` (varchar 255 unique) AND `vert_code` (varchar 10).
+ * Employee pivot uses `vertical_code` → vertical's `code` column.
+ * `vert_code` is a legacy duplicate — import writes both same value.
  */
-class Vertical extends BaseModel
+class Vertical extends Model
 {
-    use CrudTrait;
-    use HasFactory;
+    use SoftDeletes;
+
     protected $table = 'xlr8_admin_vertical';
 
-    protected $fillable = [
-        'code',
-        'name',
-        'description',
-        'is_active',
-    ];
+    protected $fillable = ['code', 'vert_code', 'name', 'description', 'is_active'];
 
-    protected $casts = [
-        'is_active' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
-    ];
+    protected $casts = ['is_active' => 'boolean'];
 
-    /**
-     * Relationship: Employee assignments
-     */
-    public function employees()
+    public function getRouteKeyName(): string { return 'code'; }
+
+    // ── Relations ─────────────────────────────────────────────────────────────
+    /** Employee pivot: emp_vertical_pivot.vertical_code → vertical.code */
+    public function employeeAssignments(): HasMany
     {
-        return $this->belongsToMany(
-            Employee::class,
-            'employee_vertical_assignments',
-            'vertical_id',
-            'employee_id'
-        )->withPivot(['from_date', 'to_date', 'is_current']);
+        return $this->hasMany(EmployeeVerticalAssignment::class, 'vertical_code', 'code');
     }
 
-    /**
-     * Generate auto code
-     */
-    public static function generateCode($prefix = 'VER')
+    public function employees()
     {
-        $lastId = self::withTrashed()->max('id') ?? 0;
-        return $prefix . '-' . str_pad($lastId + 1, 2, '0', STR_PAD_LEFT);
+        return $this->hasManyThrough(
+            Employee::class, EmployeeVerticalAssignment::class,
+            'vertical_code', 'code',
+            'code', 'employee_code'
+        );
+    }
+
+    // ── Scopes ────────────────────────────────────────────────────────────────
+    public function scopeActive($q) { return $q->where('is_active', true); }
+
+    // ── Mutators ──────────────────────────────────────────────────────────────
+    public function setCodeAttribute(string $v): void
+    {
+        $this->attributes['code']      = strtoupper(trim($v));
+        $this->attributes['vert_code'] = substr(strtoupper(trim($v)), 0, 10);
     }
 }

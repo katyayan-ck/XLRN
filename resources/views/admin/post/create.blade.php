@@ -1,125 +1,176 @@
 @extends(backpack_view('blank'))
 
-@section('title', 'Add New Post')
-
-@push('after_styles')
-<style>
-    .card {
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    }
-
-    .form-control:focus {
-        border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
-    }
-</style>
-@endpush
+@section('header')
+    <section class="header-operation container-fluid animated fadeIn d-flex mb-2 align-items-baseline d-print-none">
+        <h2 class="text-capitalize mb-0">Add Post</h2>
+        <p class="ml-2 ml-md-4 mb-0">Create a new IAM Post with org and vehicle scopes.</p>
+    </section>
+@endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header text-black">
-                    <h2 class="mb-0">Add New Post</h2>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ backpack_url('post') }}">
-                        @csrf
+<div class="container-fluid animated fadeIn">
+    <form method="POST" action="{{ backpack_url('post') }}" id="postForm">
+        @csrf
 
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label>Post Code <span class="text-danger">*</span></label>
-                                <input type="text" name="code" class="form-control" value="{{ old('code') }}" required>
-                            </div>
-
-                            <div class="col-md-8 mb-3">
-                                <label>Post Title <span class="text-danger">*</span></label>
-                                <input type="text" name="title" class="form-control" value="{{ old('title') }}"
-                                    required>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>Branch <span class="text-danger">*</span></label>
-                                <select name="branch_id" class="form-control form-select" required>
-                                    <option value="">Select Branch</option>
-                                    @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}" {{ old('branch_id')==$branch->id ? 'selected' : ''
-                                        }}>
-                                        {{ $branch->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>Department <span class="text-danger">*</span></label>
-                                <select name="department_id" class="form-control form-select" required>
-                                    <option value="">Select Department</option>
-                                    @foreach($departments as $dept)
-                                    <option value="{{ $dept->id }}" {{ old('department_id')==$dept->id ? 'selected' : ''
-                                        }}>
-                                        {{ $dept->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>Designation <span class="text-danger">*</span></label>
-                                <select name="designation_id" class="form-control form-select" required>
-                                    <option value="">Select Designation</option>
-                                    @foreach($designations as $desig)
-                                    <option value="{{ $desig->id }}" {{ old('designation_id')==$desig->id ? 'selected' :
-                                        '' }}>
-                                        {{ $desig->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label>Max Assignees <span class="text-danger">*</span></label>
-                                <input type="number" name="max_assignees" class="form-control"
-                                    value="{{ old('max_assignees', 1) }}" min="1" required>
-                            </div>
-
-                            <div class="col-md-9 mb-3">
-                                <label>Description</label>
-                                <textarea name="description" class="form-control"
-                                    rows="3">{{ old('description') }}</textarea>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Is Active?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_active" value="0">
-                                    <input type="checkbox" name="is_active" value="1" class="form-check-input" {{
-                                        old('is_active') ? 'checked' : '' }}>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Is Vacant?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_vacant" value="0">
-                                    <input type="checkbox" name="is_vacant" value="1" class="form-check-input" {{
-                                        old('is_vacant', true) ? 'checked' : '' }}>
-                                </div>
-                            </div>
+        {{-- Core Fields --}}
+        <div class="card">
+            <div class="card-header"><strong>Post Details</strong></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label>Designation <span class="text-danger">*</span></label>
+                        <select name="desig_code" class="form-control @error('desig_code') is-invalid @enderror" required>
+                            <option value="">-- Select Designation --</option>
+                            @foreach($designations as $d)
+                                <option value="{{ $d->code }}" {{ old('desig_code') == $d->code ? 'selected' : '' }}>
+                                    {{ $d->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('desig_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Branch</label>
+                        <select name="branch_code" class="form-control">
+                            <option value="">-- All Branches --</option>
+                            @foreach($branches as $b)
+                                <option value="{{ $b->code }}" {{ old('branch_code') == $b->code ? 'selected' : '' }}>
+                                    {{ $b->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Department</label>
+                        <select name="dept_code" class="form-control">
+                            <option value="">-- All Departments --</option>
+                            @foreach($departments as $d)
+                                <option value="{{ $d->code }}" {{ old('dept_code') == $d->code ? 'selected' : '' }}>
+                                    {{ $d->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Division</label>
+                        <select name="div_code" class="form-control">
+                            <option value="">-- All Divisions --</option>
+                            @foreach($divisions as $d)
+                                <option value="{{ $d->code }}" {{ old('div_code') == $d->code ? 'selected' : '' }}>
+                                    {{ $d->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Location</label>
+                        <select name="loc_code" class="form-control">
+                            <option value="">-- All Locations --</option>
+                            @foreach($locations as $l)
+                                <option value="{{ $l->code }}" {{ old('loc_code') == $l->code ? 'selected' : '' }}>
+                                    {{ $l->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2 form-group">
+                        <label>Max Occupants</label>
+                        <input type="number" name="max_occupants" value="{{ old('max_occupants', 1) }}"
+                               class="form-control" min="1" max="10">
+                    </div>
+                    <div class="col-md-2 form-group d-flex align-items-end pb-2">
+                        <div class="custom-control custom-switch">
+                            <input type="hidden" name="is_active" value="0">
+                            <input type="checkbox" class="custom-control-input" id="is_active"
+                                   name="is_active" value="1" {{ old('is_active', 1) ? 'checked' : '' }}>
+                            <label class="custom-control-label" for="is_active">Active</label>
                         </div>
-
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="la la-save"></i> Create Post
-                            </button>
-                            <a href="{{ backpack_url('post') }}" class="btn btn-secondary btn-lg">Cancel</a>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        {{-- Org Scopes --}}
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <strong>Org Scopes</strong>
+                <small class="ml-2 text-muted">Leave blank for wildcard (all access)</small>
+                <button type="button" class="btn btn-sm btn-outline-primary ml-auto" id="addOrgScope">
+                    <i class="la la-plus"></i> Add Scope
+                </button>
+            </div>
+            <div class="card-body" id="orgScopesContainer">
+                <div class="row font-weight-bold mb-1 px-2">
+                    <div class="col-5">Scope Type</div>
+                    <div class="col-5">Scope Value <small class="text-muted">(blank = wildcard)</small></div>
+                    <div class="col-2"></div>
+                </div>
+                {{-- rows injected by JS --}}
+            </div>
+        </div>
+
+        {{-- Vehicle Scopes --}}
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <strong>Vehicle Scopes</strong>
+                <small class="ml-2 text-muted">Leave blank for wildcard (all access)</small>
+                <button type="button" class="btn btn-sm btn-outline-primary ml-auto" id="addVehicleScope">
+                    <i class="la la-plus"></i> Add Scope
+                </button>
+            </div>
+            <div class="card-body" id="vehicleScopesContainer">
+                <div class="row font-weight-bold mb-1 px-2">
+                    <div class="col-5">Scope Type</div>
+                    <div class="col-5">Scope Value <small class="text-muted">(blank = wildcard)</small></div>
+                    <div class="col-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <button type="submit" class="btn btn-success"><i class="la la-save"></i> Save Post</button>
+            <a href="{{ backpack_url('post') }}" class="btn btn-secondary ml-2">Cancel</a>
+        </div>
+    </form>
 </div>
 @endsection
+
+@push('after_scripts')
+<script>
+const orgTypes     = @json(\App\Models\IAM\PostOrgScope::TYPES);
+const vehicleTypes = @json(\App\Models\IAM\PostVehicleScope::TYPES);
+
+function makeScopeRow(prefix, types, index) {
+    const options = types.map(t => `<option value="${t}">${t}</option>`).join('');
+    return `
+    <div class="row mb-2 scope-row align-items-center px-2" id="${prefix}_row_${index}">
+        <div class="col-5">
+            <select name="${prefix}[${index}][type]" class="form-control form-control-sm">
+                ${options}
+            </select>
+        </div>
+        <div class="col-5">
+            <input type="text" name="${prefix}[${index}][value]" class="form-control form-control-sm"
+                   placeholder="e.g. NKH (blank = wildcard)">
+        </div>
+        <div class="col-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.scope-row').remove()">
+                <i class="la la-trash"></i>
+            </button>
+        </div>
+    </div>`;
+}
+
+let orgIdx = 0, vehIdx = 0;
+
+document.getElementById('addOrgScope').addEventListener('click', function() {
+    document.getElementById('orgScopesContainer').insertAdjacentHTML('beforeend',
+        makeScopeRow('org_scopes', orgTypes, orgIdx++));
+});
+
+document.getElementById('addVehicleScope').addEventListener('click', function() {
+    document.getElementById('vehicleScopesContainer').insertAdjacentHTML('beforeend',
+        makeScopeRow('vehicle_scopes', vehicleTypes, vehIdx++));
+});
+</script>
+@endpush

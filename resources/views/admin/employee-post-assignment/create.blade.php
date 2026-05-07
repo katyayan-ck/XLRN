@@ -1,99 +1,58 @@
 @extends(backpack_view('blank'))
 
-@section('title', 'Add New Post Assignment')
-
-@push('after_styles')
-<style>
-    .card {
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    }
-
-    .form-control:focus {
-        border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
-    }
-</style>
-@endpush
+@section('header')
+    <section class="header-operation container-fluid animated fadeIn d-flex mb-2 align-items-baseline d-print-none">
+        <h2 class="text-capitalize mb-0">Onboard Employee to Post</h2>
+    </section>
+@endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header text-black">
-                    <h2 class="mb-0">Add New Post Assignment</h2>
-                </div>
-                <div class="card-body">
-
-                    <form method="POST" action="{{ backpack_url('employee-post-assignment') }}">
-                        @csrf
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label>Employee <span class="text-danger">*</span></label>
-                                <select name="employee_id" class="form-control form-select" required>
-                                    <option value="">Select Employee</option>
-                                    @foreach($employees as $emp)
-                                    <option value="{{ $emp->id }}" {{ old('employee_id')==$emp->id ? 'selected' : '' }}>
-                                        {{ $emp->code }} - {{ $emp->person ? trim($emp->person->first_name . ' ' .
-                                        $emp->person->last_name) : 'No Person' }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>Post <span class="text-danger">*</span></label>
-                                <select name="post_id" class="form-control form-select" required>
-                                    <option value="">Select Post</option>
-                                    @foreach($posts as $p)
-                                    <option value="{{ $p->id }}" {{ old('post_id', isset($assignment) ? $assignment->
-                                        post_id : '') == $p->id ? 'selected' : '' }}>
-                                        {{ $p->name ?? $p->display_name ?? $p->title ?? $p->code ?? 'Post #' . $p->id }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>From Date <span class="text-danger">*</span></label>
-                                <input type="date" name="from_date" class="form-control" value="{{ old('from_date') }}"
-                                    required>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>To Date</label>
-                                <input type="date" name="to_date" class="form-control" value="{{ old('to_date') }}">
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>Assignment Order</label>
-                                <input type="number" name="assignment_order" class="form-control"
-                                    value="{{ old('assignment_order', 1) }}" min="1">
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Is Current?</label>
-                                <div class="form-check form-switch">
-                                    <input type="hidden" name="is_current" value="0">
-                                    <input type="checkbox" name="is_current" value="1" class="form-check-input" {{
-                                        old('is_current', true) ? 'checked' : '' }}>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="la la-save"></i> Create Assignment
-                            </button>
-                            <a href="{{ backpack_url('employee-post-assignment') }}"
-                                class="btn btn-secondary btn-lg">Cancel</a>
-                        </div>
-                    </form>
+<div class="container-fluid animated fadeIn">
+    <form method="POST" action="{{ backpack_url('emp-post-assignment') }}">
+        @csrf
+        <div class="card">
+            <div class="card-header"><strong>Assignment Details</strong></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label>Employee <span class="text-danger">*</span></label>
+                        <select name="emp_code" class="form-control @error('emp_code') is-invalid @enderror" required>
+                            <option value="">-- Select Employee --</option>
+                            @foreach($employees as $e)
+                                <option value="{{ $e->code }}" {{ old('emp_code') == $e->code ? 'selected' : '' }}>
+                                    {{ $e->code }} — {{ $e->person?->display_name ?? $e->code }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('emp_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <small class="text-muted">Only employees without a current primary post are shown.</small>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Post <span class="text-danger">*</span></label>
+                        <select name="post_code" class="form-control @error('post_code') is-invalid @enderror" required>
+                            <option value="">-- Select Vacant Post --</option>
+                            @foreach($posts as $p)
+                                <option value="{{ $p->post_code }}" {{ old('post_code') == $p->post_code ? 'selected' : '' }}>
+                                    {{ $p->post_code }} — {{ $p->designation?->name ?? '' }}
+                                    @if($p->branch) ({{ $p->branch->name }}) @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('post_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>From Date <span class="text-danger">*</span></label>
+                        <input type="date" name="from_date" value="{{ old('from_date', date('Y-m-d')) }}"
+                               class="form-control @error('from_date') is-invalid @enderror" required>
+                        @error('from_date') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+        <div class="mb-4">
+            <button type="submit" class="btn btn-success"><i class="la la-user-check"></i> Onboard</button>
+            <a href="{{ backpack_url('emp-post-assignment') }}" class="btn btn-secondary ml-2">Cancel</a>
+        </div>
+    </form>
 </div>
 @endsection

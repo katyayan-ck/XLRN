@@ -2,6 +2,8 @@
 
 namespace App\Models\Module\Booking;
 
+use \App\Models\Traits\ScopedQuery;
+
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,10 @@ class Booking extends BaseModel  implements HasMedia
     protected $table = 'xlr8_booking_master';
     protected $fillable = [];
     protected $guarded = ['id'];
+
+    public string $scopeType   = 'branch';
+public string $scopeColumn = 'branchid';   // existing column name on xlr8_booking_master
+public string $scopeGroup  = 'org';
 
 
 

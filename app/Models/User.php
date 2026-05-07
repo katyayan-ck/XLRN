@@ -130,6 +130,29 @@ class User extends Authenticatable
         ]);
     }
 
+    /**
+ * Step 1 — Tell Laravel where the email lives.
+ * Called by Backpack's Password Broker on every boot.
+ */
+public function getEmailForPasswordReset(): string
+{
+    return $this->person
+        ?->contacts()
+        ->where('data_type', 'Email')
+        ->where('contact_type', 'Primary')
+        ->whereNull('deleted_at')
+        ->value('contact_detail') ?? '';
+}
+
+/**
+ * Step 2 — Tell Laravel Notifications where to send the email.
+ * Called when the reset email is actually dispatched.
+ */
+public function routeNotificationForMail(): string
+{
+    return $this->getEmailForPasswordReset();
+}
+
     // ── RBAC (preserved) ──────────────────────────────────────────────────────
 
     public function roleAssignments(): HasMany
@@ -333,19 +356,7 @@ class User extends Authenticatable
         return $this->employee?->getCurrentScope() ?? [];
     }
 
-    // ── Auth username (Fortify / custom guard) ────────────────────────────────
-    // FIX: getEmailForPasswordReset() and findForPassport() must use person proxy
-    //      since `email` column is removed from users table.
-
-    public function getEmailForPasswordReset(): string
-    {
-        return $this->person?->primary_email ?? '';
-    }
-
-    public function routeNotificationForMail(): string
-    {
-        return $this->person?->primary_email ?? '';
-    }
+    
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 

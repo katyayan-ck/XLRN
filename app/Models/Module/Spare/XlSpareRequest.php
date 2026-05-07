@@ -2,35 +2,30 @@
 
 namespace App\Models;
 
+use App\Models\Traits\ScopedQuery;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use DataTables, Auth;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class XlSpareRequest extends BaseModel
 {
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    use SoftDeletes;
+    use SoftDeletes, ScopedQuery;
+
     protected $table = 'xlr8_spare_request';
 
-    /**
-     * The attributes to be fillable from the model.
-     *
-     * A dirty hack to allow fields to be fillable by calling empty fillable array
-     *
-     * @var array
-     */
-
-    protected $fillable = [];
     protected $guarded = ['id'];
+
     /**
-     * The attributes excluded from the model's JSON form.
-     *
-     * @var array
+     * DataScopeFilter config — filters by branch_code column.
+     * If this table uses an integer branch_id instead, change scopeColumn to 'branch_id'
+     * and keep it commented until branch column migration is done (same as Booking/Stock).
      */
-	  public function details()
+    public string $scopeType   = 'branch';
+    public string $scopeColumn = 'branch_code'; // ← change to 'branch_id' if needed
+    public string $scopeGroup  = 'org';
+
+    // ── Relations ─────────────────────────────────────────────────────
+
+    public function details(): HasMany
     {
         return $this->hasMany(XlSpareRequestDetail::class, 'spare_req_id');
     }

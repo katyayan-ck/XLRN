@@ -1,44 +1,102 @@
 <?php
-<?php
 
 namespace App\Models\IAM;
 
-use App\Models\Admin\Department;
-use App\Models\Admin\Designation;
-use App\Models\Admin\DesigDeptTree;
-use App\Models\Admin\Division;
-use App\Models\Admin\EmpPostAssignment;
-use App\Models\Admin\Location;
-use App\Models\IAM\PostOrgScope;
-use App\Models\IAM\PostVehicleScope;
-use App\Models\IAM\PostPermission;
-use App\Models\IAM\PostReporting;
+use App\Models\Admin\{Branch, Department, Designation, DesigDeptTree, Division, EmpPostAssignment, Location};
+use App\Models\IAM\{PostOrgScope, PostPermission, PostReporting, PostVehicleScope};
+use App\Models\BaseModel;
+
+
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Permission\Models\Role;
 
 /**
- * Post extends Role (which extends SpatieRole).
- * Stored in xlr8_iam_roles with is_post = true.
- *
+ * Post = a named organisational position stored as a Spatie Role row.
+ * is_post = true discriminates Posts from system Roles.
  * Workspace Rules:
- *  - No SQL FKs: all relations are code-based via Eloquent only
- *  - 6 audit columns managed via boot hooks
- *  - Pure Eloquent: no raw SQL
+ *   - NO SQL FKs — Eloquent only
+ *   - BaseModel provides 6 audit columns + SoftDeletes
+ *   - name always equals post_code (Spatie's unique key)
+ *   - guard_name always 'web'
  */
 class Post extends Role
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;   // ← HasFactory HERE, same line as SoftDeletes
 
-    // ── Boot: auto-enforce post rules ────────────────────────────────────
+    protected $table = 'xlr8_iam_roles';
 
-    protected static function booted(): void
+    protected $fillable = [
+        'name',           // Spatie required — always = post_code
+        'guard_name',     // Spatie required — always 'web'
+        'post_code',
+        'display_name',
+        'is_post',
+        'branch_code',
+        'loc_code',
+        'dept_code',
+        'div_code',
+        'desig_code',
+        'tree_code',
+        'seq_no',
+        'max_occupants',
+        'is_active',
+        'metadata',
+        'created_by',
+        'updated_by',
+        'deleted_by',
+    ];
+
+    protected $casts = [
+        'is_post'       => 'boolean',
+        'is_active'     => 'boolean',
+        'max_occupants' => 'integer',
+        'seq_no'        => 'integer',
+        'metadata'      => 'array',
+    ];
+
+    // ── Factory ───────────────────────────────────────────────────────────
+
+    protected static function newFactory(): \Database\Factories\IAM\PostFactory
+{
+    return \Database\Factories\IAM\PostFactory::new();
+}
+
+public static function create(array $attributes = []): static
+{
+    // Generate post_code first if not given
+    if (empty($attributes['post_code'])) {
+        $attributes['post_code'] = static::generateCode(
+            $attributes['loc_code']   ?? $attributes['branch_code'] ?? 'GEN',
+            $attributes['dept_code']  ?? 'GEN',
+            $attributes['div_code']   ?? null,
+            $attributes['desig_code'] ?? 'GEN'
+        );
+    }
+
+    // Spatie REQUIRES name — set it before parent::create() is called
+    $attributes['name']       = $attributes['post_code'];
+    $attributes['guard_name'] = $attributes['guard_name'] ?? 'web';
+    $attributes['is_post']    = true;
+
+    return parent::create($attributes);
+}
+
+
+    // ── Boot ──────────────────────────────────────────────────────────────
+
+    protected static function boot(): void
     {
+        parent::boot();
+
+        // Global scope: Post queries never accidentally return system Roles
+        static::addGlobalScope('posts_only', fn (Builder $q) => $q->where('is_post', true));
+
         static::creating(function (Post $post) {
             $post->is_post    = true;
-            $post->guard_name = $post->guard_name ?? 'api';
+            $post->guard_name = $post->guard_name ?? 'web';  // ← 'web' not 'api'
 
             if (empty($post->post_code)) {
                 $post->post_code = static::generateCode(
@@ -52,7 +110,6 @@ class Post extends Role
             // Spatie uses `name` as the unique role identifier
             $post->name = $post->post_code;
 
-            // Audit
             if (auth()->check()) {
                 $post->created_by = $post->created_by ?? auth()->id();
                 $post->updated_by = auth()->id();
@@ -60,7 +117,6 @@ class Post extends Role
         });
 
         static::updating(function (Post $post) {
-            // Keep Spatie's name in sync if post_code changes
             if ($post->isDirty('post_code')) {
                 $post->name = $post->post_code;
             }
@@ -77,28 +133,11 @@ class Post extends Role
         });
     }
 
-    // ── Global Scope: Posts only ─────────────────────────────────────────
-
-    protected static function newFactory()
-    {
-        return null; // Add PostFactory when needed
-    }
-
-    /**
-     * Every query on Post model automatically filters is_post = true.
-     * This means Post::all() never accidentally returns system roles.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-        static::addGlobalScope('posts_only', fn(Builder $q) => $q->where('is_post', true));
-    }
-
-    // ── Code-based Relations (NO SQL FKs — Eloquent only) ────────────────
+    // ── Code-based Relations (NO SQL FKs — Eloquent only) ─────────────────
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Admin\Branch::class, 'branch_code', 'branch_code');
+        return $this->belongsTo(Branch::class, 'branch_code', 'branch_code');
     }
 
     public function location(): BelongsTo
@@ -126,7 +165,7 @@ class Post extends Role
         return $this->belongsTo(DesigDeptTree::class, 'tree_code', 'tree_code');
     }
 
-    // ── Scope Tables ─────────────────────────────────────────────────────
+    // ── Scope Tables ──────────────────────────────────────────────────────
 
     public function orgScopes(): HasMany
     {
@@ -169,7 +208,7 @@ class Post extends Role
         return $this->empAssignments()->whereNull('to_date');
     }
 
-    // ── Local Scopes ─────────────────────────────────────────────────────
+    // ── Local Scopes ──────────────────────────────────────────────────────
 
     public function scopeVacant(Builder $q): Builder
     {
@@ -197,6 +236,11 @@ class Post extends Role
         return $q->where('desig_code', $code);
     }
 
+public function scopeActive(Builder $q): Builder
+{
+    return $q->where('is_active', true);
+}
+
     // ── Business Logic ────────────────────────────────────────────────────
 
     public function isVacant(): bool
@@ -210,13 +254,13 @@ class Post extends Role
     }
 
     /**
-     * Union org scope across all assigned employees.
-     * Returns null = wildcard (all access), [] = no access, [...codes] = specific access.
+     * Union org scope for a given scope_type.
+     * Returns null = wildcard, [] = no access, [...codes] = specific.
      */
     public function getOrgScopeFor(string $scopeType): ?array
     {
         $scopes = $this->orgScopes->where('scope_type', $scopeType);
-        if ($scopes->contains('scope_value', null)) return null; // wildcard
+        if ($scopes->contains('scope_value', null)) return null;
         return $scopes->pluck('scope_value')->filter()->unique()->values()->all();
     }
 
@@ -230,8 +274,8 @@ class Post extends Role
     // ── Code Generator ────────────────────────────────────────────────────
 
     /**
-     * Generates: LOC-DEPT-DIV-DESIG-SEQ or LOC-DEPT-DESIG-SEQ
-     * e.g. NKH-SLS-SHW-FSC-001
+     * Generates: BRANCH-DEPT-DIV-DESIG-001  or  BRANCH-DEPT-DESIG-001
+     * Uses withoutGlobalScopes() so the is_post global scope doesn't interfere.
      */
     public static function generateCode(
         string $locOrBranch,
@@ -239,15 +283,16 @@ class Post extends Role
         ?string $divCode,
         string $desigCode
     ): string {
-        $parts  = array_filter([$locOrBranch, $deptCode, $divCode, $desigCode]);
-        $base   = strtoupper(implode('-', $parts));
-        $seq    = static::withoutGlobalScopes()
+        $parts = array_filter([$locOrBranch, $deptCode, $divCode, $desigCode]);
+        $base  = strtoupper(implode('-', $parts));
+        $seq   = static::withoutGlobalScopes()
                         ->where('is_post', true)
                         ->where('post_code', 'LIKE', "{$base}-%")
                         ->count() + 1;
         return $base . '-' . str_pad($seq, 3, '0', STR_PAD_LEFT);
     }
 }
+
 
 // namespace App\Models\IAM;
 

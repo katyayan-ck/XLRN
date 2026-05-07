@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'validate_device' => \App\Http\Middleware\ValidateDevice::class,
         ]);
     })
+    ->withCommands([                                        // ← ADD THIS
+        \App\Console\Commands\ImportRbacMasterCommand::class,
+        \App\Console\Commands\ImportUsersCommand::class,
+    ])
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

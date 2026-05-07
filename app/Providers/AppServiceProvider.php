@@ -28,9 +28,13 @@ class AppServiceProvider extends ServiceProvider
             return new DataScopeService();
         });
 
-        $this->app->singleton(AuthService::class, function ($app) {
-            return new AuthService();
-        });
+$this->app->bind(AuthService::class, function ($app) {
+    return new AuthService(
+        $app->make(\Illuminate\Http\Request::class),
+        $app->make(\Illuminate\Cache\CacheManager::class),
+        $app->make(\App\Services\OtpNotificationService::class)
+    );
+});
 
         $this->app->singleton(ApprovalService::class, function ($app) {
             return new ApprovalService();
@@ -47,10 +51,13 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-       $this->app->singleton(\App\Services\IAM\PostService::class);
-$this->app->singleton(\App\Services\HR\HRJourneyService::class);
+
+
 $this->app->singleton(\App\Services\IAM\DataScopeService::class);
+$this->app->singleton(\App\Services\IAM\PostService::class);
 $this->app->singleton(\App\Services\IAM\ReportingService::class);
+$this->app->singleton(\App\Services\HR\HRJourneyService::class);
+
     }
 
     /**

@@ -3,42 +3,60 @@
 namespace App\Models\Admin;
 
 use App\Models\BaseModel;
-use App\Models\IAM\Post;
 use Carbon\Carbon;
+use Database\Factories\Admin\EmpPostAssignmentFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * The HR Journey table.
- * Every assignment, transfer, promotion, demotion and relieving writes here.
- * to_date = NULL means currently active.
- * Workspace Rule: Pure Eloquent — all queries via named scopes.
+ * Employee ↔ Post assignment history.
+ * One record per assignment period. Current = to_date IS NULL.
+ * Workspace Rule: NO SQL FKs — Eloquent-only relations via emp_code / post_code.
  */
 class EmpPostAssignment extends BaseModel
 {
+    use SoftDeletes, HasFactory;   // ← HasFactory ADDED HERE
+
     protected $table = 'xlr8_admin_emp_post_assignments';
 
     protected $fillable = [
-        'emp_code','post_code','assignment_type',
-        'from_date','to_date','relieving_type','remarks','relieved_by',
-        'created_by','updated_by','deleted_by',
+        'emp_code',
+        'post_code',
+        'assignment_type',
+        'from_date',
+        'to_date',
+        'relieving_type',
+        'remarks',
+        'relieved_by',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     protected $casts = [
-        'from_date' => 'date',
-        'to_date'   => 'date',
-    ];
+    'from_date' => 'date:Y-m-d',
+    'to_date'   => 'date:Y-m-d',
+];
+
+    // ── Factory ───────────────────────────────────────────────────────────
+
+    protected static function newFactory(): EmpPostAssignmentFactory
+    {
+        return EmpPostAssignmentFactory::new();
+    }
 
     // ── Relations (code-based, NO SQL FKs) ───────────────────────────────
 
     public function employee(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'emp_code', 'emp_code');
+        return $this->belongsTo(Employee::class, 'emp_code', 'code');
     }
 
     public function post(): BelongsTo
     {
-        return $this->belongsTo(Post::class, 'post_code', 'post_code');
+        return $this->belongsTo(\App\Models\IAM\Post::class, 'post_code', 'post_code');
     }
 
     public function relievedByUser(): BelongsTo
@@ -46,7 +64,7 @@ class EmpPostAssignment extends BaseModel
         return $this->belongsTo(\App\Models\User::class, 'relieved_by', 'id');
     }
 
-    // ── Named Scopes — composable building blocks ─────────────────────────
+    // ── Named Scopes ──────────────────────────────────────────────────────
 
     /** Active (not yet relieved) */
     public function scopeCurrent(Builder $q): Builder
@@ -66,7 +84,7 @@ class EmpPostAssignment extends BaseModel
 
     /**
      * Assignments active on a specific date.
-     * Replaces the raw SQL: from_date <= date AND (to_date IS NULL OR to_date >= date)
+     * from_date <= $date AND (to_date IS NULL OR to_date >= $date)
      */
     public function scopeOnDate(Builder $q, string|Carbon $date): Builder
     {

@@ -3,12 +3,12 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Admin\EmpPostAssignment;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class EmpPostAssignmentTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     public function test_current_scope_returns_only_active_assignments(): void
     {

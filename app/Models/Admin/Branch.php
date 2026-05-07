@@ -1,121 +1,67 @@
 <?php
-
 namespace App\Models\Admin;
 
-use App\Models\BaseModel;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
-use OpenApi\Attributes as OA;
-
-#[OA\Schema(title: 'Branch')]
-/**
- * Branch Model
- *
- * Represents company branches/offices
- */
-class Branch extends BaseModel
+class Branch extends Model
 {
-    use CrudTrait;
-    use HasFactory;
-    protected $table = 'xlr8_admin_branch';
-    public $scopeType = 'branch';
+    use SoftDeletes;
 
+    protected $table = 'xlr8_admin_branch';
+
+    // Schema has code (varchar 255 unique) AND branch_code (varchar 10 short org key).
+    // All cross-table FKs in employee/location/post use branch_code.
     protected $fillable = [
-        'code',
-        'name',
-        'short_name',
-        'description',
-        'phone',
-        'email',
-        'address',
-        'city',
-        'state',
-        'pincode',
-        'country',
-        'latitude',
-        'longitude',
-        'is_head_office',
-        'is_active',
+        'code', 'branch_code', 'name', 'short_name', 'description',
+        'phone', 'email', 'address', 'city', 'state', 'pincode', 'country',
+        'latitude', 'longitude', 'is_head_office', 'is_active',
     ];
 
     protected $casts = [
         'is_head_office' => 'boolean',
-        'is_active' => 'boolean',
-        'latitude' => 'float',
-        'longitude' => 'float',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'is_active'      => 'boolean',
+        'latitude'       => 'float',
+        'longitude'      => 'float',
     ];
 
-    /**
-     * Relationship: Locations under this branch
-     */
-    public function locations()
+    public function getRouteKeyName(): string { return 'branch_code'; }
+
+    // ── Relations ─────────────────────────────────────────────────────────────
+    public function locations(): HasMany
     {
-        return $this->hasMany(Location::class);
+        // location.branch_code → branch.branch_code
+        return $this->hasMany(Location::class, 'branch_code', 'branch_code');
     }
 
-    /**
-     * Relationship: Employees assigned to branch
-     */
-    public function employees()
+    public function primaryEmployees(): HasMany
     {
-        return $this->belongsToMany(
-            Employee::class,
-            'employee_branch_assignments',
-            'branch_id',
-            'employee_id'
-        )->withPivot(['from_date', 'to_date', 'is_primary', 'is_current']);
+        return $this->hasMany(Employee::class, 'primary_branch_code', 'branch_code');
     }
 
-    /**
-     * Relationship: Departments
-     */
-    public function departments()
+    public function posts(): HasMany
     {
-        return $this->hasMany(Department::class);
+        return $this->hasMany(\App\Models\Iam\Post::class, 'branch_code', 'branch_code');
     }
 
-    /**
-     * Scope: Only head office
-     */
-    public function scopeHeadOffice($query)
+    // ── Scopes ────────────────────────────────────────────────────────────────
+    public function scopeActive($q)        { return $q->where('is_active', true); }
+    public function scopeHeadOffice($q)    { return $q->where('is_head_office', true); }
+    public function scopeByCity($q, $city) { return $q->where('city', $city); }
+    public function scopeByState($q, $s)   { return $q->where('state', $s); }
+
+    // ── Mutators ──────────────────────────────────────────────────────────────
+    public function setBranchCodeAttribute(string $v): void
     {
-        return $query->where('is_head_office', true);
+        $this->attributes['branch_code'] = strtoupper(trim($v));
     }
 
-    /**
-     * Scope: Get branches by city
-     */
-    public function scopeByCity($query, $city)
+    // ── Accessors ─────────────────────────────────────────────────────────────
+    public function getFullAddressAttribute(): string
     {
-        return $query->where('city', $city);
-    }
-
-    /**
-     * Scope: Get branches by state
-     */
-    public function scopeByState($query, $state)
-    {
-        return $query->where('state', $state);
-    }
-
-    /**
-     * Generate auto code
-     */
-    public static function generateCode($prefix = 'BR')
-    {
-        $lastId = self::withTrashed()->max('id') ?? 0;
-        return $prefix . '-' . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Get full address
-     */
-    public function getFullAddressAttribute()
-    {
-        return "{$this->address}, {$this->city}, {$this->state} {$this->pincode}";
+        return implode(', ', array_filter([
+            $this->address, $this->city, $this->state, $this->pincode
+        ]));
     }
 }

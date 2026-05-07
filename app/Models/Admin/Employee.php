@@ -38,7 +38,7 @@ class Employee extends Model
         'vertical_code',
         'segment_code',
         'sub_segment_code',
-
+        'mile_id', 
         // Reporting
         'reporting_emp_code',   // FK → xlr8_admin_employee.code (self-ref)
 
@@ -168,6 +168,68 @@ class Employee extends Model
 
     // ── Relationships ──────────────────────────────────────────────────────────
 
+    // ── Post-Scope Aggregation Methods (Sprint 2) ─────────────────────────────
+
+/**
+ * Get UNION of org scope codes across ALL current active posts.
+ * Returns: null = wildcard (all access) | [] = no access | ['NKH','BKN'] = specific
+ */
+public function getUnionScopeFor(string $scopeType): ?array
+{
+    $assignments = \App\Models\Admin\EmpPostAssignment::forEmployee($this->code)
+        ->primary()
+        ->current()
+        ->with('post.orgScopes')
+        ->get();
+
+    if ($assignments->isEmpty()) return [];
+
+    $allCodes = collect();
+
+    foreach ($assignments as $assignment) {
+        $codes = $assignment->post?->getOrgScopeFor($scopeType);
+        if ($codes === null) return null; // any wildcard post = full wildcard
+        $allCodes = $allCodes->merge($codes);
+    }
+
+    return $allCodes->unique()->values()->all();
+}
+
+/**
+ * Get UNION of vehicle scope codes across ALL current active posts.
+ */
+public function getVehicleScopeFor(string $scopeType): ?array
+{
+    $assignments = \App\Models\Admin\EmpPostAssignment::forEmployee($this->code)
+        ->primary()
+        ->current()
+        ->with('post.vehicleScopes')
+        ->get();
+
+    if ($assignments->isEmpty()) return [];
+
+    $allCodes = collect();
+
+    foreach ($assignments as $assignment) {
+        $codes = $assignment->post?->getVehicleScopeFor($scopeType);
+        if ($codes === null) return null;
+        $allCodes = $allCodes->merge($codes);
+    }
+
+    return $allCodes->unique()->values()->all();
+}
+
+/**
+ * Get the employee's primary post assignment on a given date.
+ */
+public function getPostOnDate(string|\Carbon\Carbon $date): ?\App\Models\Admin\EmpPostAssignment
+{
+    return \App\Models\Admin\EmpPostAssignment::forEmployee($this->code)
+        ->primary()
+        ->onDate(\Carbon\Carbon::parse($date))
+        ->first();
+}
+
     // FIX: person via person_code (natural key) — NOT person_id
     public function person(): BelongsTo
     {
@@ -179,6 +241,7 @@ class Employee extends Model
     {
         return $this->hasOne(\App\Models\User::class, 'employee_code', 'code');
     }
+    
 
     // Self-referencing reporting chain
     public function reportingManager(): BelongsTo

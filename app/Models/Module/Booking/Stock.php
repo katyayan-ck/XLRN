@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
+use \App\Models\Traits\ScopedQuery;
 
 class Stock extends BaseModel
 {
@@ -14,7 +15,9 @@ class Stock extends BaseModel
 	 */
 	use SoftDeletes;
 	protected $table = 'xcelr8_stock_master';
-
+public string $scopeType   = 'branch';
+public string $scopeColumn = 'branchid';
+public string $scopeGroup  = 'org';
 	/**
 	 * The attributes to be fillable from the model.
 	 *

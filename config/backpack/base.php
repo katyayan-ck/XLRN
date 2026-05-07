@@ -54,7 +54,7 @@ return [
 
     // Set this to false if you would like to skip adding the password recovery routes
     // (you then need to manually define the routes in your web.php)
-    'setup_password_recovery_routes' => true,
+    'setup_password_recovery_routes' => false,
 
     // Set this to true if you would like to enable email verification for your user model.
     // Make sure your user model implements the MustVerifyEmail contract and your database
@@ -63,7 +63,7 @@ return [
 
     // When email verification is enabled, automatically add the Verified middleware to Backpack routes?
     // Set false if you want to use your own Verified middleware in `middleware_class`.
-    'setup_email_verification_middleware' => true,
+    'setup_email_verification_middleware' => false,
 
     // How many times in any given time period should the user be allowed to
     // request a new verification email?
@@ -171,7 +171,7 @@ return [
     // Should we use DB transactions when executing multiple queries? For example when creating an entry and it's relationships.
     // By wrapping in a database transaction you ensure that either all queries went ok, or if some failed the whole process
     // is rolled back and considered failed. This is a good setting for data integrity.
-    'useDatabaseTransactions' => true,
+    'use DatabaseTransactions' => true,
 
     /*
     |--------------------------------------------------------------------------

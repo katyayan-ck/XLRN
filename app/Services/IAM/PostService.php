@@ -3,7 +3,7 @@
 namespace App\Services\IAM;
 
 use App\Enums\ErrorCodeEnum;
-use App\Exceptions\ApplicationException;
+use App\Exceptions\DomainException;
 use App\Models\IAM\Post;
 use App\Models\IAM\PostOrgScope;
 use App\Models\IAM\PostVehicleScope;
@@ -58,10 +58,7 @@ class PostService
         ])->where('post_code', $postCode)->first();
 
         if (!$post) {
-            throw new ApplicationException(
-                ErrorCodeEnum::POST_NOT_FOUND,
-                "Post [{$postCode}] not found."
-            );
+           throw new DomainException('Post not found', ErrorCodeEnum::POST_NOT_FOUND);
         }
         return $post;
     }
@@ -79,35 +76,60 @@ class PostService
     // ── Write Operations ──────────────────────────────────────────────
 
     public function create(array $data): Post
-    {
-        return DB::transaction(function () use ($data) {
-            $post = Post::create([
-                'display_name'  => $data['display_name'],
-                'branch_code'   => $data['branch_code'],
-                'loc_code'      => $data['loc_code']    ?? null,
-                'dept_code'     => $data['dept_code']   ?? null,
-                'div_code'      => $data['div_code']    ?? null,
-                'desig_code'    => $data['desig_code']  ?? null,
-                'tree_code'     => $data['tree_code']   ?? null,
-                'max_occupants' => $data['max_occupants'] ?? 1,
-                'seq_no'        => $data['seq_no']      ?? 1,
-                'is_active'     => $data['is_active']   ?? true,
-                'metadata'      => $data['metadata']    ?? null,
-            ]);
+{
+    return DB::transaction(function () use ($data) {
+        // Generate post_code first (needed as the 'name' for Spatie)
+        $postCode = $this->generatePostCode(
+            $data['branch_code'],
+            $data['dept_code']    ?? null,
+            $data['div_code']     ?? null,
+            $data['desig_code']   ?? null,
+        );
 
-            // Attach org scopes if provided
-            if (!empty($data['org_scopes'])) {
-                $this->syncOrgScopes($post, $data['org_scopes']);
-            }
+        $post = Post::create([
+            'name'         => $postCode,   // ← REQUIRED by Spatie Role
+            'guard_name'   => 'web',       // ← REQUIRED by Spatie Role
+            'post_code'    => $postCode,
+            'display_name' => $data['display_name'],
+            'branch_code'  => $data['branch_code'],
+            'loc_code'     => $data['loc_code']     ?? null,
+            'dept_code'    => $data['dept_code']    ?? null,
+            'div_code'     => $data['div_code']     ?? null,
+            'desig_code'   => $data['desig_code']   ?? null,
+            'tree_code'    => $data['tree_code']    ?? null,
+            'max_occupants'=> $data['max_occupants'] ?? 1,
+            'seq_no'       => $data['seq_no']       ?? 1,
+            'is_active'    => $data['is_active']    ?? true,
+            'metadata'     => $data['metadata']     ?? null,
+        ]);
 
-            // Attach vehicle scopes if provided
-            if (!empty($data['vehicle_scopes'])) {
-                $this->syncVehicleScopes($post, $data['vehicle_scopes']);
-            }
+        if (!empty($data['org_scopes'])) {
+            $this->syncOrgScopes($post, $data['org_scopes']);
+        }
+        if (!empty($data['vehicle_scopes'])) {
+            $this->syncVehicleScopes($post, $data['vehicle_scopes']);
+        }
 
-            return $post->load(['orgScopes', 'vehicleScopes']);
-        });
-    }
+        return $post->load(['orgScopes', 'vehicleScopes']);
+    });
+}
+
+private function generatePostCode(
+    string $branchCode,
+    ?string $deptCode,
+    ?string $divCode,
+    ?string $desigCode
+): string {
+    $prefix = collect([$branchCode, $deptCode, $divCode, $desigCode])
+        ->filter()
+        ->implode('-');
+
+    $count = Post::where('is_post', true)
+                 ->where('post_code', 'LIKE', "{$prefix}-%")
+                 ->count();
+
+    return $prefix . '-' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+}
 
     public function update(string $postCode, array $data): Post
     {
@@ -144,10 +166,7 @@ class PostService
 
             // Block deactivation if post has active occupants
             if (!$post->isVacant()) {
-                throw new ApplicationException(
-                    ErrorCodeEnum::POST_HAS_ACTIVE_OCCUPANTS,
-                    "Cannot deactivate post [{$postCode}] — it has active occupants. Relieve them first."
-                );
+                throw new DomainException('Cannot deactivate post with active occupants', ErrorCodeEnum::POST_HAS_ACTIVE_OCCUPANTS);
             }
 
             $post->update(['is_active' => false]);

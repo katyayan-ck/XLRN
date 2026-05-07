@@ -2,132 +2,215 @@
 
 namespace App\Services\IAM;
 
-use App\Models\IAM\Post;
 use App\Models\Admin\EmpPostAssignment;
+use App\Models\IAM\Post;
+use App\Models\IAM\PostOrgScope;
+use App\Models\IAM\PostVehicleScope;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
- * DataScopeService — resolves what data an employee/post can see.
+ * DataScopeService — Post-based data access scope resolver.
  *
- * Resolution Order (highest priority wins):
- *  1. Check active Post → PostOrgScope / PostVehicleScope
- *  2. Fall back to DesigDeptTree defaults
- *  3. Return null = all access (wildcard) if no scopes defined
+ * All scope resolution is derived from the employee's current active Post(s).
+ * SuperAdmin always bypasses — returns null (wildcard).
+ * Employee with no current post — returns [] (no access).
  *
- * All queries are Pure Eloquent — no raw SQL.
+ * Cache key: user.{userId}.scope.{type}  TTL: 60 minutes
  */
 class DataScopeService
 {
-    // ── Org Scope Resolution ──────────────────────────────────────────
+    private const TTL = 3600; // 1 hour
+
+    // ── Primary Resolution ────────────────────────────────────────────
 
     /**
-     * Get org scope codes for an employee's current primary post.
-     * Returns: null = all access | [] = no access | ['NKH','BKN'] = specific
+     * Get accessible org-scope codes for authenticated user.
+     * null = all access (wildcard) | [] = no access | [...] = specific codes
      */
-    public function getOrgScope(string $empCode, string $scopeType, ?Carbon $onDate = null): ?array
+    public function getOrgScope(User $user, string $scopeType, bool $useCache = true): ?array
     {
-        $assignment = $onDate
-            ? EmpPostAssignment::forEmployee($empCode)->primary()->onDate($onDate)->first()
-            : EmpPostAssignment::forEmployee($empCode)->primary()->current()->first();
+        $this->validateOrgScopeType($scopeType);
 
-        if (!$assignment) return [];
+        if ($user->isSuperAdmin()) return null;
 
-        $post = Post::with('orgScopes')
-                    ->where('post_code', $assignment->post_code)
-                    ->first();
+        $cacheKey = "user.{$user->id}.scope.org.{$scopeType}";
 
-        if (!$post) return [];
+        if ($useCache) {
+            return Cache::remember($cacheKey, self::TTL, fn () =>
+                $this->resolveOrgScope($user, $scopeType)
+            );
+        }
 
-        return $post->getOrgScopeFor($scopeType);
+        return $this->resolveOrgScope($user, $scopeType);
     }
 
     /**
-     * Unified scope check: can this employee access entity with given code + type?
+     * Get accessible vehicle-scope codes for authenticated user.
      */
-    public function canAccessOrg(string $empCode, string $scopeType, string $scopeValue): bool
+    public function getVehicleScope(User $user, string $scopeType, bool $useCache = true): ?array
     {
-        $scopes = $this->getOrgScope($empCode, $scopeType);
-        if ($scopes === null) return true;  // wildcard — all access
-        if (empty($scopes)) return false;   // no scopes defined — no access
-        return in_array($scopeValue, $scopes, true);
+        $this->validateVehicleScopeType($scopeType);
+
+        if ($user->isSuperAdmin()) return null;
+
+        $cacheKey = "user.{$user->id}.scope.vehicle.{$scopeType}";
+
+        if ($useCache) {
+            return Cache::remember($cacheKey, self::TTL, fn () =>
+                $this->resolveVehicleScope($user, $scopeType)
+            );
+        }
+
+        return $this->resolveVehicleScope($user, $scopeType);
     }
 
-    // ── Vehicle Scope Resolution ──────────────────────────────────────
+    // ── Access Checks ─────────────────────────────────────────────────
 
-    public function getVehicleScope(string $empCode, string $scopeType, ?Carbon $onDate = null): ?array
+    public function canAccessOrg(User $user, string $scopeType, string $value): bool
     {
-        $assignment = $onDate
-            ? EmpPostAssignment::forEmployee($empCode)->primary()->onDate($onDate)->first()
-            : EmpPostAssignment::forEmployee($empCode)->primary()->current()->first();
-
-        if (!$assignment) return [];
-
-        $post = Post::with('vehicleScopes')
-                    ->where('post_code', $assignment->post_code)
-                    ->first();
-
-        if (!$post) return [];
-
-        return $post->getVehicleScopeFor($scopeType);
+        $scope = $this->getOrgScope($user, $scopeType);
+        if ($scope === null) return true;
+        if (empty($scope)) return false;
+        return in_array($value, $scope, true);
     }
 
-    public function canAccessVehicle(string $empCode, string $scopeType, string $scopeValue): bool
+    public function canAccessVehicle(User $user, string $scopeType, string $value): bool
     {
-        $scopes = $this->getVehicleScope($empCode, $scopeType);
-        if ($scopes === null) return true;
-        if (empty($scopes)) return false;
-        return in_array($scopeValue, $scopes, true);
+        $scope = $this->getVehicleScope($user, $scopeType);
+        if ($scope === null) return true;
+        if (empty($scope)) return false;
+        return in_array($value, $scope, true);
     }
 
-    // ── Combined Scope Payload ────────────────────────────────────────
+    // ── Query Helpers ─────────────────────────────────────────────────
 
-    /**
-     * Returns full scope payload for a post — used by API to hydrate
-     * the authenticated user's data access context.
-     */
-    public function getFullScopePayload(string $postCode): array
+    public function getBranchCodesForQuery(User $user): ?array
     {
-        $post = Post::with(['orgScopes', 'vehicleScopes'])
-                    ->where('post_code', $postCode)
-                    ->first();
+        return $this->getOrgScope($user, 'branch');
+    }
 
-        if (!$post) return ['org' => [], 'vehicle' => []];
+    public function getLocationCodesForQuery(User $user): ?array
+    {
+        return $this->getOrgScope($user, 'location');
+    }
+
+    public function getDeptCodesForQuery(User $user): ?array
+    {
+        return $this->getOrgScope($user, 'department');
+    }
+
+    public function getDivCodesForQuery(User $user): ?array
+    {
+        return $this->getOrgScope($user, 'division');
+    }
+
+    public function getSegmentCodesForQuery(User $user): ?array
+    {
+        return $this->getVehicleScope($user, 'segment');
+    }
+
+    public function getSubsegmentCodesForQuery(User $user): ?array
+    {
+        return $this->getVehicleScope($user, 'subsegment');
+    }
+
+    // ── Full Scope Payload (for API /me response) ─────────────────────
+
+    public function getFullScopePayload(User $user): array
+    {
+        if ($user->isSuperAdmin()) {
+            return ['superadmin' => true, 'org' => null, 'vehicle' => null];
+        }
 
         $orgScopes = [];
-        foreach (\App\Models\IAM\PostOrgScope::TYPES as $type) {
-            $orgScopes[$type] = $post->getOrgScopeFor($type);
+        foreach (PostOrgScope::TYPES as $type) {
+            $orgScopes[$type] = $this->getOrgScope($user, $type);
         }
 
         $vehicleScopes = [];
-        foreach (\App\Models\IAM\PostVehicleScope::TYPES as $type) {
-            $vehicleScopes[$type] = $post->getVehicleScopeFor($type);
+        foreach (PostVehicleScope::TYPES as $type) {
+            $vehicleScopes[$type] = $this->getVehicleScope($user, $type);
         }
 
         return [
-            'post_code' => $postCode,
-            'org'       => $orgScopes,
-            'vehicle'   => $vehicleScopes,
+            'superadmin' => false,
+            'org'        => $orgScopes,
+            'vehicle'    => $vehicleScopes,
         ];
     }
 
-    // ── Eloquent Query Scope Injection ────────────────────────────────
+    // ── Cache Invalidation ────────────────────────────────────────────
 
     /**
-     * Returns an array of branch codes for use in Eloquent whereIn() calls.
-     * Returns null if wildcard (caller skips the whereIn).
+     * Called by HRJourneyService when assignments change.
      */
-    public function getBranchCodesForQuery(string $empCode): ?array
+    public function invalidateScopeCache(User $user): void
     {
-        return $this->getOrgScope($empCode, 'branch');
+        foreach (PostOrgScope::TYPES as $type) {
+            Cache::forget("user.{$user->id}.scope.org.{$type}");
+        }
+        foreach (PostVehicleScope::TYPES as $type) {
+            Cache::forget("user.{$user->id}.scope.vehicle.{$type}");
+        }
     }
 
-    public function getLocationCodesForQuery(string $empCode): ?array
+    /**
+     * Called by PostOrgScope/PostVehicleScope observers — invalidates ALL
+     * employees currently on the affected post.
+     */
+    public function invalidateScopeCacheForPost(string $postCode): void
     {
-        return $this->getOrgScope($empCode, 'location');
+        $empCodes = EmpPostAssignment::where('post_code', $postCode)
+            ->current()
+            ->pluck('emp_code');
+
+        $userIds = \App\Models\User::whereHas('employee', fn ($q) =>
+            $q->whereIn('code', $empCodes)
+        )->pluck('id');
+
+        foreach ($userIds as $userId) {
+            foreach (PostOrgScope::TYPES as $type) {
+                Cache::forget("user.{$userId}.scope.org.{$type}");
+            }
+            foreach (PostVehicleScope::TYPES as $type) {
+                Cache::forget("user.{$userId}.scope.vehicle.{$type}");
+            }
+        }
     }
 
-    public function getSegmentCodesForQuery(string $empCode): ?array
+    // ── Private Resolvers ─────────────────────────────────────────────
+
+    private function resolveOrgScope(User $user, string $scopeType): ?array
     {
-        return $this->getVehicleScope($empCode, 'segment');
+        $employee = $user->employee ?? null;
+        if (!$employee) return [];
+
+        return $employee->getUnionScopeFor($scopeType);
+    }
+
+    private function resolveVehicleScope(User $user, string $scopeType): ?array
+    {
+        $employee = $user->employee ?? null;
+        if (!$employee) return [];
+
+        return $employee->getVehicleScopeFor($scopeType);
+    }
+
+    // ── Validation ────────────────────────────────────────────────────
+
+    private function validateOrgScopeType(string $type): void
+    {
+        if (!in_array($type, PostOrgScope::TYPES, true)) {
+            throw new \InvalidArgumentException("Invalid org scope type: {$type}");
+        }
+    }
+
+    private function validateVehicleScopeType(string $type): void
+    {
+        if (!in_array($type, PostVehicleScope::TYPES, true)) {
+            throw new \InvalidArgumentException("Invalid vehicle scope type: {$type}");
+        }
     }
 }

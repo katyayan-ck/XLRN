@@ -3,12 +3,12 @@
 namespace Tests\Unit\Models;
 
 use App\Models\IAM\PostReporting;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class PostReportingTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     public function test_on_date_scope_matches_active_reporting_line(): void
     {

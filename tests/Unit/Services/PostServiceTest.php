@@ -5,12 +5,12 @@ namespace Tests\Unit\Services;
 use App\Exceptions\ApplicationException;
 use App\Models\IAM\Post;
 use App\Services\IAM\PostService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class PostServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     private PostService $service;
 

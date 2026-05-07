@@ -6,6 +6,7 @@ use App\Models\BaseModel;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * Post-to-Post reporting lines, scoped by topic and optional param.
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class PostReporting extends BaseModel
 {
+    use HasFactory;
     protected $table = 'xlr8_iam_post_reporting';
 
     protected $fillable = [
@@ -100,4 +102,6 @@ class PostReporting extends BaseModel
     {
         return $this->to_date === null;
     }
+
+    
 }

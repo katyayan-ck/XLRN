@@ -5,12 +5,12 @@ namespace Tests\Unit\Services;
 use App\Models\IAM\Post;
 use App\Models\IAM\PostReporting;
 use App\Services\IAM\ReportingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class ReportingServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     private ReportingService $service;
 

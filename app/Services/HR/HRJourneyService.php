@@ -3,7 +3,7 @@
 namespace App\Services\HR;
 
 use App\Enums\ErrorCodeEnum;
-use App\Exceptions\ApplicationException;
+use App\Exceptions\DomainException;
 use App\Models\Admin\EmpPostAssignment;
 use App\Models\IAM\Post;
 use Carbon\Carbon;
@@ -38,7 +38,7 @@ class HRJourneyService
                                          ->current()
                                          ->first();
             if ($existing) {
-                throw new ApplicationException(
+                throw new DomainException(
                     ErrorCodeEnum::EMP_ALREADY_HAS_PRIMARY_POST,
                     "Employee [{$empCode}] already has active primary post [{$existing->post_code}]. Use transfer() instead."
                 );
@@ -134,7 +134,7 @@ class HRJourneyService
                                          ->current()
                                          ->first();
             if ($existing) {
-                throw new ApplicationException(
+                throw new DomainException(
                     ErrorCodeEnum::EMP_ALREADY_HAS_ADDITIONAL_POST,
                     "Employee [{$empCode}] already holds additional charge of [{$postCode}]."
                 );
@@ -275,13 +275,13 @@ class HRJourneyService
     {
         $post = Post::where('post_code', $postCode)->active()->first();
         if (!$post) {
-            throw new ApplicationException(
+            throw new DomainException(
                 ErrorCodeEnum::POST_NOT_FOUND,
                 "Post [{$postCode}] not found or inactive."
             );
         }
         if (!$post->isVacant()) {
-            throw new ApplicationException(
+            throw new DomainException(
                 ErrorCodeEnum::POST_FULLY_OCCUPIED,
                 "Post [{$postCode}] has no vacancy (max_occupants={$post->max_occupants})."
             );

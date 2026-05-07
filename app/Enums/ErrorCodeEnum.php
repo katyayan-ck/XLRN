@@ -110,6 +110,13 @@ enum ErrorCodeEnum: string
     case SYSTEM_MAINTENANCE = 'SYSTEM_MAINTENANCE';
     case SYSTEM_CONFIGURATION_ERROR = 'SYSTEM_CONFIGURATION_ERROR';
     case SYSTEM_PERMISSION_ERROR = 'SYSTEM_PERMISSION_ERROR';
+
+    case POST_NOT_FOUND = 'POST_NOT_FOUND';
+case POST_OCCUPIED  = 'POST_OCCUPIED';     // also add this — PostService uses it
+case EMP_HAS_PRIMARY = 'EMP_HAS_PRIMARY'; // HRJourneyService uses this
+case POST_FULLY_OCCUPIED         = 'POST_FULLY_OCCUPIED';
+case EMP_ALREADY_HAS_PRIMARY_POST = 'EMP_ALREADY_HAS_PRIMARY_POST';
+case POST_HAS_ACTIVE_OCCUPANTS    = 'POST_HAS_ACTIVE_OCCUPANTS';   // ← PostService
     
     /**
      * Get human-readable error message
@@ -183,55 +190,63 @@ enum ErrorCodeEnum: string
     /**
      * Get HTTP status code for error
      */
-    public function statusCode(): int
-    {
-        return match ($this) {
-            // 400 Bad Request
-            self::VALIDATION_FAILED,
-            self::VALIDATION_REQUIRED_FIELD,
-            self::VALIDATION_INVALID_FORMAT,
-            self::AUTH_MOBILE_INVALID,
-            self::VALIDATION_CONSTRAINT_VIOLATION => 400,
+public function statusCode(): int
+{
+    return match ($this) {
+        // 400 Bad Request
+        self::VALIDATION_FAILED,
+        self::VALIDATION_REQUIRED_FIELD,
+        self::VALIDATION_INVALID_FORMAT,
+        self::AUTH_MOBILE_INVALID,
+        self::VALIDATION_CONSTRAINT_VIOLATION => 400,
 
-            // 401 Unauthorized
-            self::AUTH_TOKEN_INVALID,
-            self::AUTH_TOKEN_EXPIRED,
-            self::AUTH_TOKEN_REVOKED,
-            self::AUTH_UNAUTHORIZED,
-            self::AUTH_OTP_INVALID,
-            self::AUTH_OTP_EXPIRED => 401,
+        // 401 Unauthorized
+        self::AUTH_TOKEN_INVALID,
+        self::AUTH_TOKEN_EXPIRED,
+        self::AUTH_TOKEN_REVOKED,
+        self::AUTH_UNAUTHORIZED,
+        self::AUTH_OTP_INVALID,
+        self::AUTH_OTP_EXPIRED => 401,
 
-            // 403 Forbidden
-            self::AUTH_FORBIDDEN,
-            self::AUTH_USER_LOCKED,
-            self::AUTH_USER_SUSPENDED,
-            self::RESOURCE_PERMISSION_DENIED,
-            self::AUTH_USER_INACTIVE => 403,
+        // 403 Forbidden
+        self::AUTH_FORBIDDEN,
+        self::AUTH_USER_LOCKED,
+        self::AUTH_USER_SUSPENDED,
+        self::RESOURCE_PERMISSION_DENIED,
+        self::AUTH_USER_INACTIVE => 403,
 
-            // 404 Not Found
-            self::RESOURCE_NOT_FOUND,
-            self::SETTINGS_NOT_FOUND,
-            self::AUTH_USER_NOT_FOUND,
-            self::RESOURCE_DELETED => 404,
+        // 404 Not Found
+        self::RESOURCE_NOT_FOUND,
+        self::SETTINGS_NOT_FOUND,
+        self::AUTH_USER_NOT_FOUND,
+        self::RESOURCE_DELETED => 404,
 
-            // 409 Conflict
-            self::VALIDATION_DUPLICATE_ENTRY,
-            self::RESOURCE_ALREADY_EXISTS,
-            self::RESOURCE_CONFLICT,
-            self::AUTH_MOBILE_REGISTERED,
-            self::DATABASE_INTEGRITY_VIOLATION => 409,
+        // 409 Conflict
+        self::VALIDATION_DUPLICATE_ENTRY,
+        self::RESOURCE_ALREADY_EXISTS,
+        self::RESOURCE_CONFLICT,
+        self::AUTH_MOBILE_REGISTERED,
+        self::DATABASE_INTEGRITY_VIOLATION => 409,
 
-            // 429 Too Many Requests
-            self::AUTH_OTP_RATE_LIMIT,
-            self::AUTH_OTP_ATTEMPTS_EXCEEDED => 429,
+        // 422 Unprocessable — HR/Post domain rules  ← MOVED BEFORE default
+        self::POST_NOT_FOUND,
+        self::POST_OCCUPIED,
+        self::POST_FULLY_OCCUPIED,
+        self::POST_HAS_ACTIVE_OCCUPANTS,
+        self::EMP_HAS_PRIMARY,
+        self::EMP_ALREADY_HAS_PRIMARY_POST => 422,
 
-            // 503 Service Unavailable
-            self::SERVICE_UNAVAILABLE,
-            self::SYSTEM_MAINTENANCE,
-            self::DATABASE_CONNECTION_FAILED => 503,
+        // 429 Too Many Requests
+        self::AUTH_OTP_RATE_LIMIT,
+        self::AUTH_OTP_ATTEMPTS_EXCEEDED => 429,
 
-            // 500 Internal Server Error (Default)
-            default => 500,
-        };
-    }
+        // 503 Service Unavailable
+        self::SERVICE_UNAVAILABLE,
+        self::SYSTEM_MAINTENANCE,
+        self::DATABASE_CONNECTION_FAILED => 503,
+
+        // 500 Internal Server Error (always last)
+        default => 500,
+    };
+}
 }
