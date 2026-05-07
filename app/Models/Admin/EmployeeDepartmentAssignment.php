@@ -18,6 +18,7 @@ class EmployeeDepartmentAssignment extends Model
         'dept_code',        // FK → xlr8_admin_department.code (FIX: was department_id int)
         'division_code',         // FK → xlr8_admin_division.code  (nullable — new)
         'is_current',
+        'assignment_type',   // 'primary' or 'secondary' (new)
         'from_date',
         'to_date',
         'created_by',

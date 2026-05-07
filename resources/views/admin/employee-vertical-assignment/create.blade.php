@@ -26,17 +26,29 @@
                 </div>
                 <div class="card-body">
 
+                    @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
+
                     <form method="POST" action="{{ backpack_url('employee-vertical-assignment') }}">
                         @csrf
 
                         <div class="row">
 
+                            <!-- Employee -->
                             <div class="col-md-4 mb-3">
                                 <label>Employee <span class="text-danger">*</span></label>
-                                <select name="employee_id" class="form-control form-select" required>
+                                <select name="employee_code" class="form-control form-select" required>
                                     <option value="">-- Select Employee --</option>
-                                    @foreach(App\Models\Admin\Employee::with('person')->orderBy('code')->get() as $emp)
-                                    <option value="{{ $emp->id }}">
+                                    @foreach($employees as $emp)
+                                    <option value="{{ $emp->code }}" {{ old('employee_code')==$emp->code ? 'selected' :
+                                        '' }}>
                                         {{ $emp->code }} -
                                         {{ $emp->person ? trim($emp->person->first_name.' '.$emp->person->last_name) :
                                         'N/A' }}
@@ -45,32 +57,27 @@
                                 </select>
                             </div>
 
+                            <!-- Vertical -->
                             <div class="col-md-4 mb-3">
                                 <label>Vertical <span class="text-danger">*</span></label>
-                                <select name="vertical_id" class="form-control form-select" required>
+                                <select name="vertical_code" class="form-control form-select" required>
                                     <option value="">-- Select Vertical --</option>
-                                    @foreach(App\Models\Admin\Vertical::orderBy('name')->get() as $vertical)
-                                    <option value="{{ $vertical->id }}">{{ $vertical->name }}</option>
+                                    @foreach($verticals as $vertical)
+                                    <option value="{{ $vertical->code }}" {{ old('vertical_code')==$vertical->code ?
+                                        'selected' : '' }}>
+                                        {{ $vertical->name }}
+                                    </option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label>From Date <span class="text-danger">*</span></label>
-                                <input type="date" name="from_date" class="form-control" required>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>To Date</label>
-                                <input type="date" name="to_date" class="form-control">
-                                <small class="text-muted">Leave empty if ongoing</small>
-                            </div>
-
+                            <!-- Is Current -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Is Current Assignment?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_current" value="0">
-                                    <input type="checkbox" name="is_current" value="1" class="form-check-input" checked>
+                                    <input type="checkbox" name="is_current" value="1" class="form-check-input" {{
+                                        old('is_current', true) ? 'checked' : '' }}>
                                 </div>
                             </div>
 
@@ -83,6 +90,7 @@
                             <a href="{{ backpack_url('employee-vertical-assignment') }}"
                                 class="btn btn-secondary btn-lg">Cancel</a>
                         </div>
+
                     </form>
                 </div>
             </div>

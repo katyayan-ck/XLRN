@@ -71,11 +71,12 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Department <span class="text-danger">*</span></label>
-                                <select name="department_id" class="form-control form-select" required>
+                                <select name="department_code" class="form-control form-select" required>
                                     <option value="">Select Department</option>
                                     @foreach($departments as $dept)
-                                    <option value="{{ $dept->id }}" {{ old('department_id', $division->department_id) ==
-                                        $dept->id ? 'selected' : '' }}>
+                                    <option value="{{ $dept->code }}" {{ old('department_code', $division->
+                                        department_code) ==
+                                        $dept->code ? 'selected' : '' }}>
                                         {{ $dept->name }}
                                     </option>
                                     @endforeach

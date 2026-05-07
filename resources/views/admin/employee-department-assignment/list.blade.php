@@ -41,7 +41,7 @@
         return col;
     }),
 
-    ...getCols(['division', 'from_date', 'to_date']), // ✅ FIXED
+    ...getCols(['division', 'assignment_type', 'from_date', 'to_date']), // ✅ FIXED
 
     ...getCols(['is_current']).map(col => {
         col.cellRenderer = params => params.value === 'Yes' ? 'Yes' : 'No';
@@ -83,6 +83,7 @@
     'employee_name',
     'department_name',
     'division',
+    'assignment_type',
     'from_date',
     'to_date',
     'is_current',
@@ -108,7 +109,7 @@
 
         const allFlatColumns = [
     ...getCols(['serial_no', 'employee_name', 'department_name']),
-    ...getCols(['division', 'from_date', 'to_date']),
+    ...getCols(['division','assignment_type', 'from_date', 'to_date']),
     ...getCols(['is_current']),
     ...getCols(['action'])
 ];
@@ -201,6 +202,7 @@
     'employee_name',
     'department_name',
     'division',
+    'assignment_type',
     'from_date',
     'to_date',
     'is_current',

@@ -36,19 +36,18 @@ class EmployeeLocationAssignmentCrudController extends CrudController
                 : '-';
 
             return [
-                'id'              => $assignment->id,
-                'serial_no'       => $index + 1,
-                'employee_code'   => $assignment->employee->code ?? $assignment->employee_code ?? '-',
-                'employee_name'   => $employeeName,
-                'location_name'   => $assignment->location->name ?? $assignment->location_code ?? '-',
-                'branch_name'     => $assignment->branch->name ?? $assignment->branch_code ?? '-',
-
-
+                'serial_no'        => $index + 1,
+                'employee_code'    => $assignment->employee_code ?? '-',
+                'employee_name'    => $employeeName,
+                'location_name'    => $assignment->location?->name ?? $assignment->location_code ?? '-',
+                'branch_name'      => $assignment->branch?->name ?? $assignment->branch_code ?? '-',
+                'assignment_type'  => ucfirst($assignment->assignment_type ?? 'explicit'),
+                'is_primary_work'  => $assignment->is_primary_work ? 'Yes' : 'No',
                 'action' => '
-                <div class="d-flex gap-2 justify-content-center">
-                    <a href="' . backpack_url("employee-location-assignment/{$assignment->id}/edit") . '"
-                       class="btn btn-sm btn-primary py-1 px-2">Edit</a>
-                </div>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="' . backpack_url("employee-location-assignment/{$assignment->id}/edit") . '"
+                           class="btn btn-sm btn-primary py-1 px-2">Edit</a>
+                    </div>
                 '
             ];
         });
@@ -57,14 +56,14 @@ class EmployeeLocationAssignmentCrudController extends CrudController
             'title' => 'Employee Location Assignments',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',       'headerName' => 'S.No'],
-                    ['field' => 'employee_code',   'headerName' => 'Employee Code'],
-                    ['field' => 'employee_name',   'headerName' => 'Employee Name'],
-                    ['field' => 'location_name',   'headerName' => 'Location'],
-                    ['field' => 'branch_name',     'headerName' => 'Branch'],
-
-
-                    ['field' => 'action',          'headerName' => 'Actions']
+                    ['field' => 'serial_no',        'headerName' => 'S.No'],
+                    ['field' => 'employee_code',    'headerName' => 'Employee Code'],
+                    ['field' => 'employee_name',    'headerName' => 'Employee Name'],
+                    ['field' => 'location_name',    'headerName' => 'Location'],
+                    ['field' => 'branch_name',      'headerName' => 'Branch'],
+                    ['field' => 'assignment_type',  'headerName' => 'Assignment Type'],
+                    ['field' => 'is_primary_work',  'headerName' => 'Primary Work'],
+                    ['field' => 'action',           'headerName' => 'Actions']
                 ],
                 'data' => $gridData
             ]
@@ -81,6 +80,22 @@ class EmployeeLocationAssignmentCrudController extends CrudController
         ]);
     }
 
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_code'   => 'required|exists:xlr8_admin_employee,code',
+            'location_code'   => 'required|exists:xlr8_admin_location,code',
+            'branch_code'     => 'nullable|exists:xlr8_admin_branch,code',
+            'assignment_type' => 'required|in:explicit,inherited,excluded',
+            'is_primary_work' => 'boolean',
+        ]);
+
+        EmployeeLocationAssignment::create($validated);
+
+        \Alert::success('Location assignment created successfully!')->flash();
+        return redirect(backpack_url('employee-location-assignment'));
+    }
+
     public function edit($id)
     {
         $assignment = EmployeeLocationAssignment::with(['employee.person', 'location', 'branch'])
@@ -89,37 +104,9 @@ class EmployeeLocationAssignmentCrudController extends CrudController
         return view('admin.employee-location-assignment.edit', [
             'title'      => 'Edit Location Assignment',
             'assignment' => $assignment,
+            'locations'  => Location::orderBy('name')->get(),
+            'branches'   => Branch::orderBy('name')->get(),
         ]);
-    }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'employee_id'  => 'required|exists:xlr8_admin_employee,id',
-            'location_id'  => 'required|exists:xlr8_admin_location,id',
-            'branch_id'    => 'nullable|exists:xlr8_admin_branch,id',
-
-        ]);
-
-        $employeeCode = Employee::findOrFail($validated['employee_id'])->code;
-        $locationCode = Location::findOrFail($validated['location_id'])->code;
-        $branchCode   = $validated['branch_id']
-            ? Branch::findOrFail($validated['branch_id'])->code
-            : null;
-
-        $userId = backpack_user()->id ?? auth()->id();   // ← Correct User ID
-
-        EmployeeLocationAssignment::create([
-            'employee_code' => $employeeCode,
-            'location_code' => $locationCode,
-            'branch_code'   => $branchCode,
-
-
-            'created_by'    => $userId,
-        ]);
-
-        \Alert::success('Location assignment created successfully!')->flash();
-        return redirect(backpack_url('employee-location-assignment'));
     }
 
     public function update(Request $request, $id)
@@ -127,36 +114,13 @@ class EmployeeLocationAssignmentCrudController extends CrudController
         $assignment = EmployeeLocationAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'location_id' => 'required|exists:xlr8_admin_location,id',
-            'branch_id'   => 'nullable|exists:xlr8_admin_branch,id',
-
-
+            'location_code'   => 'required|exists:xlr8_admin_location,code',
+            'branch_code'     => 'nullable|exists:xlr8_admin_branch,code',
+            'assignment_type' => 'required|in:explicit,inherited,excluded',
+            'is_primary_work' => 'boolean',
         ]);
 
-        $locationCode = Location::findOrFail($validated['location_id'])->code;
-
-        // Fix for branch_code - never set to null if column is NOT NULL
-        $branchCode = null;
-        if ($validated['branch_id']) {
-            $branchCode = Branch::findOrFail($validated['branch_id'])->code;
-        } else {
-            // If no branch selected, you can either:
-            // Option A: Keep existing branch_code (recommended)
-            $branchCode = $assignment->branch_code;
-
-            // Option B: Set a default value if you have one (e.g. '')
-            // $branchCode = '';
-        }
-
-        $userId = backpack_user()->id ?? auth()->id();
-
-        $assignment->update([
-            'location_code' => $locationCode,
-            'branch_code'   => $branchCode,           // ← Now safe
-
-
-            
-        ]);
+        $assignment->update($validated);
 
         \Alert::success('Location assignment updated successfully!')->flash();
         return redirect(backpack_url('employee-location-assignment'));

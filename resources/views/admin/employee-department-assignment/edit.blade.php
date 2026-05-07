@@ -86,8 +86,25 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Division</label>
-                                <input type="text" name="division_code"
-                                    value="{{ old('division_code', $assignment->division_code) }}" class="form-control">
+                                <select name="division_code" class="form-control form-select">
+                                    <option value="">Select Division</option>
+                                    @foreach($divisions as $div)
+                                    <option value="{{ $div->code }}" {{ old('division_code', $assignment->division_code)
+                                        == $div->code ? 'selected' : '' }}>
+                                        {{ $div->name }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label>Assignment Type <span class="text-danger">*</span></label>
+                                <select name="assignment_type" class="form-control form-select" required>
+                                    <option value="primary" {{ old('assignment_type', $assignment->assignment_type) ==
+                                        'primary' ? 'selected' : '' }}>Primary</option>
+                                    <option value="secondary" {{ old('assignment_type', $assignment->assignment_type) ==
+                                        'secondary' ? 'selected' : '' }}>Secondary</option>
+                                </select>
                             </div>
 
                             <div class="col-md-4 mb-3">

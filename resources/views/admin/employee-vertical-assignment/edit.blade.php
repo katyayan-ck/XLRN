@@ -18,6 +18,11 @@
         display: flex;
         align-items: center;
     }
+
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+    }
 </style>
 @endpush
 
@@ -30,6 +35,16 @@
                     <h2 class="mb-0">Edit Vertical Assignment</h2>
                 </div>
                 <div class="card-body">
+
+                    @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
 
                     <form method="POST" action="{{ backpack_url('employee-vertical-assignment/' . $assignment->id) }}">
                         @csrf
@@ -46,12 +61,14 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="fw-bold">Created At</label>
-                                        <div class="readonly-value">{{ $assignment->created_at?->format('d-m-Y H:i') }}
+                                        <div class="readonly-value">
+                                            {{ $assignment->created_at?->format('d-m-Y H:i') ?? '—' }}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Employee (Read Only) -->
                             <div class="col-md-4 mb-3">
                                 <label>Employee</label>
                                 <div class="readonly-value">
@@ -65,34 +82,24 @@
                                     @endphp
                                     {{ $display }}
                                 </div>
-                                <input type="hidden" name="employee_id" value="{{ $assignment->employee_id }}">
                             </div>
 
+                            <!-- Vertical -->
                             <div class="col-md-4 mb-3">
                                 <label>Vertical <span class="text-danger">*</span></label>
-                                <select name="vertical_id" class="form-control form-select" required>
-                                    @foreach(App\Models\Admin\Vertical::orderBy('name')->get() as $vertical)
-                                    <option value="{{ $vertical->id }}" {{ $vertical->id == $assignment->vertical_id ?
-                                        'selected' : '' }}>
+                                <select name="vertical_code" class="form-control form-select" required>
+                                    <option value="">-- Select Vertical --</option>
+                                    @foreach($verticals as $vertical)
+                                    <option value="{{ $vertical->code }}" {{ old('vertical_code', $assignment->
+                                        vertical_code) == $vertical->code ? 'selected' : '' }}>
                                         {{ $vertical->name }}
                                     </option>
                                     @endforeach
                                 </select>
                             </div>
 
+                            <!-- Is Current -->
                             <div class="col-md-4 mb-3">
-                                <label>From Date <span class="text-danger">*</span></label>
-                                <input type="date" name="from_date" class="form-control"
-                                    value="{{ old('from_date', $assignment->from_date?->format('Y-m-d')) }}" required>
-                            </div>
-
-                            <div class="col-md-4 mb-3">
-                                <label>To Date</label>
-                                <input type="date" name="to_date" class="form-control"
-                                    value="{{ old('to_date', $assignment->to_date?->format('Y-m-d')) }}">
-                            </div>
-
-                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Is Current Assignment?</label>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="is_current" value="0">
@@ -110,6 +117,7 @@
                             <a href="{{ backpack_url('employee-vertical-assignment') }}"
                                 class="btn btn-secondary btn-lg">Cancel</a>
                         </div>
+
                     </form>
                 </div>
             </div>

@@ -2,6 +2,8 @@
 
 namespace App\Models\Admin;
 
+
+
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -95,7 +97,9 @@ class Employee extends Model
         'official_email',
 
         // Audit
-        'created_by', 'updated_by', 'deleted_by',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     protected $casts = [
@@ -110,7 +114,7 @@ class Employee extends Model
         'abry_eligible'       => 'boolean',
         'esi_eligible'        => 'boolean',
         'lwf_eligible'        => 'boolean',
-        'wo_work_compensation'=> 'boolean',
+        'wo_work_compensation' => 'boolean',
         'comp_off_applicable' => 'boolean',
         'created_at'          => 'datetime',
         'updated_at'          => 'datetime',
@@ -360,10 +364,12 @@ class Employee extends Model
         return $q->where('code', 'like', "%{$term}%")
             ->orWhere('official_email',  'like', "%{$term}%")
             ->orWhere('official_mobile', 'like', "%{$term}%")
-            ->orWhereHas('person', fn($p) => $p
-                ->where('first_name',    'like', "%{$term}%")
-                ->orWhere('last_name',   'like', "%{$term}%")
-                ->orWhere('display_name','like', "%{$term}%")
+            ->orWhereHas(
+                'person',
+                fn($p) => $p
+                    ->where('first_name',    'like', "%{$term}%")
+                    ->orWhere('last_name',   'like', "%{$term}%")
+                    ->orWhere('display_name', 'like', "%{$term}%")
             );
     }
 }

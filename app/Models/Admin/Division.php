@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models\Admin;
 
 use App\Models\BaseModel;
@@ -13,7 +14,12 @@ class Division extends BaseModel
     protected $table = 'xlr8_admin_division';
 
     protected $fillable = [
-        'dept_code', 'code', 'name', 'description', 'head_emp_code', 'is_active',
+        'department_code',
+        'code',
+        'name',
+        'description',
+        'head_emp_code',
+        'is_active',
     ];
 
     protected $casts = [
@@ -25,7 +31,7 @@ class Division extends BaseModel
 
     public function department(): BelongsTo
     {
-        return $this->belongsTo(Department::class, 'dept_code', 'code');
+        return $this->belongsTo(Department::class, 'department_code', 'code');
     }
 
     public function head(): BelongsTo
@@ -41,7 +47,7 @@ class Division extends BaseModel
     public function employees(): BelongsToMany
     {
         return $this->belongsToMany(Employee::class, 'xlr8_admin_emp_division_pivot', 'div_code', 'emp_code', 'code', 'code')
-            ->withPivot(['dept_code','from_date','to_date','is_current'])->withTimestamps();
+            ->withPivot(['dept_code', 'from_date', 'to_date', 'is_current'])->withTimestamps();
     }
 
     // Note: key is (dept_code, code) not just code alone

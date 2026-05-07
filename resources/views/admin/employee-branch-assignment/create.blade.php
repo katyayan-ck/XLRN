@@ -50,11 +50,23 @@
                     </select>
                 </div>
 
+                {{-- ASSIGNMENT TYPE --}}
+                <div class="col-md-4 mb-3">
+                    <label>Assignment Type <span class="text-danger">*</span></label>
+                    <select name="assignment_type" class="form-control form-select" required>
+                        <option value="primary" {{ old('assignment_type')=='primary' ? 'selected' : '' }}>Primary
+                        </option>
+                        <option value="additional" {{ old('assignment_type', 'additional' )=='additional' ? 'selected'
+                            : '' }}>Additional</option>
+                        <option value="inherited" {{ old('assignment_type')=='inherited' ? 'selected' : '' }}>Inherited
+                        </option>
+                    </select>
+                </div>
+
                 {{-- FROM DATE --}}
                 <div class="col-md-4 mb-3">
                     <label>From Date *</label>
-                    <input type="date" name="from_date" class="form-control" value="{{ old('from_date') }}"
-                        required>
+                    <input type="date" name="from_date" class="form-control" value="{{ old('from_date') }}" required>
                 </div>
 
                 {{-- TO DATE --}}

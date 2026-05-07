@@ -7,6 +7,7 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Http\Request;
 use App\Models\Admin\Employee;
 use App\Models\Admin\Department;
+use App\Models\Admin\Division;
 use App\Models\Admin\EmployeeDepartmentAssignment;
 
 class EmployeeDepartmentAssignmentCrudController extends CrudController
@@ -28,21 +29,20 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $this->crud->setListView('admin.employee-department-assignment.list');
     }
 
-    // ================= LIST =================
     public function index()
     {
         $this->crud->setListView('admin.employee-department-assignment.list');
 
-        $assignments = EmployeeDepartmentAssignment::with(['employee.person', 'department'])
+        $assignments = EmployeeDepartmentAssignment::with(['employee.person', 'department', 'division'])
             ->select([
                 'id',
                 'employee_code',
                 'dept_code',
-                'division_code', // ✅ FIXED
+                'division_code',
+                'assignment_type',
+                'is_current',
                 'from_date',
-                'to_date',
-
-                'is_current'
+                'to_date'
             ])
             ->orderBy('id', 'desc')
             ->get();
@@ -52,7 +52,8 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
                 'serial_no'       => $index + 1,
                 'employee_name'   => $assign->employee?->display_name ?? '—',
                 'department_name' => $assign->department?->name ?? '—',
-                'division'        => $assign->division_code ?? '—', // ✅ FIXED
+                'division'        => $assign->division?->name ?? $assign->division_code ?? '—',
+                'assignment_type' => $assign->assignment_type ?? 'primary',
                 'from_date'       => $assign->from_date?->format('d/m/Y') ?? '—',
                 'to_date'         => $assign->to_date?->format('d/m/Y') ?? '—',
                 'is_current'      => $assign->is_current ? 'Yes' : 'No',
@@ -71,36 +72,38 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
                     ['field' => 'serial_no',       'headerName' => 'S.No'],
                     ['field' => 'employee_name',   'headerName' => 'Employee'],
                     ['field' => 'department_name', 'headerName' => 'Department'],
-                    ['field' => 'division',       'headerName' => 'Division'],
-                    ['field' => 'from_date',      'headerName' => 'From Date'],
-                    ['field' => 'to_date',        'headerName' => 'To Date'],
-                    ['field' => 'is_current',     'headerName' => 'Current'],
-                    ['field' => 'action',         'headerName' => 'Actions'],
+                    ['field' => 'division',        'headerName' => 'Division'],
+                    ['field' => 'assignment_type', 'headerName' => 'Assignment Type'],
+                    ['field' => 'from_date',       'headerName' => 'From Date'],
+                    ['field' => 'to_date',         'headerName' => 'To Date'],
+                    ['field' => 'is_current',      'headerName' => 'Current'],
+                    ['field' => 'action',          'headerName' => 'Actions'],
                 ],
                 'data' => $gridData
             ]
         ]);
     }
 
-    // ================= CREATE =================
     public function create()
     {
         return view('admin.employee-department-assignment.create', [
-            'title' => 'Add Department Assignment',
-            'employees' => Employee::with('person')->orderBy('code')->get(),
+            'title'       => 'Add Department Assignment',
+            'employees'   => Employee::with('person')->orderBy('code')->get(),
             'departments' => Department::orderBy('name')->get(),
+            'divisions'   => Division::orderBy('name')->get(),
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_code' => 'required|exists:xlr8_admin_employee,code',
-            'dept_code'     => 'required|exists:xlr8_admin_department,code',
-            'division_code' => 'nullable|string', // ✅ FIXED
-            'from_date'     => 'required|date',
-            'to_date'       => 'nullable|date|after_or_equal:from_date',
-            'is_current'    => 'boolean',
+            'employee_code'   => 'required|exists:xlr8_admin_employee,code',
+            'dept_code'       => 'required|exists:xlr8_admin_department,code',
+            'division_code'   => 'nullable|exists:xlr8_admin_division,code',
+            'assignment_type' => 'required|in:primary,secondary',
+            'from_date'       => 'required|date',
+            'to_date'         => 'nullable|date|after_or_equal:from_date',
+            'is_current'      => 'boolean',
         ]);
 
         EmployeeDepartmentAssignment::create($validated);
@@ -109,16 +112,16 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         return redirect(backpack_url('employee-department-assignment'));
     }
 
-    // ================= EDIT =================
     public function edit($id)
     {
         $assignment = EmployeeDepartmentAssignment::findOrFail($id);
 
         return view('admin.employee-department-assignment.edit', [
-            'title' => 'Edit Assignment',
-            'assignment' => $assignment,
-            'employees' => Employee::with('person')->orderBy('code')->get(),
+            'title'       => 'Edit Assignment',
+            'assignment'  => $assignment,
+            'employees'   => Employee::with('person')->orderBy('code')->get(),
             'departments' => Department::orderBy('name')->get(),
+            'divisions'   => Division::orderBy('name')->get(),
         ]);
     }
 
@@ -127,12 +130,13 @@ class EmployeeDepartmentAssignmentCrudController extends CrudController
         $assignment = EmployeeDepartmentAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'employee_code' => 'required|exists:xlr8_admin_employee,code',
-            'dept_code'     => 'required|exists:xlr8_admin_department,code',
-            'division_code' => 'nullable|string', // ✅ FIXED
-            'from_date'     => 'required|date',
-            'to_date'       => 'nullable|date|after_or_equal:from_date',
-            'is_current'    => 'boolean',
+            'employee_code'   => 'required|exists:xlr8_admin_employee,code',
+            'dept_code'       => 'required|exists:xlr8_admin_department,code',
+            'division_code'   => 'nullable|exists:xlr8_admin_division,code',
+            'assignment_type' => 'required|in:primary,secondary',
+            'from_date'       => 'required|date',
+            'to_date'         => 'nullable|date|after_or_equal:from_date',
+            'is_current'      => 'boolean',
         ]);
 
         $assignment->update($validated);

@@ -23,7 +23,6 @@ class EmployeeBranchAssignmentCrudController extends CrudController
         CRUD::setEntityNameStrings('branch assignment', 'branch assignments');
     }
 
-    // ================= LIST =================
     public function index()
     {
         $assignments = EmployeeBranchAssignment::with(['employee.person', 'branch'])
@@ -31,6 +30,7 @@ class EmployeeBranchAssignmentCrudController extends CrudController
                 'id',
                 'employee_code',
                 'branch_code',
+                'assignment_type',
                 'from_date',
                 'to_date',
                 'is_current'
@@ -39,24 +39,23 @@ class EmployeeBranchAssignmentCrudController extends CrudController
             ->get();
 
         $gridData = $assignments->map(function ($assignment, $index) {
-
             $employeeName = $assignment->employee && $assignment->employee->person
                 ? trim($assignment->employee->person->first_name . ' ' . $assignment->employee->person->last_name)
                 : '-';
 
             return [
-                'id'            => $assignment->id,
-                'serial_no'     => $index + 1,
-                'employee_code' => $assignment->employee_code ?? '-',
-                'employee_name' => $employeeName,
-                'branch_name'   => $assignment->branch?->name ?? $assignment->branch_code ?? '-',
-                'from_date'     => $assignment->from_date?->format('d/m/Y') ?? '-',
-                'to_date'       => $assignment->to_date?->format('d/m/Y') ?? 'Ongoing',
-                'is_current'    => $assignment->is_current ? 'Yes' : 'No',
-                'action'        => '
+                'serial_no'       => $index + 1,
+                'employee_code'   => $assignment->employee_code ?? '-',
+                'employee_name'   => $employeeName,
+                'branch_name'     => $assignment->branch?->name ?? $assignment->branch_code ?? '-',
+                'assignment_type' => ucfirst($assignment->assignment_type ?? 'additional'),
+                'from_date'       => $assignment->from_date?->format('d/m/Y') ?? '-',
+                'to_date'         => $assignment->to_date?->format('d/m/Y') ?? 'Ongoing',
+                'is_current'      => $assignment->is_current ? 'Yes' : 'No',
+                'action'          => '
                     <div class="d-flex gap-2 justify-content-center">
                         <a href="' . backpack_url("employee-branch-assignment/{$assignment->id}/edit") . '"
-                        class="btn btn-sm btn-primary py-1 px-2">Edit</a>
+                           class="btn btn-sm btn-primary py-1 px-2">Edit</a>
                     </div>
                 '
             ];
@@ -66,21 +65,21 @@ class EmployeeBranchAssignmentCrudController extends CrudController
             'title' => 'Employee Branch Assignments',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',     'headerName' => 'S.No'],
-                    ['field' => 'employee_code', 'headerName' => 'Employee Code'],
-                    ['field' => 'employee_name', 'headerName' => 'Employee Name'],
-                    ['field' => 'branch_name',   'headerName' => 'Branch'],
-                    ['field' => 'from_date',     'headerName' => 'From Date'],
-                    ['field' => 'to_date',       'headerName' => 'To Date'],
-                    ['field' => 'is_current',    'headerName' => 'Current'],
-                    ['field' => 'action',        'headerName' => 'Actions']
+                    ['field' => 'serial_no',       'headerName' => 'S.No'],
+                    ['field' => 'employee_code',   'headerName' => 'Employee Code'],
+                    ['field' => 'employee_name',   'headerName' => 'Employee Name'],
+                    ['field' => 'branch_name',     'headerName' => 'Branch'],
+                    ['field' => 'assignment_type', 'headerName' => 'Assignment Type'],
+                    ['field' => 'from_date',       'headerName' => 'From Date'],
+                    ['field' => 'to_date',         'headerName' => 'To Date'],
+                    ['field' => 'is_current',      'headerName' => 'Current'],
+                    ['field' => 'action',          'headerName' => 'Actions']
                 ],
                 'data' => $gridData
             ]
         ]);
     }
 
-    // ================= CREATE =================
     public function create()
     {
         return view('admin.employee-branch-assignment.create', [
@@ -93,14 +92,15 @@ class EmployeeBranchAssignmentCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'employee_code' => 'required|exists:xlr8_admin_employee,code',
-            'branch_code'   => 'required|exists:xlr8_admin_branch,code',
-            'from_date'     => 'required|date',
-            'to_date'       => 'nullable|date|after_or_equal:from_date',
-            'is_current'    => 'boolean',
+            'employee_code'   => 'required|exists:xlr8_admin_employee,code',
+            'branch_code'     => 'required|exists:xlr8_admin_branch,code',
+            'assignment_type' => 'required|in:primary,additional,inherited',
+            'from_date'       => 'required|date',
+            'to_date'         => 'nullable|date|after_or_equal:from_date',
+            'is_current'      => 'boolean',
         ]);
 
-        // ✅ DUPLICATE CHECK
+        // Duplicate check
         $exists = EmployeeBranchAssignment::where('employee_code', $validated['employee_code'])
             ->where('branch_code', $validated['branch_code'])
             ->exists();
@@ -110,16 +110,12 @@ class EmployeeBranchAssignmentCrudController extends CrudController
             return back()->withInput();
         }
 
-        // default current
-        $validated['is_current'] = $validated['is_current'] ?? 1;
-
         EmployeeBranchAssignment::create($validated);
 
         \Alert::success('Branch assignment created successfully!')->flash();
         return redirect(backpack_url('employee-branch-assignment'));
     }
 
-    // ================= EDIT =================
     public function edit($id)
     {
         $assignment = EmployeeBranchAssignment::with(['employee.person', 'branch'])->findOrFail($id);
@@ -136,10 +132,11 @@ class EmployeeBranchAssignmentCrudController extends CrudController
         $assignment = EmployeeBranchAssignment::findOrFail($id);
 
         $validated = $request->validate([
-            'branch_code' => 'required|exists:xlr8_admin_branch,code',
-            'from_date'   => 'required|date',
-            'to_date'     => 'nullable|date|after_or_equal:from_date',
-            'is_current'  => 'boolean',
+            'branch_code'     => 'required|exists:xlr8_admin_branch,code',
+            'assignment_type' => 'required|in:primary,additional,inherited',
+            'from_date'       => 'required|date',
+            'to_date'         => 'nullable|date|after_or_equal:from_date',
+            'is_current'      => 'boolean',
         ]);
 
         $assignment->update($validated);

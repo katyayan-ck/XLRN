@@ -36,7 +36,7 @@ class DivisionCrudController extends CrudController
                 'id',
                 'code',
                 'name',
-                'department_id',
+                'department_code',
                 'description',
                 'is_active'
             ])
@@ -96,7 +96,7 @@ class DivisionCrudController extends CrudController
         $validated = $request->validate([
             'code'          => 'required|string|unique:xlr8_admin_division,code',
             'name'          => 'required|string|max:255',
-            'department_id' => 'required|exists:xlr8_admin_department,id',
+            'department_code' => 'required|exists:xlr8_admin_department,code',
             'description'   => 'nullable|string',
             'is_active'     => 'boolean',
         ]);
@@ -128,7 +128,7 @@ class DivisionCrudController extends CrudController
         $validated = $request->validate([
             'code'          => 'required|string|unique:xlr8_admin_division,code,' . $id,
             'name'          => 'required|string|max:255',
-            'department_id' => 'required|exists:xlr8_admin_department,id',
+            'department_code' => 'required|exists:xlr8_admin_department,code',
             'description'   => 'nullable|string',
             'is_active'     => 'boolean',
         ]);

@@ -46,7 +46,7 @@ class EmployeeVerticalAssignment extends Model
 
     public function vertical(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Vehicle\Vertical::class, 'vertical_code', 'code');
+        return $this->belongsTo(\App\Models\Admin\Vertical::class, 'vertical_code', 'code');
     }
 
     public function segment(): BelongsTo

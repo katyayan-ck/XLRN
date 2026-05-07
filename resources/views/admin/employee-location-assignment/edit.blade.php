@@ -70,12 +70,13 @@
                                 <input type="hidden" name="employee_id" value="{{ $assignment->employee_id }}">
                             </div>
 
+                            <!-- Location -->
                             <div class="col-md-4 mb-3">
                                 <label>Location <span class="text-danger">*</span></label>
-                                <select name="location_id" class="form-control form-select" required>
-                                    @foreach(App\Models\Admin\Location::orderBy('name')->get() as $loc)
-                                    <option value="{{ $loc->id }}" {{ $loc->id == $assignment->location_id ? 'selected'
-                                        : '' }}>
+                                <select name="location_code" class="form-control form-select" required>
+                                    @foreach($locations as $loc)
+                                    <option value="{{ $loc->code }}" {{ old('location_code', $assignment->location_code)
+                                        == $loc->code ? 'selected' : '' }}>
                                         {{ $loc->name }}
                                     </option>
                                     @endforeach
@@ -93,6 +94,28 @@
                                     </option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <!-- Assignment Type -->
+                            <div class="col-md-4 mb-3">
+                                <label>Assignment Type <span class="text-danger">*</span></label>
+                                <select name="assignment_type" class="form-control form-select" required>
+                                    <option value="explicit" {{ old('assignment_type', $assignment->assignment_type) ==
+                                        'explicit' ? 'selected' : '' }}>Explicit</option>
+                                    <option value="inherited" {{ old('assignment_type', $assignment->assignment_type) ==
+                                        'inherited' ? 'selected' : '' }}>Inherited</option>
+                                    <option value="excluded" {{ old('assignment_type', $assignment->assignment_type) ==
+                                        'excluded' ? 'selected' : '' }}>Excluded</option>
+                                </select>
+                            </div>
+
+                            <!-- Is Primary Work -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Is Primary Work Location?</label>
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="is_primary_work" value="0">
+                                    <input type="checkbox" name="is_primary_work" value="1" class="form-check-input" {{
+                                        old('is_primary_work', $assignment->is_primary_work) ? 'checked' : '' }}>
+                                </div>
                             </div>
 
 

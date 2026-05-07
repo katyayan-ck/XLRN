@@ -78,18 +78,27 @@
                                 </select>
                             </div>
 
+                            <!-- Division -->
                             <div class="col-md-4 mb-3">
                                 <label>Division</label>
-                                <input type="text" name="primary_div_code" class="form-control">
+                                <select name="primary_div_code" class="form-control form-select">
+                                    <option value="">Select Division</option>
+                                    @foreach($divisions as $div)
+                                    <option value="{{ $div->code }}" {{ old('primary_div_code')==$div->code ? 'selected'
+                                        : '' }}>
+                                        {{ $div->name }}
+                                    </option>
+                                    @endforeach
+                                </select>
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Location</label>
+                                <label>Location (5 Characters)</label>
                                 <input type="text" name="primary_loc_code" class="form-control">
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Vertical</label>
+                                <label>Vertical (10 Characters)</label>
                                 <input type="text" name="vertical_code" class="form-control">
                             </div>
 
