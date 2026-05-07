@@ -18,7 +18,7 @@ class Xl_Refunds extends BaseModel  implements HasMedia
      */
     use SoftDeletes;
     use InteractsWithMedia;
-    protected $table = 'xcelr8_refunds';
+    protected $table = 'xlr8_booking_refund';
 
     /**
      * The attributes to be fillable from the model.

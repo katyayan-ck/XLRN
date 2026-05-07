@@ -292,7 +292,9 @@
                                     <select name="branch" id="branch" class="form-control form-select" required>
                                         <option value="" disabled selected>-- Select Branch --</option>
                                         @foreach($data['branches'] ?? [] as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                        <option value="{{ $branch->code ?? $branch->id }}">
+                                            {{ $branch->name }}
+                                        </option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -514,7 +516,7 @@
                                     <select name="segmentid" id="segmentid" class="form-control select2" required>
                                         <option value="">Please Select Segment...</option>
                                         @foreach($data['segments'] ?? [] as $segment)
-                                            <option value="{{ $segment->code }}">{{ $segment->name }}</option>
+                                        <option value="{{ $segment->code }}">{{ $segment->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -823,6 +825,7 @@
     input.numeric-only {
         -moz-appearance: textfield;
     }
+
     input.numeric-only::-webkit-outer-spin-button,
     input.numeric-only::-webkit-inner-spin-button {
         -webkit-appearance: none;
@@ -1741,20 +1744,41 @@ $('#color').on('change', function() {
             attachDuplicateCheck($(input), fieldName, type);
         });
 
+        // ================= BRANCH → LOCATION AJAX =================
         $('#branch').on('change', function() {
-            const branchId = this.value;
-            if (!branchId) return;
+            const branchValue = $(this).val();
+
+            if (!branchValue) {
+                $('#location').html('<option value="" disabled selected>-- Select Location --</option>')
+                            .prop('disabled', true);
+                return;
+            }
 
             $.ajax({
-                url: '../branchlocations/' + branchId + '/',  // Match your current route exactly
+                url: '{{ backpack_url("get-locations") }}/' + encodeURIComponent(branchValue),
                 method: 'GET',
                 success: function(data) {
-                    populateSelect($('#location'), data, 'name', 'id', '<option value="0">OTHER</option>');
-                    $('#location').prop('disabled', false);
+                    let html = '<option value="" disabled selected>-- Select Location --</option>';
+
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(function(loc) {
+                            html += `<option value="${loc.code}">${loc.name} (${loc.code})</option>`;
+                        });
+                    } else {
+                        html += '<option value="0">OTHER</option>';
+                    }
+
+                    $('#location').html(html).prop('disabled', false);
                 },
                 error: function(xhr) {
-                    console.error('Error fetching locations', xhr);
-                    alert('Error fetching locations. Please try again.');
+                    console.error('Location fetch failed:', xhr.responseText || xhr.status);
+                    $('#location').html('<option value="0">OTHER</option>').prop('disabled', false);
+
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Locations nahi mil rahe',
+                        text: 'Please use "OTHER" option.',
+                    });
                 }
             });
         });

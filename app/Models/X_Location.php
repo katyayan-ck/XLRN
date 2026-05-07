@@ -8,7 +8,7 @@ class X_Location extends BaseModel
 {
     use SoftDeletes;
 
-    protected $table = 'xcelr8_us_location';
+    protected $table = 'xlr8_admin_location';
     protected $fillable = [
         'branch_id',
         'name',
@@ -29,12 +29,12 @@ class X_Location extends BaseModel
 
     public function branch()
     {
-        return $this->belongsTo(Branches::class, 'branch_id', 'id');
+        return $this->belongsTo(\App\Models\X_Branch::class, 'branch_id', 'id');
     }
 
     public function bookings()
     {
-        return $this->hasMany(Booking::class, 'location_id', 'id');
+        return $this->hasMany(\App\Models\Module\Booking\Booking::class, 'location_id', 'id');
     }
 
     public function stock()

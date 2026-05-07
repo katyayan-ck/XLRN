@@ -1,0 +1,479 @@
+<context>
+Create a robust Enterprise Grade solution working on DRY and SOLID principals with proven and dependable Laravel 12 techniques with BackPack 7 with complex RBAC by extending Spatie Permissions, Person-->Employee-->User system with at least 3NF to avoid redundancy, Employees Custom Data Scoping based on various foundation values and hierarchial Vehicle Definition System with Full Working CRUD and leveraging custom build features like Notificaiton system (For Alerts/Notificaion and 1-2-1 or Group Chat) with deep linking for web and app and attachments, Entity History System, Keyword/KeyValue System (for Status and other Enum Like values), Custom Error/Response/Exception Handler (with error/response code managed in a separate file for easy editing/updating) using BaseController, ORM Models extending to our Custom Base Model which give stadard facilities like SoftDelete/HasMedia Default Collection(Spatie Media Library)/Some Custom Traits like Trasformer for columns etc. and our Vehicle Definition System where Brands having Segments having SubSegments having Vehicle Model having Variants having Colors.
+This system is being build to provide an Enterprice Grade ERP like solution to Auto DealerShip having one or more branches, dealing in one or more OEM Brand and these Branches may have multiple locations associated to them, just like a District having Tehsils, Now these Branches can deal in any or all activities namely Sales, Spare and Service of auto mobiles.
+Here I am going to define each system in details topic-wise for your better understanding of the project
+<topics>
+<Foundation>
+The foundation of the system are Designations - system wise ranks having a default hierarchy like Asst. manager is subordinate of Manager,
+Multiple Departments having 0 or Multiple Divisions,
+Atleast one HeadBranch with 0 or multiple other Branches having 0 or Multiple Locations
+each of the above entity should have a unique code (generally made of 3-20 chars) and should have direct link to all of its ancestors for join-less quick queries and normalisation.
+</foundation>
+<VehicleSystem>
+As this is a dealership software for multiple oem brands so we have to define our vehicle system in Brands having Segments having Sub-Segments(optional-generally none in most cases) having VehicleModels having Variants having Colors.
+OEM generally define their vehicle in Model having variant having color and the specificaions like (Segment, Sub Segment, Colour Code, Colour, Fuel, GST, Seating, Wheels, Transmission, Drivetrain, Body Make, Body Type, CC, CC Range, GVW, Permit, Taxi Price, Status) are defined at variant level along-with exshoroom price. Colors are generally defined by types (Each brand use its own color type) like General, Matelic, Dual-Tone, Spl. and some times these specific color comes at a premium increasing the exshowroom price for a specific color. Every OEM-Brand give a color code and a name to color at VehicleModel level. Some time same color code have differnt name/meaning for different VehicleModle i.e. SB may be sky blue for one model and Silver-Black for other. Every Varinat is given a unique Code generally known as OEM-code and it comes with a suffix of its color code so if a vehicle of code abcdef19 is coming in 5 color (wd,tl,gr,bl,on) it will have 5 entires abcdef19wd, abcdef19tl, abcdef19gr, abcdef19bl and abcdef19on but we create just one Variat and the 5 entries of varint_color for all of its colors. Every Brand has a specific char of color code like Mahindra use only last 2 chars or OEM-code but Honda use last 3 chars of OEM-Code for colors (In Honda fist 2 char of color are for Body color while last 1 is for interior color).
+Variant level vehicle specification are generally sotred via our Keyword/KeyValue based Status/Enum mechanism as they repeats for vehicles and we can search/query them based on these values like Fuel has fix values to choose from Petrol/Diesel/CNG/Electric or Permit have Passanger/Private/Goods/Misc allowed values.
+For the ease of query and avoid joins we normalise our tabels in such a way that each entity will have direct link to all of its ancestores lika a variant will have VehicleModel_id, Sub-Segment_id (if apllies else null), Segment_id and Brand_id; while the color will have variant_id to apart from these values. And for each entity we use a custom name (Apart from the one given by OEM).
+See the attached Vehicle_definition.xlsx Sheet of Mahindra for referance
+</VehicleSystem>
+<IAM>
+<Permissions>
+As the project is huge and will have multiple modules so we are going to extend Spatie Permission with Modules having Process Having Permissions. This way we can manage permissions more efficiently.
+Now there is a Module named Sales code SL having a Process named Booking code BK having a permission Create code create so the permission name will be SL.BK.Create. And we will be able to segragate permissions by Modules and Process Drill-Down for easy management
+</Permissions>
+<Roles>
+Now designation works as Rank and each Branch-Department combo should be able to define Post(WorkPositins) for it, i.e. Designation is Manager and Accounts Department of BKN Branch may have 3 post for Manager namely Account Manager Operations, Account Manager Sales, Account Manager Service, so these post should be connected with designation, department and branch/location. It will give us option to identify workforce of a specific Branch or Specific Department across Branches or Specific Division of a specific department of a specific location of a specific branch. These Post will work as Roles (Spatie Permission) so we have to extend the plugin for it or the roles table for it. As each post will have its own set of Permissions attached to it.
+</Roles>
+<User>
+Our user system works on Person having Person Type,Employees/Customers/Associates/DSA etc. (Currently we are starting with Employees only,UserType and User.
+<Person>
+Every one who interacts in our system in any way is a Person (Even Orgnisation or Business - defined by person type) to us, be it our customer, visitor, employees, supplier, client or Financiar. Each having some required data like fistname, lastname, primary email, primary mobile, person-type and rest nullable data like one or more address, additional contacts (Mobile or Emails), Banking Details, Statuary Details - PAN/Adhar/GSTN, DOB/DOIncorportation, Gender, Salutaion Etc.
+</person>
+<Employees>
+Some of the person are our employees having all or some of the following data (this includes person data too for the employee) : Employee Code, Employee Name as in Adhaar Card, Gender, Personal Mail Id, Official Mail ID, Personal Contact Number, Ofifcial Contact Number, DOB, DOJ, Blood Group, Designation, Department, Sub Department, Vertical, Segment, Sub Segment, Branch, Location, Master Work Location, Other Work Locations, OEM ID, Employee Type, Employee Status, Reporting Manager (Employee Name), Shift Type, Shift Name, Late Arrival Window, Early Going Window, Leave Rule, Week Off, WO Work Compensation, Comp Off Applicable, Biometric ID, Bank Name, Bank Account Number, IFSC Code, Name On Bank Account, Salary Payment Mode, PF Eligible, PF Registration Type, Employee PF Number, Employee UAN Number, Employee PF Joining Date, EPS Membership, ABRY Eligibility ( Yes-No ), ESI Eligible, Employee ESI Number, PT Establishment Id, LWF Eligible, PAN Number, Ahdaar Number, Passport Number, Marital Status, Marriage Date, No. Of Children, Spouse Name, Father's Name, Mother's Name, Nationality, Current Address1, City, State, Country, Zip, Salary Structure Type (see employees.xlsx data sheet for detail). These employees will join, promoted/demoted (Rank-wise), transferred (between Branch/location or Posts), All employee will have a primary branch/location and unique Designation and primary department, primary post at any given point of time, however he/she may have additional Branches/Locations or Departments/divisons or Posts assigned to him/her as per his/her Rank(Designation) and available post of same rank in assigned Branch/location/department/division. We also have to keep track of her promotion/demotions and transfers with dates so we can find at which post in which branch/location/department/division he/she was working on a specific date or who was working at a specific post in a specific Branch/Location, Department/Division on a specific date, or his/her entire job history if needed. Then we also have to keep track of his employemnt type, perks, shift timing etc.
+</employees>
+<system user>
+Now out of these Employees (for now later other user types like DSA/Customers/Associates will join) some will have access to our system on web and app for those we will create accoutns in user system having user-type and user-details and user-device tables as the mobile app access will be device bound and will be Mobile and Email OTP based (for both Web and App -- Currently on local-developemnt we are faking the mobile service as we have not finalised a provider yet mail has been setup already and working in system) with extra details like login history, number of max otp attempt in a defined time-frame, max failed attemp allowed before locking an account for a defined time, auto unlocking of locked account after a specific time, auto expiry of otp after a specific time or its usage, default session life in days (afer which a force logout will force the user to re-login, max number of device allowed to a user (I want this feature to be user-specific by default 1 for all but admins can change this for a user)
+
+<System User Data Scoping>
+While some users (generally top level management like DP, CEO, VP, GM) are not bound to specific Department/Division/Branch/Location/Brand/Segment/Sub-Segment/VehicleModel/Model/Vairant/Color/Vertical as they will have full access to entire of partial business data, rest of the users will have a defined/controlled access of data as per their association of Branch/Location/Brand/Segment/Sub-Segment/VehicleModel/Model/Vairant/Color/Vertical etc. This association may be defined in singular or in comma-separated values or ANY/ALL/NULL for all instance and their child of that entity. i.e. in Branch/Location system if a user is given Branch_id 2 it means he has access to data realated to branch # 2 and its defined locaitons. Now suppose Branch 2 has 8 locations and he hase been given CHR,SDS,NKH it means he has access to data of only these theree locations of Branch 2, but if he was given ALL/ANY/NULL as location it means he has access to all locations of Branch#2, similarily if he was given ANY/ALL/NULL for Branch that means he has access to the data of all locations of all branch. This applies on the Vehicle system too.
+So we have to create a smart and flexible system to assign these scoping at the time of user create/edit and autometically applies it on all queries of the user in the system using some scoping technique for defined entities. But there should be an over-ride to disable this scoping for special use case (Query-base by supplying a special flag). We will also have to keep track of the user-wise history of this scoping as it is flexible and keeps changing, but system will be able to devise which user has access to a specific data scope on a specific date for auditing and forensic purpose.
+</System User Data Scoping>
+<Topic Wise Reporting>
+See the attached Reporting Sheet : For different topic like sales/insurance/exchange/finance just like data scoping based on various filters combos (Branch/Location/Brand/Segment/VehicleModel/Variant) a user may be reporting to different users and we have to keep track of history of this reporting too as it is used for teams and individuals performance and incentive calculation, but it keeps changing so if a user is foreseeing Sales of Personal segments Thar and Scorpio Models of nokha and sardarshahar locations of bikaner branch this month, last month he may be working in all Models of LMM segment in ratangarh location of Churu Branch. So we need accurate reporting topic and userwise for specific date/month/date-range
+</Topic Wise Reporting>
+<Approval Flow>
+In daily business process like sales different kinds of special approvals (generally for pricing) are needed and these appravals may go upto 7-8 level up or sometime finish at only two levels it depends on the size of dealership and volume of sales it is handling and totally customisable for every case. Now at each level there are different user having different approval power/limit (this needs to be manage by JSON column as differen flows use different structrue to define this power. Now the creator of sales, quote, Booking needs someones approval before giving custom values or special discount/price or rebate. So he will create an approval case as per the workflow by default this case is assigned to lowest level approver, now this approver check if the ask is within his power/limit or not and what to do with it? If the ask is in his limit then he has the power to accept the ask in full, or give counter offer (Bargain) or reject the ask outrightly; now if ask is beyond his power he still can bargain or reject or esclate it to next level (if there is a next level approver available). So every approver do the same and the esclation loop will continue till it comes to the highest level of approver. We have to keep track of each approvers action and modificaiton to the original ask via json columns as the structure will be different for different topics, but procdeure will be the same of apply, modify, esclate or reject. A modified or accepted or rejected case will goes back directly to the source and each approver and creator will be able to track each case gone through him.
+See sample workbook Reproting-N-Approval.xlsx for details
+<Approval Flow>
+<WorkFlows>
+As there will be various process in the project like enquiry, quote, booking, sales, delivery we need some way to define and control the work flows within the team and keep track of reminders, notificaitions, due/overdue/pending cases. I have not given much though to it yet but need your inputs on it.
+</WorkFlows>
+</system user>
+</User>
+</IAM>
+<utilities>
+Our system will use various utilites like BaseController, BaseModel, DB based Notification System for alerts, Messages and Module/Process/System Notificaitons with FireBase for DeepLinking DB and Push Notificaitons for App and Web, Keyword/KeyValue Status/Enum mechanism to get away with multiple status/emun masters in DB, Entity Based Communication and Status history with Attachment which also doubles as 1-2-1 and Group-Chat system, Site Settings where we can store site-wide, topic/category wise settings for easy access like Site URL, Site Name/logo/Slogan, DealerShip Name/Contact/Email/Website/Logo/Address, Pricing setting. We should be able to call/fetch these values any where in code (Service/Controller/Blade/Helper). A Document Management Module, A task Module. Later we will add utility for Google Sheet managent (Read/Write/Update) and Microsoft OneDrive Sheet Management too for data import/Export too. Standard Error/Response/Exception handling has been created using BaseController and proper L5-Swagger Documentation has also been implemented in API Controllers.
+</utilities>
+<current_setup>
+<packages>
+Currently we are using following Packages :
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "backpack/crud": "^7.0",
+        "backpack/theme-tabler": "^2.0",
+        "darkaonline/l5-swagger": "^9.0",
+        "google/cloud-vision": "^2.1",
+        "graphp/graph": "^0.9.3",
+        "intervention/image": "^3.11",
+        "kalnoy/nestedset": "^6.0",
+        "kreait/firebase-php": "^7.24",
+        "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.2",
+        "laravel/tinker": "^2.10.1",
+        "maatwebsite/excel": "^3.1",
+        "owen-it/laravel-auditing": "^14.0",
+        "spatie/laravel-medialibrary": "^11.17",
+        "spatie/laravel-permission": "^6.23",
+        "spatie/laravel-translatable": "^6.12"
+    },
+    "require-dev": {
+        "backpack/generators": "^4.1",
+        "fakerphp/faker": "^1.23",
+        "laravel/pail": "^1.2.2",
+        "laravel/pint": "^1.24",
+        "laravel/sail": "^1.41",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^11.5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm install",
+            "npm run build"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan basset:cache"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "post-install-cmd": [
+            "@php artisan basset:cache"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
+
+</packages>
+<EnvFile>
+APP_NAME=Xceler8
+APP_ENV=local
+APP_KEY=base64:Ao3yAK+H9OTaJgvJFZEXj3KN63/6zuWLsduP0SLr83A=
+APP_DEBUG=true
+APP_URL=http://localhost/XLRN/public
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+# APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+# PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+L5_SWAGGER_CONST_HOST=http://localhost/XLRN/public
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=xlrn
+DB_USERNAME=root
+DB_PASSWORD=
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+# CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=smtp
+MAIL_HOST=xcelr8.insightechindia.in 
+MAIL_PORT=465
+MAIL_USERNAME=no-reply@xcelr8.insightechindia.in
+MAIL_PASSWORD=)[6C[I6LMg1M61b7
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=no-reply@xcelr8.insightechindia.in
+MAIL_FROM_NAME="${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME="${APP_NAME}"
+
+# Firebase Configuration
+FIREBASE_ENABLED=true
+FIREBASE_PROJECT_ID=xceler8-a6a46
+FIREBASE_PRIVATE_KEY_ID=918c360657e9170d1e968786d0a74b28a4e741a4
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCoCCmaxgZAv08H\n4/fsVQGkPCtIaqudjodMNVoVTK1uMPMsyWjPHRxnsaa3Ho3dN2aQSXa44BbES7n6\ncDzsJ0Jk9nhh1s64bwdCLsYLqvc1AhmxS+l0tR29jNgIjyVAoATTqAE68HPCENkg\nyA5u+HJkKBinQAEETg+KNef23HT1eRbHk9heezou74hTv9fJHLCNbazJNYBXWWgc\nL9Vracz3Hr0OxPwqFUwhR4Zn+l5YSx4kFFzb/3BfxhsJ1NCzYwzxfwkEULxiiFY6\nZX33f/8qaT6XLGwSpxf3jrll46w9s7tRSW2NiKkw2fan8SoaKBGIdMk+TzRGPZp9\nq7JfsXwDAgMBAAECggEAB9HpbcSNgfHlUa6wWRVTsDsEoKgmOHzrmwZYnOkmoRwy\nFQGCmTD3o3PHGHqZi5QKd+iTV+NF6/jCPP+ANlVVZ7F4xMTkdfzkz5WxrdVVD+h7\nHZ80zDOpoKqvWyaeSzWnQ9prxDxwhrWWBUqKMWvqlvKuwwndgj/HxVzg4MI9xza6\nIsE3GFJdL2akrC25xigitBpqJNBzTvuWaxS/YlxmSt1A2Aig0BnqjUfCeV6tl6fu\nRynrhZl6b55iPd5KmCxQTD5NgXVUi6XIMvqb87nOGGpB3oO2dx3IatWiibmY/FBM\nf54j9crTxDPfafBe/fgV8pifI9+VRXYQA9Ure7HT4QKBgQDVNPIdt8BfY4GHnHxS\nOk9qFkD+UUFilD+18nUKlUefVfgFe3WQq6YU+mzgif5WNbtTiswz5BjFipTF2g4S\nrsyARdeLT1JVXnQgkVdewVtkf1PeVR3IB16Gv45NZX4i35KYcu3PIq1M9gkhQ/QV\nNgWvtAUfowkTr8L8+m4fhEDFeQKBgQDJwgZ2iRABbJkjkEjlwax394AXc4oDSVH7\ndy/s/Rjj/zIoG38GCjU+8PEpt50a6ITirhS8D9KFI1nNBhmhcPSEOva/By3oskyg\nXHBqOIN3D8Z0K24TcHzQSR6w4apNnSPr+4NwbU8PF2z72S3acbmjk8JGsLNQV8B+\nIUYGR0UaWwKBgB0joFeZboxa8DAVnhQq7gGkyvs3JcWQV2jJm1936ZMIT96H8hh0\nrT0+wLSrh3xG2bRgSupoqU4OU6j61WOOSlrZsMzUaX9LanmtA5Dqwk/o6xB+95QI\nFc46zfsb/PJNNh7pzkC6D49uLO9D908S1BIge3bIdIwhQHgMzhI2pBeZAoGAP0tv\nW6CENO4s3MtXEz0/LiOnO7Qzh/Rok8tAbci5Fk3pHkwB/ZMWQTi1b7D6yIZJqhOS\nzazpDnuYoIlZYRxemV0mK6fE70uAXo6hdbFlDOUWDTvSvKZ9gZpu1m71ToQN0OqG\nwa6JLuLafegUSoODCZ5BRIwKtRnSeb9WiIGzXCECgYBlstTv2vQYLARQXys1CU4O\naSmJalERWwUa2viZaXmgDP2O+CMGcfXtXr3GTx1uDdoxEpPPRmePkci3T8Lp6C/X\n1+Pr0VBUy8YctsqnkCG5z9b21C+vZRqoIWlEEqQQoo3Opl5z8X0c3ZDkCb4U7sgA\nkxbzEWfuXrXn6FWawjJ9og==\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@xceler8-a6a46.iam.gserviceaccount.com
+FIREBASE_CLIENT_ID=117557646410141511171
+FIREBASE_AUTH_URI=https://accounts.google.com/o/oauth2/auth
+FIREBASE_TOKEN_URI=https://oauth2.googleapis.com/token
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
+FIREBASE_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40xceler8-a6a46.iam.gserviceaccount.com
+
+# Firebase App Configuration
+FIREBASE_APP_NAME=Xceler8
+FIREBASE_PACKAGE_NAME=in.insigtech.android.xceler8
+</EnvFile
+Current SQL Dump and Core Models (All Merged into one text file) is also attached for your study and analyse.
+
+</current_setup>
+</Foundation>
+
+</context>
+<requirements>
+I want you to study the requirement and analyse my existing solution file-by-file and line-by-line as a Sr. Developer and then give me a detailed report what we have done correctly, where we have made mistakes and where we are compleltely deviated from our goal and which feature we have not implemented at all. As there is number of files limits I am sharing a few here and now you keep asking me what files you need first in coming prompts or access them all whatever you need from the attahed git repo :
+@Github https://github.com/katyayan-ck/Xv2
+then I want you to first create a detailed project requirement FRS as a Project Manager cum Business Analyst in proper order covering and enhancing everything with proper flow in details with text diagram wherever needed.
+Finally varify our approach and flow as an solution architect or CTO and give your own input to make it more easy to use and manage. We will keep discussing this and I want your help to setup a gem/workspace/project specifically for this project where we will keep building/refining this project prompt by prompt.
+Do not haste go through all the data/files/code carefully line-by-line multiple times and make connections and logic based in it then give me your solution. If the answer is too much for a single response then break it in parts and give me one-by-one
+</requirements>
+<suggestions>
+1. Make entire DB at-least 3NF compatible which means eleminage redundancy from the system completely. For example in Person --> Employee --> User system user table will have user_type_id powered by our Keyword/KeyValue mechanism. It will not have email or mobile columns but person_id FK, Person table will have its own FK to Person_Contacts where unique set of mobile and email will be stored for a person with type (Home/Office/Alternate) and is_primary column. There should be a unique constratint in Person_id and is_primary=true which means each person should have only one primary contact. Similarily there is Person_address table wiht is_primary for storing person postal addresses. Then there should be a person_relation table which should be a pivot to connect one person record to other person record by relation like Father/Mother/Spouse/Brother/Sister/Son/Daughter/Relative etc. Then there should be a person_extra_data table which should store its extra info like MaritalStatus/BloodGroup/Nominee(FK to Person_id) and other non-relevant data which is personal in nature. And finally Person_Banking Details with is_primary in case of multiple bank accounts.
+2. Person will have a type column to define wheather it is an Individual, Organisation.
+3. Employee table will FK Person table for personal info like firstname, lastname, contacts, address etc. and master employee record will have its FK to Designation (Designation is unique to an employee and can be changed in case of promotion/demotion - We will have to keep history of this), then there is binding of an employee to Department/Division, Branch/Location where one is primary and can have multiple other assigned to him (we will have to keep a history of these assignements too so we can query who was the Sales Manager of BackOffice Division at Nokha location of Bikaner Branch on 12-Sep-2024 or Emp12 was working at which post of which branch during a given date/date-range - this will help us create performance reports and employees journey within our organisation)
+4. We will use Post as Roles (by extending Spatie Roles table and Model) : Post will serve as a unique role based in the combo of Designation_Department+Division+Branch+Location+ExtraData. Now suppose our org has 100 consultants now Nokha Location of Bikaner Branch has need 5 consultants and one of them is for Non-XUV(Sub-Segment) sales only in Showroom Division of Sales Department so there will be a post like <desig_code>_<deptCode>_<diviCode>_<BranchCode>_<LocCode>_<PostCode> CNSLT_SL_SHWR_BKN_NKH_NXUV with a display name like FSC_NonXUV Display names are not unique for post.
+5. Each post will be bound to a Branch/Location/Department/Division with option to assign All/None/Some Brands,Segments,SubSegments,VehicleModels,Variants,Verticals where ANY/ALL/NULL means all and None means 0 using a common pivot if possible like Model_has_role approach having multiple entries for model Variant if Some variants are assigned to it. Here we have to keep in mind if a post has Segment LMM bind to it and there is All\ANY\Null or no-record in its VehicleModel, Variant binding it means all the descendants of the said entity are assigned to it.
+6. At the time of Location creation of a Branch a post for designation Manager with post display name "Branch Manager" should auto metically create for that Branch/Location combo with Admin and Admin as Department and Division and there will be a permission Location.Nodal which should auto assigned to him.
+7. Any employee having Branch.Nodal or Location.Nodal will have the power to create new posts for his Branch and/or Location/Locations by selecting Designation_id, Department_id, Division_id, Branch_id, Location_id. Initially every post will be vacant.
+8. Then there will be an HR.Admin who will be responsible for employee Onboarding/Promotion/Demotion/Transfer/Relieving/Terminations and Post Assignments. He should be able to see all the eleigible posts (Based on an employees current Rank (designation) and preference of Branch/Location/Department/Division (Multiple of Singular while each employee must have at-least one Primary Branch/Location/Department/Division) now admin can assign multiple posts to an employee. Now as Post are extended Roles so they will come with their bounded set of permission attached to them and in case a user get 3 posts he will get assigned to permissions of all three roles collectively. This will make the user-permission management super easy as each nodel will have to define permissions for a post and it will autometically assigned and revoked from an employee as per his assigned roles/posts.
+9. The binding of vehicle system and verticals to a post too will autometically apply on the employee attached to that role and this will be used to define the dataFilterScope for that user. We will have to make a mechanism for it so it should auto applied via RBAC Services/Polices/Middlewares. There should be functioning to check if a user has access to an entity or group of entities
+10. As soon as a Branch is created a Post "Branch_Manager" should auto created for it with permission Branch.Nodal auto assigned to it, and a Location by the same BranchName and BranchCode should auto created.
+11. As soon as Department is created a division named General for that Department should auto created for that department
+12. As soon as A Segment is creaeted a SubSegment named ALL under that Segment should autometically created.
+13. 10/11/12 are to manage Branches wihtout multiple locations, Departments without multiple Divisons and Segments without Multiple SubSegments.
+14. We have to create MaatWebSite powered Excel Imports/Exports for these entities from given Excel Workbooks/WorkSheets in Bulk where all needed enities or Keyword/KeyValue combos gets auto-created in the system if not already exists like inthe attached VehicleDefineImporter.
+15. We have to start from the scratch and build step by step on given composer setup with given Packages and BaseModel (With Standard model features like 6 audit colomns, Auto Auditing, Media integration, Tree Traits, Transformation Trait, Translatable Trait, Default Media Collection, Standary Access of Active/Inactive etc), Basecontroller (With Standard and Uniform Exception/Error/Response Handling), Keyword/KeyValue system, Entity History/Status Mechanism, Notification Mechanism (Alerts,Notification,System), DocsMechanism, SiteSettings Mechanism, Foundation Mechanism, Vehicle Machanism (Vehicle-System from Brands to Color) to built first as they are core functioning.
+</suggestions>
+<final_words>
+This is my plan which may have faults, I need you to understand, analyse and study the requirements and proposed plan as a Solution Architect and Sr. Dvaloper and DBA and then see the viability/feasiability of the proposed solution. Give your own inputs/suggestions for imporvement in terms of usage and implementation and prepare a detailed project Requriement and implementation plan Module wise covering everything. Step-By-Step in incremetal order.
+</Final_Words>
+<attachments>
+1. Source Data provided in RBAC_User_Master.xlsx with following data worksheets :
+1.1. VehicleSystem to Capture : VehiclesDefinition
+1.2. Branch and Location System with Types : Sales Location, Workshop Location and Parts Location
+1.3. Employees Details with scoping to Capture : Employee (Full Format)
+1.4. User Details with scoping to Capture : User
+1.5. Topic Reportings to Capture : Reporting and Reporting_Sales
+1.6. Topic wise Approvals with scope to Capture : Approval_Sales and Approval_Insurance
+2. Keyword/KeyValue Mechanism Example (Table, Models, Routes, Controllers, Services all merged into one)
+3. Entity History/Status Mechanism Example (Table, Models, Routes, Controllers, Services all merged into one)
+4. SiteSetting Mechanism Example (Table, Models, Routes, Controllers, Services all merged into one)
+5. Notifications Mechanism Example (Table, Models, Routes, Controllers, Services all merged into one)
+6. Docs Mechanism Example (Table, Models, Routes, Controllers, Services all merged into one)
+</attachment>
+<Desired_Order_Of_Implementation>
+1. Base Installtion
+2. All Package Setup
+3. Standard Migration
+4. Setup of BaseModel
+5. Setup of BaseController with Standard Error/Exception/Respose handling for all and any case
+6. Module wise implementation with Migrations, Models, Rotues, Services<or any other codefile like helper/middleware/policies/imports/exports/observers/commands/traits etc. with proper format comments and l5-swagger documentation for BackPack Crud Web and APIs> in following order (You may change the order as per dependancies on other feature/modules).
+6.1 Keyword/KeyValue
+6.2 Entity History/Status
+6.3 OTP Based Device Bound Web and App Login
+6.4 SiteSettings Mechanism
+6.5 Notification Mechanism with FireBase
+6.6 Docs System
+6.7 Task System with Multiple Assignee, Contributors/Monitors, Snoopers (Silent Hidden Viewer),
+6.8 Foundation System (Branch having Location, Departments having Divisions, Verticals)
+6.9 Vehicle System (Brands having Segments having SubSegments having VehicleModels having Variants having Colors
+6.10 Person System
+6.11 Employee sysem with Employemnt and Post History
+6.12 User System
+6.13 RBAC extension with Modules having Process having Permissions and Posts = Roles
+6.14 SuperAdmin User blanket wildcard access
+6.15 Assigned Post wise DataScoping with override for dataFilterScoping feature (to be use in special case)
+6.16 Topic-wise User Reporting with extra_data JSON column
+6.17 Topic wise Approval with extra_data JSON column
+</Desired_Order_Of_Implementation>
+<Instructions_to_follow>
+1. All tables to have SoftDelete, 6 Audit Columns, Auto Auditing, Default Media collections etc via BaseController
+2. All Response/Exception/Errors to be in uniform format and error/response code using BaseController
+3. All Migrations to be provided apart from standard Laravel and Package migrations
+4. All API's to be properly commented and OpenAPI documented as per L5-Swagger
+5. Group Migrations Modulewise i.e. all tables eitities, transactional, pivots of a module in a single migration with all FK and constraints to be defined with short names at the end to avoid column not found/model not found problem
+6. Do the things by "The Laravel Way" using DRY and SOLID and MVC principals where most of the DB logic is defined in Models itself
+7. Use/Create Helpers for System-wide usage of any feature/table/entity/module as per the requirements
+8. Study each feature/module/entity carfully and devise its dependancies on other feature/module/entity beforehand
+10. Use Index and Caching for faster performance
+11. Use only standard outof the box laravel caching/document storage for now
+12. Use only free/community version Plugins and packages for now no Paid package to be use
+13. Double check everything with Laravel 12 and Backpack 7 and php 8.3 and package/plugin in use's help and documentation beforehand to avoid incorrect code or logic.
+14. Ask questions where any more details/clarification is needed
+</Instructions_to_follow>
+We are refactoring our Identity and Access system of our Xcelre8 Project here is its current user and person table. We are working on the following logic :
+1. Every Person/Legal-Entity (Firm/Corp/ORganisation/Company) will have its data in Person Master Table, instead of id we will use person code for FK and relations. Code will be a unique value for each person and it will be his Pan or Adhar (which ever is available, PAN in case both are available at the time of creation and Whatever is used for the first time will be same forever which means at the time of creation if only adhaar was available then it will be used a person-code and later if PAN data is added to the record then no change will be done in the person-code), Similarily in case of Legal-entity we will use its PAN/TAN and GSTIN for code where PAN/TAN is primary.
+
+2. Person Contact will be used to store Person's Mobile/Email data (one record for each data) there will be contact_type and data_type colums with fixed values Email/Mobile/Landline/Fax for Data_type and Primary/Alternate/Office/Home/Emergancy for contact_type. By default First entry of each data_type for a person_code will be Primary for that type and when there are more then one entry or a person_code of a given data_type then we will give him option to choose primary of that data_type. Every data_type will have only one primary Contact_type entry for any person_code.
+
+3. Similarily to contact we will also store a person address (if exist) and Banking details (if exist) connected by person_code and must have primary rule
+
+4. In user table we will have user_type Emp/Cust/DSA/Insurer/Associate and username with password hash only all the other user data like code, mile_id, email, mobile etc will be now fetched from respective tables so here the proposed changed we will do the existing tables :
+*******USER'S TABLE********
+1. user_type_id to be hardcoded in db
+2. change emplyoee id to emplyoee code
+3. person_id to be changed with person_code and add in person master
+4. mile_id, code to be removed as already in emplyoee table
+5. mobile, emailid, name to be removed as already in person
+6. add username
+7. remove email_verfied, remember_token as well
+8. make created/update/delete by and at in every table
+9. emplyoee code must be optional
+
+
+*********PERSON TABLE********
+1. MOBILE PRIMARY, MOBILE SECONDARY, EMAIL PRIMARY AND SECONDARY TO BE REMOVED FORM PERSONS
+
+********PERSON CONTACT TABLE*******
+1. NEW COLUMN TO BE ADDED "CONTACT_TYPE"
+2. REMOVE NAME, RELATIONSHIP, NOTES, IS_PRIMARY 
+3. REMOVE PHONE AND EMAIL, AND ADD "CONATCT DETAILS"
+
+********PERSON ADDREESS*********
+1. REMOVE IS_PRIMARY AND NOTES
+
+Now we need to create full migration for the task and update models accordingly
+
+great so now you under stand our user, person, person_contact, person_address, person_banking relationship. So now move on to the employee integration in the system. Study the attached Employee excel workbook and my attahced sql dump and models of employee system. Here we have to follow following rules. To implement it either recreate them from scratch or update them :
+We have following structure in our Xceler8 Laravel Dealership Management Project where "-->" means having
+
+Vehicle Brand --> Vehicle Segment --> Vehicle Sub-Segment (optional) --> Vehicle Model --> Vehicle Variant (specifications defined at this level) --> Color
+
+Branch --> Location  
+
+Department --> Division (SubDepartment)
+
+Vertical (Standalone)
+
+UserType -- Employee (EMP_Code) / Customer (Cust_ID) / DSA (DSA_ID) / Insurer (Ins_Code) / Financiar (Fin_Code)
+
+User have username / password / primary type / Person ID
+
+Designation : Department wise different Designation hierarchy with reporting to 
+
+
+
+We deals with various person/entity i.e. Company and not every person is a user, some person are employee, some are customer/dsa/financiar/insurer, some are multiple like Emp and Cust or DSA and Cust. So we will keep a primary type and a pivot for other user type so user can switch type at the time of login
+
+Every person have PAN/Aadhar (one is compulsary) one primary email, contact and address (out of these three contact is compulsary) then they have additional Address/email/contact
+
+Now we have a custom RBAC too where we have Modules --> Process --> Permissions
+Each Branch/Location can have have Posts based on Designations from various departments designation tree. There might be multiple posts for a single designation (i.e. if there is a desination Service Engg in Service Department's Designation tree then there might be three post of same designation in Bikaner Branch named SE1, SE2 and SE3)
+These Post are bound with Branch/Location and Department and Designation.
+
+So analyse the provided data while I am preparing further inputs. 
+
+
+Now every user has a primary Branch, Primary Department and Single Unique Designation, then he has a primary work Branch and Location. Now apart from this he may be assigned or inherit other additional Branches, Locations, Departments, Divisions but single Designation.
+Inheritance means if A user has been assigned a branch (Primary or additional) i.e. Bikaner then he will be auto inherit all the locations of the Bikaner Branch by default unless stated otherwise. Similarily if he is assigened a Department then he will inherit all of its divisions, if he has been assigend a brand or segment or subsegment or model or variant then he will auto assigned to all of its childs unless stated otherwise.
+
+wait for more details, meanwhile ask questions for clarification if needed about the given data and info
+
+Here is answers to all your queries :
+🏢 Org / Branch / Location Scope
+
+    Exclusion override: it i salways "all or individually listed"
+
+    Location uses branchcode (string) as FK instead of branchid (integer) — this is intentional and we want to do the same everywhere in vehcle system, admin or iam I want each entity to be identified by a unique code of 3-5 chars be it Brand/model/Seg/Branch/Location/Department/Designation/Module/Process/Post we have to make required changes in schema and fk and models as and where needed. 
+
+    Primary Work Branch vs Primary Branch — an employee's administrative "home branch" can be differ from their physical work location branch/location
+
+👤 Designation & Department Hierarchy
+
+    A user's designation belong to a specific department's hierarchy tree, but some designation (top level management) are common superior to all departments and their divisions like Founder (DP), VP, CEO, GM, AGM etc rest are department specific. For while we should have a consolidated Designation tree we should also give Rank to each designation and then have a designation_department pivot having reporting to from the same department or TLM
+
+    Reporting-to chain — one default at the  Designation level (all SEs report to Service Manager), and final override at the Post level (SE1 at Bikaner reports to SM-BKN) in general then a topic wise reproting between posts i.e. FSC3 in BKn branch report to SM2 for Sales in LMM Segment but reprots to SM4 for Personal segment and report to IM3 for Insurance Tracking and so on (we have to finalise this custom reporting mechanism too)
+
+    Department inheritance — if a user is assigned Department "Service", they will be assinged post manually by HR in each division where needed and it can be change any time
+
+👥 Multi-UserType (Person Types)
+
+    Type switching at login — when a person who is both Employee and Customer logs in and switches type, does their RBAC (roles/permissions) also switch completely, or does it remain the same user session with just a UI/context change? - We have to brainstorm and decide on it as for now all the active users are employees only.
+
+    DSA / Insurer / Financiar — everyone who is in system should have their person records/data 
+
+    Customer ID (Cust_ID), DSA_ID, Ins_Code, Fin_Code — will these be separate tables like xlr8admincustomer, xlr8admindsa, etc., each linking back to personid, similar to how xlr8adminemployee works? -- cant understand the question need more details on it
+	
+	
+	Answers to your Clarification Questions Before Coding
+
+A1. Departments and Divisions are org-wide, not branch or location specific.
+
+A2. Division code — are unique to a department as each department has its own division hierarchy.
+
+A3. BMPL-0001 the ERP employee code (kept as-is)
+
+A4. Preferred code pattern For Posts : {LOCATION_CODE}-{DIVISION_CODE}-{DESIG_CODE}[-{SEQ in 001 series by default which is editable by HR but a post code should always be unique}]
+👥 Multi-Type Person (Cust/DSA/Financier)
+
+A5. Yes Customer, DSA, Financier, Insurer each have their own table (like xlr8_admin_customer, xlr8_admin_dsa) linked to person_code not id, similar to how xlr8_admin_employee
+
+A6. Type Switching (Multi-UserType Login): Currently we do not have such user so leave it for future
+
+Q7. Payroll/compliance data should be split into separate table(s) as and where required
+
+
+Take a deep analytical look at attached sql and keep in mind the following details :
+Vehicle Brand --> Vehicle Segment --> Vehicle Sub-Segment (optional) --> Vehicle Model --> Vehicle Variant (specifications defined at this level) --> Color
+
+Branch --> Location  
+
+Department --> Division (SubDepartment)
+
+Vertical (Standalone)
+
+UserType -- Employee (EMP_Code) / Customer (Cust_ID) / DSA (DSA_ID) / Insurer (Ins_Code) / Financiar (Fin_Code)
+
+User have username / password / user type / Person Code
+
+Designation : Department wise different Designation hierarchy with reporting to 
+
+Only Emp will be defined there scope of data access for vehicle system or by branch/location/department/division/vertical as per their assignment
+
+Modules --> Process --> Permissions
+
+Post are custom vacancy at a location of a branch in a specific division of specific department and bound to a specific post of that department's designation tree. A division may have multiple post of same designation, i.e. Bikaner's Sujangarh location may have 3 post of FSC in their Sales Department so each post name will be unique and each post will have its own set of permission as each post will work as spatie role. A user can be assigned multiple posts till the posts are of similar designation as asigned to the user. Post name will be in following pattern : {LOCATION_CODE}-{DIVISION_CODE}-{DESIG_CODE}[-{SEQ in 001 series by default which is editable by HR but a post code should always be unique}]
+
+We will avoid FK and use ORM Relations for data itegrity where ever possible. For these realation or fk instead of using ids like person_id, we are introducing a candidate key in each entity master like person_code in person table so all relation/fk will be immutable irrespctive of chagnes to id due to import/export or data optimisation. 
+
+I am attaching the existing current models and sql dump for your study. This is the current state and we have to build/update on it as per the data given in userdata.xls employee data.
+
+Now reeveluate the entire code and data thorouly multiple time as a CTO or Sr Developer cum DBA cum Solution Architecht then give me a step by step detailed solution with full code and migrations. Keeping in mind all tables to have 6 audit columns and all models to extend basemodel for core functioning

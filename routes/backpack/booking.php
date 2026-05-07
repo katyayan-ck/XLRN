@@ -123,13 +123,13 @@ Route::group([
     Route::get('/get-models/{segment}', 'BookingCrudController@getModels')
         ->name('get.models');
 
-Route::get('/get-variants/{model}', 'BookingCrudController@getVariants')
+    Route::get('/get-variants/{model}', 'BookingCrudController@getVariants')
         ->name('get.variants');
 
-Route::get('/get-colors/{variant}', 'BookingCrudController@getColors')
+    Route::get('/get-colors/{variant}', 'BookingCrudController@getColors')
         ->name('get.colors');
 
-Route::get('/check-receipt/{rn}', 'BookingCrudController@CheckReceipt')
+    Route::get('/check-receipt/{rn}', 'BookingCrudController@CheckReceipt')
         ->name('check-receipt');
     Route::get('/get-chassis-numbers/{modelCode}', 'BookingCrudController@getChassisNumbers')
         ->name('get.chasis');
@@ -137,8 +137,7 @@ Route::get('/check-receipt/{rn}', 'BookingCrudController@CheckReceipt')
     Route::get('/get-accessories/{segment}/{model}/{variant}', 'BookingCrudController@getAccessories')
         ->name('get.accessories');
 
-    Route::get('/get-locations/{state_id}', 'BookingCrudController@getLocations')
-        ->name('get.locations');
+
 
     Route::get('/get-locations-by-pincode/{pincode}', 'BookingCrudController@getLocationsByPincode')
         ->name('get.locations.by.pincode');
@@ -366,4 +365,11 @@ Route::get('/check-receipt/{rn}', 'BookingCrudController@CheckReceipt')
 
     Route::get('booking/{id}/check-field-payment', 'BookingCrudController@checkFieldPayment')
         ->name('booking.check-field-payment');
+
+
+
+
+
+    Route::get('/get-locations/{branchCode}', [App\Http\Controllers\Admin\BookingCrudController::class, 'getLocationsByBranch'])
+        ->name('get.locations.by.branch');
 });

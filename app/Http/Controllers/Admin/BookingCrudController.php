@@ -10,6 +10,8 @@ use App\Http\Requests\BookingRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
+use App\Models\Admin\Location;
+
 use App\Http\Controllers\Admin\Cache;
 use DataTables;
 use Illuminate\Validation\Rule;
@@ -23,18 +25,18 @@ use App\Models\Module\Booking\Booking;
 use App\Models\Bookingamount;
 use App\Models\XVehicleMaster; // Import the model
 use App\Models\Stock; // Import the Stock model
-use App\Models\Branches; // Import the Branch model
+use App\Models\Admin\Branch; // Import the Branch model
 use App\Models\Xessories;
-use App\Models\Xl_Refunds;
+use App\Models\Module\Booking\Xl_Refunds;
 use App\Models\Xl_DSA_Master;
-use App\Models\X_Branch;
+
 use App\Models\X_Location;
 use App\Models\X_Vh_Stock;
 use App\Models\X_Vh_Order;
 use App\Models\EnumMaster;
 use App\Models\PinCodes;
 use App\Models\XExchange;
-use App\Models\XFinance;
+use App\Models\Module\Finance\XFinance;
 use App\Models\XlInsurer;
 use Illuminate\Support\Facades\Log;
 
@@ -65,13 +67,13 @@ class BookingCrudController extends CrudController
     use \Backpack\CRUD\app\Http\Controllers\Operations\ShowOperation;
 
     public function setup()
-{
-    // FIXED: Correct namespace
-    CRUD::setModel(\App\Models\Module\Booking\Booking::class);
-    
-    CRUD::setRoute(config('backpack.base.route_prefix') . '/booking');
-    CRUD::setEntityNameStrings('booking', 'bookings');
-}
+    {
+        // FIXED: Correct namespace
+        CRUD::setModel(\App\Models\Module\Booking\Booking::class);
+
+        CRUD::setRoute(config('backpack.base.route_prefix') . '/booking');
+        CRUD::setEntityNameStrings('booking', 'bookings');
+    }
 
 
     /**
@@ -97,7 +99,7 @@ class BookingCrudController extends CrudController
             'uid'               => Auth::id(),
             'dsaname'           => 'N/A',
             'comm'              => ChatHelper::get_communication(3, $id),
-            'receiptLogs'       => Bookingamount::where('bid', $id)
+            'receiptLogs'       => App\Models\Module\Booking\Bookingamount::where('bid', $id)
                 ->select('id', 'date', 'reciept', 'amount')
                 ->orderBy('date', 'desc')
                 ->get(),
@@ -185,10 +187,10 @@ class BookingCrudController extends CrudController
         $data['total_amount'] = $data['receiptLogs']->sum('amount');
 
         // Branch & Location
-        $data['branch']   = X_Branch::find($booking->branch_code)?->name ?? 'N/A';
+        $data['branch']   = CommonHelper::getBranchName($booking->branch_code);
         $data['fbranch']  = $data['branch'];
         $data['location'] = $booking->location_code
-            ? (X_Location::find($booking->location_code)?->name ?? 'N/A')
+            ? (Location::where('code', $booking->location_code)->value('name') ?? 'N/A')
             : ($booking->location_other ?? 'N/A');
         $data['flocation'] = $data['location'];
         $segmentsFromHelper = XpricingHelper::getSegments() ?? [];
@@ -481,7 +483,7 @@ class BookingCrudController extends CrudController
         $collectedBy = $booking->col_by ? User::find($booking->col_by) : null;
         $collectedByName = $collectedBy?->name ?? 'N/A';
 
-        $branchName = $booking->branch?->name ?? 'N/A';
+        $branchName = CommonHelper::getBranchName($booking->branch_code) ?? 'N/A';
         $locationName = $booking->location?->name ?? ($booking->location_other ?? 'N/A');
 
         $statusBadge = $this->getStatusBadge($booking->status ?? 8);
@@ -503,7 +505,7 @@ class BookingCrudController extends CrudController
         $financierRecord = $booking->financier
             ? XlFinancier::find($booking->financier)
             : null;
-        $refundRecord = \App\Models\Xl_Refunds::where('entity_id', $booking->id)
+        $refundRecord = Xl_Refunds::where('entity_id', $booking->id)
             ->where('entity_type', 'booking')
             ->latest('created_at')
             ->first();
@@ -1032,7 +1034,7 @@ class BookingCrudController extends CrudController
         return array_merge($columns, $extraColumns);
     }
 
-   
+
     private function getStatusBadge($status)
     {
         return match ((int)$status) {
@@ -1460,25 +1462,25 @@ class BookingCrudController extends CrudController
     {
         CRUD::setValidation(BookingRequest::class);
         $this->crud->setCreateView('admin.booking.add');
-    
+
         $data = [];
-    
+
         // Existing Masters
         $data['branches']       = collect(CommonHelper::getBranches())->map(fn($b) => (object) $b);
         $data['financiers']     = collect(CommonHelper::getFinanciers())->map(fn($f) => (object) $f);
         $data['dsa_details']    = CommonHelper::getDSAs();
-    
+
         // New Vehicle Masters (Code-based)
         $data['segments'] = CommonHelper::getVehicleSegments();
-    
+
         // These will be populated via AJAX
         $data['models']     = [];
         $data['variants']   = [];
         $data['colors']     = [];
-    
+
         $data['locations']  = [];
         $data['person_id']  = backpack_auth()->id();
-    
+
         $this->data['data'] = $data;
     }
 
@@ -2979,29 +2981,29 @@ class BookingCrudController extends CrudController
     //     ]);
     // }
 
-public function getModels($segmentCode)
-{
-    $models = CommonHelper::getVehicleModels($segmentCode);
-    return response()->json($models);
-}
+    public function getModels($segmentCode)
+    {
+        $models = CommonHelper::getVehicleModels($segmentCode);
+        return response()->json($models);
+    }
 
-public function getVariants($modelCode)
-{
-    $variants = CommonHelper::getVehicleVariants($modelCode);
-    return response()->json($variants);
-}
+    public function getVariants($modelCode)
+    {
+        $variants = CommonHelper::getVehicleVariants($modelCode);
+        return response()->json($variants);
+    }
 
-public function getColors($variantCode)
-{
-    $colors = CommonHelper::getVehicleColors($variantCode);
-    return response()->json($colors);
-}
+    public function getColors($variantCode)
+    {
+        $colors = CommonHelper::getVehicleColors($variantCode);
+        return response()->json($colors);
+    }
 
-public function CheckReceipt($rn)
-{
-    $count = XpricingHelper::checkReceiptX($rn);
-    return response()->json((int)$count > 0 ? 1 : 0);
-}
+    public function CheckReceipt($rn)
+    {
+        $count = XpricingHelper::checkReceiptX($rn);
+        return response()->json((int)$count > 0 ? 1 : 0);
+    }
 
     public function getChassisNumbers($modelCode)
     {
@@ -6993,7 +6995,7 @@ public function CheckReceipt($rn)
         // FIXED: Use Backpack's auth helper
         $uid = backpack_user()->id ?? null;  // Safe fallback if no user (though middleware should prevent this)
 
-        $data['branch'] = X_Branch::find($booking->branch_code)->name ?? 'N/A';
+        $data['branch'] = Branch::where('code', $booking->branch_code)->first()?->name ?? 'N/A';
         $data['location'] = ($booking->location_code > 0) ? X_Location::find($booking->location_code)->name : $booking->location_other;
         $acc = explode(',', $booking->accessories);
         foreach ($acc as $a) {
@@ -9953,5 +9955,15 @@ public function CheckReceipt($rn)
         }
 
         return response()->json(['success' => true]);
+    }
+    public function getLocationsByBranch($branchCode)
+    {
+        $locations = \App\Models\Admin\Location::where('branch_code', $branchCode)
+            ->where('is_active', 1)
+            ->select('code', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($locations);
     }
 }

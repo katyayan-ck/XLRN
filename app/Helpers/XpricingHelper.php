@@ -2,13 +2,13 @@
 
 namespace App\Helpers;
 
-use App\Models\Bookingamount;
+
 use App\User;
 
 use Auth;
 
 use Illuminate\Support\Facades\DB;
-
+use App\Models\Module\Booking\Bookingamount;
 
 use App\Models\Person;
 

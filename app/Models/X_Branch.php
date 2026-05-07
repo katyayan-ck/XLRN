@@ -1,8 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\BaseModel;
+
 
 class X_Branch extends BaseModel
 {

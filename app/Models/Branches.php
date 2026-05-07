@@ -3,6 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\BaseModel;
+use App\Models\Admin\Branch;
+use App\Models\Admin\Location;
+use App\Models\Module\Booking\Booking;
+use App\Models\Admin\Subbranch;
+use App\Models\Admin\XVehicleStock;
+use App\Models\Admin\User;
 
 class Branches extends BaseModel
 {

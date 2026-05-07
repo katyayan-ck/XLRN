@@ -42,12 +42,12 @@ class Booking extends BaseModel  implements HasMedia
 
     public function location()
     {
-        return $this->belongsTo(Location::class, 'location_code', 'code');
+        return $this->belongsTo(\App\Models\X_Location::class, 'location_code', 'code');
     }
 
     public function branch()
     {
-        return $this->belongsTo(Branches::class, 'branch_code', 'code');
+        return $this->belongsTo(\App\Models\X_Branch::class, 'branch_code', 'code');
     }
 
     public function finances()
