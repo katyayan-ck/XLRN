@@ -1,59 +1,92 @@
 <?php
 namespace App\Models\Admin;
 
-use App\Models\BaseModel;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, BelongsToMany};
 
-class Department extends BaseModel
+/**
+ * Table: xlr8_admin_department
+ * POST-MIGRATION: dept_code dropped. Only `code` is authoritative.
+ * cross-table refs: employee.primary_dept_code, division.dept_code → department.code
+ */
+class Department extends Model
 {
-    use CrudTrait, HasFactory;
+    use SoftDeletes;
 
     protected $table = 'xlr8_admin_department';
 
     protected $fillable = [
-        'code', 'name', 'description', 'head_emp_code', 'is_active',
+        'code', 'name', 'description',
+        'parent_department_id', 'branch_id', 'head_emp_code',
+        'is_active',
     ];
 
-    protected $casts = [
-        'is_active'  => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
-    ];
+    protected $casts = ['is_active' => 'boolean'];
 
+    public function getRouteKeyName(): string { return 'code'; }
+
+    // ── Relations ─────────────────────────────────────────────────────────────
+    /** Head employee: head_emp_code → employee.code */
     public function head(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'head_emp_code', 'code');
     }
 
+    /** Parent department (id-based — schema uses integer FK) */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(static::class, 'parent_department_id', 'id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(static::class, 'parent_department_id', 'id');
+    }
+
+    /** Divisions: division.dept_code → department.code */
     public function divisions(): HasMany
     {
         return $this->hasMany(Division::class, 'dept_code', 'code');
     }
 
+    /** DesigDeptTree: desig_dept_tree.dept_code → department.code */
     public function designationTree(): HasMany
     {
-        return $this->hasMany(DesignationDeptTree::class, 'dept_code', 'code');
+        return $this->hasMany(DesigDeptTree::class, 'dept_code', 'code');
     }
 
+    /** Posts: xlr8_iam_roles.dept_code → department.code */
     public function posts(): HasMany
     {
-        return $this->hasMany(\App\Models\IAM\Post::class, 'dept_code', 'code');
+        return $this->hasMany(\App\Models\Iam\Post::class, 'dept_code', 'code');
     }
 
+    /**
+     * Employees via pivot.
+     * Pivot table: xlr8_admin_emp_department_pivot
+     * Pivot FK cols: dept_code (string), employee_code (string)
+     */
     public function employees(): BelongsToMany
     {
-        return $this->belongsToMany(Employee::class, 'xlr8_admin_emp_department_pivot', 'dept_code', 'emp_code', 'code', 'code')
-            ->withPivot(['from_date','to_date','is_current'])->withTimestamps();
+        return $this->belongsToMany(
+            Employee::class,
+            'xlr8_admin_emp_department_pivot',
+            'dept_code',    // FK for this model
+            'employee_code', // FK for related model
+            'code',          // local key on department
+            'code'           // owner key on employee
+        )->withPivot('division_code', 'assignment_type', 'is_current', 'from_date', 'to_date')
+         ->withTimestamps();
     }
 
-    public function scopeTopLevel($q) { return $q->whereNull('parent_dept_code'); }
+    // ── Scopes ────────────────────────────────────────────────────────────────
+    public function scopeActive($q)   { return $q->where('is_active', true); }
+    public function scopeTopLevel($q) { return $q->whereNull('parent_department_id'); }
 
-    public static function generateCode(string $prefix = 'DEPT'): string
+    // ── Mutators ──────────────────────────────────────────────────────────────
+    public function setCodeAttribute(string $v): void
     {
-        $lastId = static::withTrashed()->max('id') ?? 0;
-        return strtoupper($prefix) . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
+        $this->attributes['code'] = strtoupper(trim($v));
     }
 }

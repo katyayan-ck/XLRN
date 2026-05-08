@@ -5,25 +5,22 @@ namespace App\Models\Admin;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 
 class EmployeeDepartmentAssignment extends Model
 {
-    use CrudTrait;
+    use SoftDeletes;
 
-    protected $table = 'xlr8_admin_emp_department_pivot';
+    protected $table = 'xlr8_admin_emp_dept_pivot';
 
     protected $fillable = [
         'employee_code',    // FK → xlr8_admin_employee.code  (FIX: was employee_id int)
         'dept_code',        // FK → xlr8_admin_department.code (FIX: was department_id int)
-        'division_code',         // FK → xlr8_admin_division.code  (nullable — new)
+        'div_code',         // FK → xlr8_admin_division.code  (nullable — new)
+        'is_primary',
         'is_current',
-        'assignment_type',   // 'primary' or 'secondary' (new)
         'from_date',
         'to_date',
-        'created_by',
-        'updated_by',
-        'deleted_by',
+        'created_by', 'updated_by', 'deleted_by',
     ];
 
     protected $casts = [
@@ -52,17 +49,11 @@ class EmployeeDepartmentAssignment extends Model
 
     public function division(): BelongsTo
     {
-        return $this->belongsTo(Division::class, 'division_code', 'code');
+        return $this->belongsTo(Division::class, 'div_code', 'code');
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    public function scopeCurrent($q)
-    {
-        return $q->where('is_current', true)->whereNull('deleted_at');
-    }
-    // public function scopePrimary($q)
-    // {
-    //     return $q->where('is_primary', true);
-    // }
+    public function scopeCurrent($q)  { return $q->where('is_current', true)->whereNull('deleted_at'); }
+    public function scopePrimary($q)  { return $q->where('is_primary', true); }
 }

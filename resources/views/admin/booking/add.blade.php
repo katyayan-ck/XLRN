@@ -1751,6 +1751,7 @@ $('#color').on('change', function() {
             if (!branchValue) {
                 $('#location').html('<option value="" disabled selected>-- Select Location --</option>')
                             .prop('disabled', true);
+                $('#locationother').prop('disabled', true).prop('required', false).val('');
                 return;
             }
 
@@ -1764,31 +1765,45 @@ $('#color').on('change', function() {
                         data.forEach(function(loc) {
                             html += `<option value="${loc.code}">${loc.name} (${loc.code})</option>`;
                         });
-                    } else {
-                        html += '<option value="0">OTHER</option>';
                     }
+
+                    // Always add "OTHER" at the end
+                    html += '<option value="0">OTHER</option>';
 
                     $('#location').html(html).prop('disabled', false);
                 },
                 error: function(xhr) {
                     console.error('Location fetch failed:', xhr.responseText || xhr.status);
-                    $('#location').html('<option value="0">OTHER</option>').prop('disabled', false);
 
+                    // Fallback with OTHER option
+                    $('#location').html(`
+                        <option value="" disabled selected>-- Select Location --</option>
+                        <option value="0">OTHER</option>
+                    `).prop('disabled', false);
+
+                    // Removed Hindi Swal
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Locations nahi mil rahe',
-                        text: 'Please use "OTHER" option.',
+                        title: 'Something went wrong',
+                        text: 'Please select "OTHER" option.',
+                        timer: 3000
                     });
                 }
             });
         });
 
+        // Location change handler
         $('#location').on('change', function() {
             const isOther = parseInt(this.value) === 0;
-            $('#locationother').prop('disabled', !isOther).prop('required', isOther);
+
+            $('#locationother')
+                .prop('disabled', !isOther)
+                .prop('required', isOther);
+
             if (!isOther) {
                 $('#locationother').val('');
             }
+
             toggleRequiredMark($('#locationother'), isOther);
         });
 

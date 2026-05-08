@@ -2,14 +2,13 @@
 
 namespace App\Models\Admin;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeLocationAssignment extends Model
 {
-    use CrudTrait;
+    use SoftDeletes;
 
     protected $table = 'xlr8_admin_emp_location_pivot';
 
@@ -19,16 +18,15 @@ class EmployeeLocationAssignment extends Model
         'branch_code',          // FK → xlr8_admin_branch.code     (FIX: was branch_id int)
         'is_primary_work',      // is this the primary physical work location?
         'assignment_type',      // explicit | inherited | excluded
-        
-
-
-        'created_by',
-        'updated_by',
-        'deleted_by',
+        'is_current',
+        'from_date',
+        'to_date',
+        'created_by', 'updated_by', 'deleted_by',
     ];
 
     protected $casts = [
-
+        'from_date'       => 'date',
+        'to_date'         => 'date',
         'is_primary_work' => 'boolean',
         'is_current'      => 'boolean',
         'created_at'      => 'datetime',
@@ -56,20 +54,8 @@ class EmployeeLocationAssignment extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    public function scopeCurrent($q)
-    {
-        return $q->where('is_current', true)->whereNull('deleted_at');
-    }
-    public function scopePrimaryWork($q)
-    {
-        return $q->where('is_primary_work', true);
-    }
-    public function scopeExplicit($q)
-    {
-        return $q->where('assignment_type', 'explicit');
-    }
-    public function scopeNotExcluded($q)
-    {
-        return $q->where('assignment_type', '!=', 'excluded');
-    }
+    public function scopeCurrent($q)        { return $q->where('is_current', true)->whereNull('deleted_at'); }
+    public function scopePrimaryWork($q)    { return $q->where('is_primary_work', true); }
+    public function scopeExplicit($q)       { return $q->where('assignment_type', 'explicit'); }
+    public function scopeNotExcluded($q)    { return $q->where('assignment_type', '!=', 'excluded'); }
 }

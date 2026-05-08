@@ -1,50 +1,56 @@
 <?php
 
-namespace App\Models\Admin;
+namespace Database\Factories\Admin;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Admin\EmpPostAssignment;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-class EmployeePostAssignment extends Model
+class EmpPostAssignmentFactory extends Factory
 {
-    use SoftDeletes;
+    protected $model = EmpPostAssignment::class;
 
-    protected $table = 'xlr8_iam_emp_post_pivot';
-
-    protected $fillable = [
-        'employee_code',    // FK → xlr8_admin_employee.code  (FIX: was employee_id int)
-        'post_code',        // FK → xlr8_iam_post.code        (FIX: was post_id int)
-        'is_current',
-        'from_date',
-        'to_date',
-        'created_by', 'updated_by', 'deleted_by',
-    ];
+    public function definition(): array
+    {
+        return [
+            'emp_code'        => 'BMPL-' . str_pad($this->faker->unique()->numberBetween(1, 9999), 4, '0', STR_PAD_LEFT),
+            'post_code'       => 'NKH-SLS-SHW-FSC-001',
+            'assignment_type' => 'primary',
+            'from_date'       => now()->subYear()->toDateString(),
+            'to_date'         => null,
+            'relieving_type'  => 'onboarding',
+            'remarks'         => null,
+            'relieved_by'     => null,
+            'created_by'      => null,
+            'updated_by'      => null,
+            'deleted_by'      => null,
+        ];
+    }
 
     protected $casts = [
-        'from_date'  => 'date',
-        'to_date'    => 'date',
-        'is_current' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
-    ];
+    'from_date' => 'date:Y-m-d',   // ← returns string not Carbon
+    'to_date'   => 'date:Y-m-d',   // ← returns string not Carbon
+];
 
-    // ── Relationships ──────────────────────────────────────────────────────────
-    // FIX: employee via employee_code (string), post via post_code (string)
-    // The Post model lives in App\Models\Admin\Post (xlr8_iam_post table)
-
-    public function employee(): BelongsTo
+    public function closed(?string $toDate = null): static
     {
-        return $this->belongsTo(Employee::class, 'employee_code', 'code');
+        return $this->state([
+            'to_date'        => $toDate ?? now()->subMonth()->toDateString(),
+            'relieving_type' => 'transfer',
+        ]);
     }
 
-    public function post(): BelongsTo
+    public function additional(): static
     {
-        return $this->belongsTo(Post::class, 'post_code', 'code');
+        return $this->state(['assignment_type' => 'additional']);
     }
 
-    // ── Scopes ────────────────────────────────────────────────────────────────
+    public function forEmployee(string $empCode): static
+    {
+        return $this->state(['emp_code' => $empCode]);
+    }
 
-    public function scopeCurrent($q) { return $q->where('is_current', true)->whereNull('deleted_at'); }
+    public function forPost(string $postCode): static
+    {
+        return $this->state(['post_code' => $postCode]);
+    }
 }

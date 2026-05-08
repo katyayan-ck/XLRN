@@ -8,11 +8,10 @@ use Illuminate\Database\Eloquent\Relations\{HasMany, HasOne};
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\User;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 
 class Person extends Model implements HasMedia
 {
-    use SoftDeletes, InteractsWithMedia, CrudTrait;
+    use SoftDeletes, InteractsWithMedia;
 
     protected $table = 'xlr8_admin_person';
 
@@ -202,34 +201,23 @@ class Person extends Model implements HasMedia
             ->whereNull('deleted_at')
             ->first();
     }
-    public function setPanNoAttribute($value)
-    {
-        $this->attributes['pan_no'] = strtoupper($value);
-    }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
     public function scopeSearch($q, string $term)
     {
-        return $q->where(
-            fn($s) => $s
-                ->where('first_name',    'like', "%{$term}%")
-                ->orWhere('last_name',   'like', "%{$term}%")
-                ->orWhere('display_name', 'like', "%{$term}%")
-                ->orWhere('person_code', 'like', "%{$term}%")
-                ->orWhere('pan_no',      'like', "%{$term}%")
-                ->orWhere('aadhaar_no',  'like', "%{$term}%")
+        return $q->where(fn($s) => $s
+            ->where('first_name',    'like', "%{$term}%")
+            ->orWhere('last_name',   'like', "%{$term}%")
+            ->orWhere('display_name','like', "%{$term}%")
+            ->orWhere('person_code', 'like', "%{$term}%")
+            ->orWhere('pan_no',      'like', "%{$term}%")
+            ->orWhere('aadhaar_no',  'like', "%{$term}%")
         );
     }
 
-    public function scopeIndividuals($q)
-    {
-        return $q->where('entity_type', 'individual');
-    }
-    public function scopeLegalEntities($q)
-    {
-        return $q->where('entity_type', 'legal_entity');
-    }
+    public function scopeIndividuals($q)   { return $q->where('entity_type', 'individual'); }
+    public function scopeLegalEntities($q) { return $q->where('entity_type', 'legal_entity'); }
 
     // ── Media ─────────────────────────────────────────────────────────────────
 

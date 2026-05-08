@@ -2,14 +2,13 @@
 
 namespace App\Models\Admin;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PersonContact extends Model
 {
-    use SoftDeletes, CrudTrait;
+    use SoftDeletes;
 
     protected $table = 'xlr8_admin_person_contacts';
 
@@ -100,11 +99,11 @@ class PersonContact extends Model
     {
         // Demote current Primary
         static::where('person_code',   $this->person_code)
-            ->where('data_type',     $this->data_type)
-            ->where('contact_type',  'Primary')
-            ->where('id', '!=',      $this->id)
-            ->whereNull('deleted_at')
-            ->update(['contact_type' => 'Alternate', 'updated_by' => auth()->id()]);
+              ->where('data_type',     $this->data_type)
+              ->where('contact_type',  'Primary')
+              ->where('id', '!=',      $this->id)
+              ->whereNull('deleted_at')
+              ->update(['contact_type' => 'Alternate', 'updated_by' => auth()->id()]);
 
         $this->contact_type = 'Primary';
         $this->save();
@@ -112,24 +111,9 @@ class PersonContact extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    public function scopePrimary($q)
-    {
-        return $q->where('contact_type', 'Primary');
-    }
-    public function scopeByDataType($q, $type)
-    {
-        return $q->where('data_type', $type);
-    }
-    public function scopeMobiles($q)
-    {
-        return $q->where('data_type', 'Mobile');
-    }
-    public function scopeEmails($q)
-    {
-        return $q->where('data_type', 'Email');
-    }
-    public function scopeEmergency($q)
-    {
-        return $q->where('contact_type', 'Emergency');
-    }
+    public function scopePrimary($q)           { return $q->where('contact_type', 'Primary'); }
+    public function scopeByDataType($q, $type) { return $q->where('data_type', $type); }
+    public function scopeMobiles($q)           { return $q->where('data_type', 'Mobile'); }
+    public function scopeEmails($q)            { return $q->where('data_type', 'Email'); }
+    public function scopeEmergency($q)         { return $q->where('contact_type', 'Emergency'); }
 }

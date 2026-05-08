@@ -2,14 +2,13 @@
 
 namespace App\Models\Admin;
 
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PersonAddress extends Model
 {
-    use SoftDeletes, CrudTrait;
+    use SoftDeletes;
 
     protected $table = 'xlr8_admin_person_addresses';
 
@@ -102,10 +101,10 @@ class PersonAddress extends Model
     public function makePrimary(): void
     {
         static::where('person_code',  $this->person_code)
-            ->where('address_type', 'Primary')
-            ->where('id', '!=',     $this->id)
-            ->whereNull('deleted_at')
-            ->update(['address_type' => 'Alternate', 'updated_by' => auth()->id()]);
+              ->where('address_type', 'Primary')
+              ->where('id', '!=',     $this->id)
+              ->whereNull('deleted_at')
+              ->update(['address_type' => 'Alternate', 'updated_by' => auth()->id()]);
 
         $this->address_type = 'Primary';
         $this->save();
@@ -128,12 +127,6 @@ class PersonAddress extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    public function scopePrimary($q)
-    {
-        return $q->where('address_type', 'Primary');
-    }
-    public function scopeByType($q, string $t)
-    {
-        return $q->where('address_type', $t);
-    }
+    public function scopePrimary($q)           { return $q->where('address_type', 'Primary'); }
+    public function scopeByType($q, string $t) { return $q->where('address_type', $t); }
 }

@@ -1,16 +1,14 @@
 <?php
 
-namespace App\Models\Admin;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\BaseModel;
-
 
 class X_Branch extends BaseModel
 {
     use SoftDeletes;
 
-    protected $table = 'xlr8_admin_branch';
+    protected $table = 'xcelr8_us_branch';
     protected $fillable = [];
     protected $guarded = ['id'];
 

@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models\Vehicle;
 
 use App\Models\BaseModel;
@@ -11,7 +10,7 @@ class Segment extends BaseModel
 
     protected $table = 'xlr8_vehicle_segment';
 
-    protected $fillable = ['brand_code', 'code', 'name', 'is_active', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['brand_code', 'code', 'name', 'description', 'is_active', 'created_by', 'updated_by', 'deleted_by'];
 
     protected $casts = [
         'is_active'  => 'boolean',

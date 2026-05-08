@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models\Vehicle;
 
 use App\Models\BaseModel;
@@ -12,16 +11,9 @@ class VehicleModel extends BaseModel
     protected $table = 'xlr8_vehicle_model';
 
     protected $fillable = [
-        'brand_code',
-        'segment_code',
-        'sub_segment_code',
-        'code',
-        'name',
-        'oem_name',
-        'is_active',
-        'created_by',
-        'updated_by',
-        'deleted_by',
+        'brand_code', 'segment_code', 'sub_segment_code',
+        'code', 'name', 'custom_name', 'oem_code', 'description',
+        'is_active', 'created_by', 'updated_by', 'deleted_by',
     ];
 
     protected $casts = [

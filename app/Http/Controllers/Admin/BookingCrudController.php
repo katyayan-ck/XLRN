@@ -24,12 +24,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Module\Booking\Booking;
 use App\Models\Bookingamount;
 use App\Models\XVehicleMaster; // Import the model
-use App\Models\Stock; // Import the Stock model
+use App\Models\Module\Booking\Stock; // Import the Stock model
 use App\Models\Admin\Branch; // Import the Branch model
 use App\Models\Xessories;
 use App\Models\Module\Booking\Xl_Refunds;
 use App\Models\Xl_DSA_Master;
-
 use App\Models\X_Location;
 use App\Models\X_Vh_Stock;
 use App\Models\X_Vh_Order;
@@ -341,8 +340,8 @@ class BookingCrudController extends CrudController
                 'bookings.receipt_no',
                 'bookings.receipt_date',
                 'bookings.booking_amount',
-                'bookings.branch_code',
-                'bookings.location_code',
+                // 'bookings.branch_code',
+                // 'bookings.location_code',
                 'bookings.location_other',
                 'bookings.c_dob',
                 'bookings.gender',
@@ -755,7 +754,8 @@ class BookingCrudController extends CrudController
                 : 'N/A',
             // Segment – lookup from EnumMaster ya direct value
             'segment' => $booking->segment_id
-                ? (EnumMaster::find($booking->segment_id)?->value ?? 'N/A')
+                ? (\App\Models\EnumMaster::where('id', $booking->segment_id)
+                    ->value('value') ?? 'N/A')
                 : 'N/A',
             'model'                 => $booking->model ?? 'N/A',
             'variant'               => $booking->variant ?? 'N/A',
@@ -4830,163 +4830,163 @@ class BookingCrudController extends CrudController
     }
 
 
-    public function fetchPendBkData()
-    {
-        $now = Carbon::now();
-        $mtdStart = $now->copy()->startOfMonth();
-        $ytdStart = $now->copy()->startOfYear();
+    // public function fetchPendBkData()
+    // {
+    //     $now = Carbon::now();
+    //     $mtdStart = $now->copy()->startOfMonth();
+    //     $ytdStart = $now->copy()->startOfYear();
 
-        // Cache the query for 1 hour
-        $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
-            // Bulk fetch bookings
-            $bookings = DB::table('xlr8_booking_master as bm')
-                ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
-                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-                ->whereIn('bm.status', [1, 4, 6, 8])
-                ->select(
-                    'bm.id',
-                    'bm.status',
-                    'bm.b_type',
-                    'bm.fin_mode',
-                    'bm.buyer_type',
-                    'bm.pending',
-                    'bm.order',
-                    'bm.dms_so',
-                    'bm.booking_amount',
-                    'bm.created_at',
-                    DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
-                    'em.value as seg',
-                    'vm.oem_model as model',
-                    'vm.oem_variant as variant',
-                    'vm.color as clr',
-                    'vm.code'
-                )
-                ->get()
-                ->groupBy('group_key');
+    //     // Cache the query for 1 hour
+    //     $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
+    //         // Bulk fetch bookings
+    //         $bookings = DB::table('xlr8_booking_master as bm')
+    //             ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+    //             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //             ->whereIn('bm.status', [1, 4, 6, 8])
+    //             ->select(
+    //                 'bm.id',
+    //                 'bm.status',
+    //                 'bm.b_type',
+    //                 'bm.fin_mode',
+    //                 'bm.buyer_type',
+    //                 'bm.pending',
+    //                 'bm.order',
+    //                 'bm.dms_so',
+    //                 'bm.booking_amount',
+    //                 'bm.created_at',
+    //                 DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+    //                 'em.value as seg',
+    //                 'vm.oem_model as model',
+    //                 'vm.oem_variant as variant',
+    //                 'vm.color as clr',
+    //                 'vm.code'
+    //             )
+    //             ->get()
+    //             ->groupBy('group_key');
 
-            // Bulk fetch booking amounts
-            $bookingAmounts = DB::table('xlr8_booking_amount')
-                ->where('status', 1)
-                ->select('bid', DB::raw('SUM(amount) as total_amount'))
-                ->groupBy('bid')
-                ->pluck('total_amount', 'bid');
-
-
-
-
-            // Bulk fetch exchange and scrappage pending statuses
-            $exchanges = DB::table('xlr8_exchange')
-                ->whereIn('verification_status', [0, null])
-                ->select('bid', 'purchase_type')
-                ->get()
-                ->groupBy('bid')
-                ->map(function ($group) {
-                    return [
-                        'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
-                        'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
-                    ];
-                });
-
-            // Bulk fetch finance pending statuses
-            $finances = DB::table('xlr8_booking_finance')
-                ->whereIn('verification_status', [0, null])
-                ->pluck('bid')
-                ->mapWithKeys(fn($bid) => [$bid => 1]);
-
-            $data = collect();
-            $index = 1;
-
-            foreach ($bookings as $groupKey => $groupBookings) {
-                [$seg, $model, $variant, $clr] = explode('|', $groupKey);
-
-                $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
-
-                $total_bookings = $liveGroup->count();
-                if ($total_bookings === 0) continue;
-
-                $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
-                $chr_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+    //         // Bulk fetch booking amounts
+    //         $bookingAmounts = DB::table('xlr8_booking_amount')
+    //             ->where('status', 1)
+    //             ->select('bid', DB::raw('SUM(amount) as total_amount'))
+    //             ->groupBy('bid')
+    //             ->pluck('total_amount', 'bid');
 
 
 
-                $on_hold = $liveGroup->where('status', 6)->count();
 
-                $verify = $liveGroup->where('order', 1)->count();
+    //         // Bulk fetch exchange and scrappage pending statuses
+    //         $exchanges = DB::table('xlr8_exchange')
+    //             ->whereIn('verification_status', [0, null])
+    //             ->select('bid', 'purchase_type')
+    //             ->get()
+    //             ->groupBy('bid')
+    //             ->map(function ($group) {
+    //                 return [
+    //                     'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
+    //                     'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
+    //                 ];
+    //             });
 
-                $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+    //         // Bulk fetch finance pending statuses
+    //         $finances = DB::table('xlr8_booking_finance')
+    //             ->whereIn('verification_status', [0, null])
+    //             ->pluck('bid')
+    //             ->mapWithKeys(fn($bid) => [$bid => 1]);
 
-                $payments = $liveGroup->filter(function ($booking) use ($bookingAmounts) {
-                    $total_amount = $bookingAmounts->get($booking->id, 0);
-                    return $total_amount < $booking->booking_amount;
-                })->count();
+    //         $data = collect();
+    //         $index = 1;
 
-                $data_pending = $liveGroup->where('pending', '>', 0)->count();
+    //         foreach ($bookings as $groupKey => $groupBookings) {
+    //             [$seg, $model, $variant, $clr] = explode('|', $groupKey);
 
-                $refunds = $groupBookings->where('status', 4)->count();
+    //             $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
 
+    //             $total_bookings = $liveGroup->count();
+    //             if ($total_bookings === 0) continue;
 
-
-                $data->push([
-                    'sno' => $index++,
-                    'seg' => $seg,
-                    'model' => $model,
-                    'variant' => $variant,
-                    'clr' => $clr,
-                    'total_bookings' => $total_bookings,
-                    'bkn_bookings' => $bkn_bookings,
-                    'chr_bookings' => $chr_bookings,
-                    'verify' => $verify,
-                    'orders' => $orders,
-                    'payments' => $payments,
-                    'data' => $data_pending,
-                    'refund' => $refunds,
-                ]);
-            }
-
-            return $data;
-        });
+    //             $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+    //             $chr_bookings = $liveGroup->where('b_type', 'Dealer')->count();
 
 
 
-        $title = 'Pending Data Report';
-        $filename = 'PndngDataRprt_' . $now->format('Y-m-d-H-i-s') . '.xlsx';
-        $stkbr = $tbr = null;
-        $header = [
-            ['title' => 'S.No.', 'field' => 'sno', 'hozAlign' => 'center', 'formatter' => 'plaintext'],
-            [
-                'title' => 'Vehicle Info',
-                'columns' => [
-                    ['title' => 'Segment', 'field' => 'seg', 'headerFilter' => 'select'],
-                    ['title' => 'Model', 'field' => 'model', 'headerFilter' => 'select'],
-                    ['title' => 'Variant', 'field' => 'variant', 'headerFilter' => 'select'],
-                    ['title' => 'Color', 'field' => 'clr', 'headerFilter' => 'select'],
-                ]
-            ],
+    //             $on_hold = $liveGroup->where('status', 6)->count();
 
-            [
-                'title' => 'Bookings',
-                'columns' => [
-                    ['title' => 'Total', 'field' => 'total_bookings', 'bottomCalc' => 'sum'],
-                    ['title' => 'BKN', 'field' => 'bkn_bookings', 'bottomCalc' => 'sum'],
-                    ['title' => 'CHR', 'field' => 'chr_bookings', 'bottomCalc' => 'sum'],
-                ]
-            ],
+    //             $verify = $liveGroup->where('order', 1)->count();
 
-            [
-                'title' => 'Pending Actions',
-                'columns' => [
-                    ['title' => 'Verify', 'field' => 'verify', 'bottomCalc' => 'sum'],
-                    ['title' => 'Orders', 'field' => 'orders', 'bottomCalc' => 'sum'],
-                    ['title' => 'Payments', 'field' => 'payments', 'bottomCalc' => 'sum'],
-                    ['title' => 'Data', 'field' => 'data', 'bottomCalc' => 'sum'],
-                    ['title' => 'Refund', 'field' => 'refund', 'bottomCalc' => 'sum'],
-                ]
-            ],
+    //             $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
 
-        ];
+    //             $payments = $liveGroup->filter(function ($booking) use ($bookingAmounts) {
+    //                 $total_amount = $bookingAmounts->get($booking->id, 0);
+    //                 return $total_amount < $booking->booking_amount;
+    //             })->count();
 
-        return [$header, $data, $tbr, $stkbr, $filename, $title];
-    }
+    //             $data_pending = $liveGroup->where('pending', '>', 0)->count();
+
+    //             $refunds = $groupBookings->where('status', 4)->count();
+
+
+
+    //             $data->push([
+    //                 'sno' => $index++,
+    //                 'seg' => $seg,
+    //                 'model' => $model,
+    //                 'variant' => $variant,
+    //                 'clr' => $clr,
+    //                 'total_bookings' => $total_bookings,
+    //                 'bkn_bookings' => $bkn_bookings,
+    //                 'chr_bookings' => $chr_bookings,
+    //                 'verify' => $verify,
+    //                 'orders' => $orders,
+    //                 'payments' => $payments,
+    //                 'data' => $data_pending,
+    //                 'refund' => $refunds,
+    //             ]);
+    //         }
+
+    //         return $data;
+    //     });
+
+
+
+    //     $title = 'Pending Data Report';
+    //     $filename = 'PndngDataRprt_' . $now->format('Y-m-d-H-i-s') . '.xlsx';
+    //     $stkbr = $tbr = null;
+    //     $header = [
+    //         ['title' => 'S.No.', 'field' => 'sno', 'hozAlign' => 'center', 'formatter' => 'plaintext'],
+    //         [
+    //             'title' => 'Vehicle Info',
+    //             'columns' => [
+    //                 ['title' => 'Segment', 'field' => 'seg', 'headerFilter' => 'select'],
+    //                 ['title' => 'Model', 'field' => 'model', 'headerFilter' => 'select'],
+    //                 ['title' => 'Variant', 'field' => 'variant', 'headerFilter' => 'select'],
+    //                 ['title' => 'Color', 'field' => 'clr', 'headerFilter' => 'select'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'title' => 'Bookings',
+    //             'columns' => [
+    //                 ['title' => 'Total', 'field' => 'total_bookings', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'BKN', 'field' => 'bkn_bookings', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'CHR', 'field' => 'chr_bookings', 'bottomCalc' => 'sum'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'title' => 'Pending Actions',
+    //             'columns' => [
+    //                 ['title' => 'Verify', 'field' => 'verify', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Orders', 'field' => 'orders', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Payments', 'field' => 'payments', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Data', 'field' => 'data', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Refund', 'field' => 'refund', 'bottomCalc' => 'sum'],
+    //             ]
+    //         ],
+
+    //     ];
+
+    //     return [$header, $data, $tbr, $stkbr, $filename, $title];
+    // }
 
 
     public function pendingPayment(Request $request)
@@ -8593,231 +8593,231 @@ class BookingCrudController extends CrudController
     }
 
 
-    public function stockReport(Request $request)
-    {
-        $this->crud->hasAccessOrFail('list');
+    // public function stockReport(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
 
-        $this->data['crud'] = $this->crud;
-        $this->data['title'] = 'Stock Report';
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Stock Report';
 
-        $now = Carbon::now();
-        $py = $now->format('Y') - 1;
-        $cy = $now->format('Y');
-        $ovin = "STOCK VIN-" . $py;
-        $cvin = "STOCK VIN-" . $cy;
+    //     $now = Carbon::now();
+    //     $py = $now->format('Y') - 1;
+    //     $cy = $now->format('Y');
+    //     $ovin = "STOCK VIN-" . $py;
+    //     $cvin = "STOCK VIN-" . $cy;
 
-        $locbr = DB::table('xlr8_us_location')
-            ->whereNotNull('abbr')
-            ->where('status', 1)
-            ->pluck('abbr')
-            ->unique()
-            ->sort()
-            ->values()
-            ->toArray() ?: ['BKN', 'CHR'];
-
-
-        $stocks = DB::table('xlr8_stock_master as stock')
-            ->leftJoin('xlr8_vehicle_master as vm', 'stock.vh_id', '=', 'vm.id')
-
-            // If vh_id join gives 0 rows, try this instead (uncomment and comment above line):
-            // ->leftJoin('xlr8_vehicle_master as vm', 'stock.model_code', '=', 'vm.code')
-
-            ->leftJoin('bmpl_enum_master as seg', 'vm.segment_id', '=', 'seg.id')
-            ->leftJoin('xlr8_us_location as loc', 'stock.location_code', '=', 'loc.id')
-
-            ->selectRaw("
-                stock.id,
-                stock.chasis_no,
-                stock.oem_invoice_date,
-                stock.damage,
-                stock.v_status,
-                COALESCE(seg.value, 'Unknown') as seg,
-                COALESCE(vm.oem_model, 'Unknown') as mdl,          -- removed vm.model_name
-                COALESCE(vm.oem_variant, 'Unknown') as vrnt,
-                COALESCE(vm.color, 'Unknown') as clr,
-                COALESCE(loc.abbr, 'UNK') as loc_abbr,
-                vm.id as vh_id                                     -- added for better booking count later
-        ")
-
-            // Important filters (copied from your old working logic)
-            ->whereNull('stock.inv_id')
-            ->whereNull('stock.inv_date')
-            ->where('stock.status', 1)
-            ->whereIn('stock.v_status', ['Received', 'In Transit', 'Dealer Stock', 'Alloted'])  // added 'Alloted' just in case
-
-            ->get();
+    //     $locbr = DB::table('xlr8_us_location')
+    //         ->whereNotNull('abbr')
+    //         ->where('status', 1)
+    //         ->pluck('abbr')
+    //         ->unique()
+    //         ->sort()
+    //         ->values()
+    //         ->toArray() ?: ['BKN', 'CHR'];
 
 
-        // Group by model
-        // Group by the FULL vehicle identity (segment + model + variant + color)
-        // This matches your screenshot / desired report style
-        $grouped = $stocks->groupBy(function ($stock) {
-            return implode('|', [
-                $stock->seg   ?? 'Unknown',
-                $stock->mdl   ?? 'Unknown',
-                $stock->vrnt  ?? 'Unknown',
-                $stock->clr   ?? 'Unknown',
-            ]);
-        });
+    //     $stocks = DB::table('xlr8_stock_master as stock')
+    //         ->leftJoin('xlr8_vehicle_master as vm', 'stock.vh_id', '=', 'vm.id')
 
-        $data = [];
-        $sno = 1;
+    //         // If vh_id join gives 0 rows, try this instead (uncomment and comment above line):
+    //         // ->leftJoin('xlr8_vehicle_master as vm', 'stock.model_code', '=', 'vm.code')
 
-        foreach ($grouped as $key => $groupStocks) {
-            if ($groupStocks->isEmpty()) continue;
+    //         ->leftJoin('bmpl_enum_master as seg', 'vm.segment_id', '=', 'seg.id')
+    //         ->leftJoin('xlr8_us_location as loc', 'stock.location_code', '=', 'loc.id')
 
-            [$seg, $mdl, $vrnt, $clr] = explode('|', $key);
+    //         ->selectRaw("
+    //             stock.id,
+    //             stock.chasis_no,
+    //             stock.oem_invoice_date,
+    //             stock.damage,
+    //             stock.v_status,
+    //             COALESCE(seg.value, 'Unknown') as seg,
+    //             COALESCE(vm.oem_model, 'Unknown') as mdl,          -- removed vm.model_name
+    //             COALESCE(vm.oem_variant, 'Unknown') as vrnt,
+    //             COALESCE(vm.color, 'Unknown') as clr,
+    //             COALESCE(loc.abbr, 'UNK') as loc_abbr,
+    //             vm.id as vh_id                                     -- added for better booking count later
+    //     ")
 
-            // Count per branch
-            $branchCounts = $groupStocks->countBy('loc_abbr')->toArray();
+    //         // Important filters (copied from your old working logic)
+    //         ->whereNull('stock.inv_id')
+    //         ->whereNull('stock.inv_date')
+    //         ->where('stock.status', 1)
+    //         ->whereIn('stock.v_status', ['Received', 'In Transit', 'Dealer Stock', 'Alloted'])  // added 'Alloted' just in case
 
-            $row = [
-                'sno'           => $sno++,
-                'seg'           => $seg,
-                'mdl'           => $mdl,
-                'vrnt'          => $vrnt,
-                'clr'           => $clr,
-                'total'         => $groupStocks->count(),
-                'bkn'           => $branchCounts['BKN'] ?? 0,
-                'chr'           => $branchCounts['CHR'] ?? 0,
-                'tst_max_age'   => '0 D',
-                'stock_max_age' => '0 D',
-                'stock_gt_60'   => 0,
-                'bkng'          => (int) Booking::where('model', $mdl)->count(),
-                'enq'           => (int) Booking::where('model', $mdl)->where('status', 1)->count(),
-                'lordr'         => 0,
-            ];
+    //         ->get();
 
-            // Reset per-year stats
-            $ovin_stats = array_fill_keys($locbr, 0) + ['damage' => 0, 'dlr_transit' => 0, 'oem_transit' => 0];
-            $cvin_stats = array_fill_keys($locbr, 0) + ['damage' => 0, 'dlr_transit' => 0, 'oem_transit' => 0];
 
-            $tst_max_age = 0;
-            $stock_max_age = 0;
-            $stock_gt_60 = 0;
+    //     // Group by model
+    //     // Group by the FULL vehicle identity (segment + model + variant + color)
+    //     // This matches your screenshot / desired report style
+    //     $grouped = $stocks->groupBy(function ($stock) {
+    //         return implode('|', [
+    //             $stock->seg   ?? 'Unknown',
+    //             $stock->mdl   ?? 'Unknown',
+    //             $stock->vrnt  ?? 'Unknown',
+    //             $stock->clr   ?? 'Unknown',
+    //         ]);
+    //     });
 
-            foreach ($groupStocks as $stock) {
-                if (empty($stock->oem_invoice_date) || empty($stock->chasis_no) || strlen($stock->chasis_no) < 10) {
-                    continue;
-                }
+    //     $data = [];
+    //     $sno = 1;
 
-                $age = $now->diffInDays(Carbon::parse($stock->oem_invoice_date));
-                $is_current_year = str_starts_with($stock->chasis_no, 'S'); // your logic
+    //     foreach ($grouped as $key => $groupStocks) {
+    //         if ($groupStocks->isEmpty()) continue;
 
-                $stats = $is_current_year ? $cvin_stats : $ovin_stats;
+    //         [$seg, $mdl, $vrnt, $clr] = explode('|', $key);
 
-                $loc = $stock->loc_abbr ?? 'UNK';
+    //         // Count per branch
+    //         $branchCounts = $groupStocks->countBy('loc_abbr')->toArray();
 
-                if (array_key_exists($loc, $stats)) {
-                    $stats[$loc]++;
-                }
+    //         $row = [
+    //             'sno'           => $sno++,
+    //             'seg'           => $seg,
+    //             'mdl'           => $mdl,
+    //             'vrnt'          => $vrnt,
+    //             'clr'           => $clr,
+    //             'total'         => $groupStocks->count(),
+    //             'bkn'           => $branchCounts['BKN'] ?? 0,
+    //             'chr'           => $branchCounts['CHR'] ?? 0,
+    //             'tst_max_age'   => '0 D',
+    //             'stock_max_age' => '0 D',
+    //             'stock_gt_60'   => 0,
+    //             'bkng'          => (int) Booking::where('model', $mdl)->count(),
+    //             'enq'           => (int) Booking::where('model', $mdl)->where('status', 1)->count(),
+    //             'lordr'         => 0,
+    //         ];
 
-                if ($stock->damage == 1) {
-                    $stats['damage']++;
-                }
+    //         // Reset per-year stats
+    //         $ovin_stats = array_fill_keys($locbr, 0) + ['damage' => 0, 'dlr_transit' => 0, 'oem_transit' => 0];
+    //         $cvin_stats = array_fill_keys($locbr, 0) + ['damage' => 0, 'dlr_transit' => 0, 'oem_transit' => 0];
 
-                if (strtolower($stock->v_status) === 'in transit') {
-                    $stats['oem_transit']++;
-                    $tst_max_age = max($tst_max_age, $age);
-                } else {
-                    $stats['dlr_transit']++;
-                    $stock_max_age = max($stock_max_age, $age);
-                    if ($age >= 60) $stock_gt_60++;
-                }
-            }
+    //         $tst_max_age = 0;
+    //         $stock_max_age = 0;
+    //         $stock_gt_60 = 0;
 
-            // Assign to row
-            foreach ($locbr as $loc) {
-                $row["ovin_" . strtolower($loc)] = $ovin_stats[$loc] ?? 0;
-                $row["cvin_" . strtolower($loc)] = $cvin_stats[$loc] ?? 0;
-            }
+    //         foreach ($groupStocks as $stock) {
+    //             if (empty($stock->oem_invoice_date) || empty($stock->chasis_no) || strlen($stock->chasis_no) < 10) {
+    //                 continue;
+    //             }
 
-            $row['ovin_damage']      = $ovin_stats['damage'];
-            $row['ovin_dlr_transit'] = $ovin_stats['dlr_transit'];
-            $row['ovin_oem_transit'] = $ovin_stats['oem_transit'];
-            $row['cvin_damage']      = $cvin_stats['damage'];
-            $row['cvin_dlr_transit'] = $cvin_stats['dlr_transit'];
-            $row['cvin_oem_transit'] = $cvin_stats['oem_transit'];
+    //             $age = $now->diffInDays(Carbon::parse($stock->oem_invoice_date));
+    //             $is_current_year = str_starts_with($stock->chasis_no, 'S'); // your logic
 
-            $row['tst_max_age']   = $tst_max_age   ? $tst_max_age   . ' D' : '0 D';
-            $row['stock_max_age'] = $stock_max_age ? $stock_max_age . ' D' : '0 D';
-            $row['stock_gt_60']   = $stock_gt_60;
+    //             $stats = $is_current_year ? $cvin_stats : $ovin_stats;
 
-            $data[] = $row;
-        }
+    //             $loc = $stock->loc_abbr ?? 'UNK';
 
-        // Columns (tumhare original se copy-paste)
-        $columns = [
-            ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 80, 'pinned' => 'left', 'filter' => false],
+    //             if (array_key_exists($loc, $stats)) {
+    //                 $stats[$loc]++;
+    //             }
 
-            [
-                'headerName' => 'VEHICLE INFO',
-                'children' => [
-                    ['field' => 'seg',  'headerName' => 'SEGMENT', 'width' => 140],
-                    ['field' => 'mdl',  'headerName' => 'MODEL',   'width' => 160],
-                    ['field' => 'vrnt', 'headerName' => 'VARIANT', 'width' => 220],
-                    ['field' => 'clr',  'headerName' => 'COLOR',   'width' => 130],
-                ]
-            ],
+    //             if ($stock->damage == 1) {
+    //                 $stats['damage']++;
+    //             }
 
-            [
-                'headerName' => 'TOTAL STOCK',
-                'children' => [
-                    ['field' => 'total', 'headerName' => 'TOTAL', 'width' => 100, 'cellClass' => 'text-right'],
-                    ['field' => 'bkn',   'headerName' => 'BKN',   'width' => 80,  'cellClass' => 'text-right'],
-                    ['field' => 'chr',   'headerName' => 'CHR',   'width' => 80,  'cellClass' => 'text-right'],
-                ]
-            ],
+    //             if (strtolower($stock->v_status) === 'in transit') {
+    //                 $stats['oem_transit']++;
+    //                 $tst_max_age = max($tst_max_age, $age);
+    //             } else {
+    //                 $stats['dlr_transit']++;
+    //                 $stock_max_age = max($stock_max_age, $age);
+    //                 if ($age >= 60) $stock_gt_60++;
+    //             }
+    //         }
 
-            [
-                'headerName' => $ovin,
-                'children' => array_merge(
-                    array_map(fn($loc) => ['field' => "ovin_" . strtolower($loc), 'headerName' => $loc, 'width' => 80, 'cellClass' => 'text-right'], $locbr),
-                    [
-                        ['field' => 'ovin_damage',      'headerName' => 'DAMAGE',     'width' => 100, 'cellClass' => 'text-right'],
-                        ['field' => 'ovin_dlr_transit', 'headerName' => 'DLR TST',    'width' => 110, 'cellClass' => 'text-right'],
-                        ['field' => 'ovin_oem_transit', 'headerName' => 'OEM TST',    'width' => 110, 'cellClass' => 'text-right'],
-                    ]
-                )
-            ],
+    //         // Assign to row
+    //         foreach ($locbr as $loc) {
+    //             $row["ovin_" . strtolower($loc)] = $ovin_stats[$loc] ?? 0;
+    //             $row["cvin_" . strtolower($loc)] = $cvin_stats[$loc] ?? 0;
+    //         }
 
-            [
-                'headerName' => $cvin,
-                'children' => array_merge(
-                    array_map(fn($loc) => ['field' => "cvin_" . strtolower($loc), 'headerName' => $loc, 'width' => 80, 'cellClass' => 'text-right'], $locbr),
-                    [
-                        ['field' => 'cvin_damage',      'headerName' => 'DAMAGE',     'width' => 100, 'cellClass' => 'text-right'],
-                        ['field' => 'cvin_dlr_transit', 'headerName' => 'DLR TST',    'width' => 110, 'cellClass' => 'text-right'],
-                        ['field' => 'cvin_oem_transit', 'headerName' => 'OEM TST',    'width' => 110, 'cellClass' => 'text-right'],
-                    ]
-                )
-            ],
+    //         $row['ovin_damage']      = $ovin_stats['damage'];
+    //         $row['ovin_dlr_transit'] = $ovin_stats['dlr_transit'];
+    //         $row['ovin_oem_transit'] = $ovin_stats['oem_transit'];
+    //         $row['cvin_damage']      = $cvin_stats['damage'];
+    //         $row['cvin_dlr_transit'] = $cvin_stats['dlr_transit'];
+    //         $row['cvin_oem_transit'] = $cvin_stats['oem_transit'];
 
-            [
-                'headerName' => 'GLOBAL DATA',
-                'children' => [
-                    ['field' => 'tst_max_age',  'headerName' => 'TST MAX AGE', 'width' => 140],
-                    ['field' => 'stock_max_age', 'headerName' => 'PHY MAX AGE', 'width' => 140],
-                    ['field' => 'stock_gt_60',  'headerName' => 'AGE > 60D',   'width' => 120, 'cellClass' => 'text-right'],
-                    ['field' => 'bkng',         'headerName' => 'BOOKED',      'width' => 120, 'cellClass' => 'text-right'],
-                    ['field' => 'enq',          'headerName' => 'HOT ENQ',     'width' => 120, 'cellClass' => 'text-right'],
-                    ['field' => 'lordr',        'headerName' => 'LIVE ORDERS', 'width' => 130, 'cellClass' => 'text-right'],
-                ]
-            ],
-        ];
+    //         $row['tst_max_age']   = $tst_max_age   ? $tst_max_age   . ' D' : '0 D';
+    //         $row['stock_max_age'] = $stock_max_age ? $stock_max_age . ' D' : '0 D';
+    //         $row['stock_gt_60']   = $stock_gt_60;
 
-        $gridConfig = [
-            'columns' => $columns,
-            'data'    => $data,
-            'ovin'    => $ovin,
-            'cvin'    => $cvin,
-            'locbr'   => $locbr,
-        ];
+    //         $data[] = $row;
+    //     }
 
-        $this->data['gridConfig'] = $gridConfig;
+    //     // Columns (tumhare original se copy-paste)
+    //     $columns = [
+    //         ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 80, 'pinned' => 'left', 'filter' => false],
 
-        return view('booking.stock', $this->data);
-    }
+    //         [
+    //             'headerName' => 'VEHICLE INFO',
+    //             'children' => [
+    //                 ['field' => 'seg',  'headerName' => 'SEGMENT', 'width' => 140],
+    //                 ['field' => 'mdl',  'headerName' => 'MODEL',   'width' => 160],
+    //                 ['field' => 'vrnt', 'headerName' => 'VARIANT', 'width' => 220],
+    //                 ['field' => 'clr',  'headerName' => 'COLOR',   'width' => 130],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'TOTAL STOCK',
+    //             'children' => [
+    //                 ['field' => 'total', 'headerName' => 'TOTAL', 'width' => 100, 'cellClass' => 'text-right'],
+    //                 ['field' => 'bkn',   'headerName' => 'BKN',   'width' => 80,  'cellClass' => 'text-right'],
+    //                 ['field' => 'chr',   'headerName' => 'CHR',   'width' => 80,  'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => $ovin,
+    //             'children' => array_merge(
+    //                 array_map(fn($loc) => ['field' => "ovin_" . strtolower($loc), 'headerName' => $loc, 'width' => 80, 'cellClass' => 'text-right'], $locbr),
+    //                 [
+    //                     ['field' => 'ovin_damage',      'headerName' => 'DAMAGE',     'width' => 100, 'cellClass' => 'text-right'],
+    //                     ['field' => 'ovin_dlr_transit', 'headerName' => 'DLR TST',    'width' => 110, 'cellClass' => 'text-right'],
+    //                     ['field' => 'ovin_oem_transit', 'headerName' => 'OEM TST',    'width' => 110, 'cellClass' => 'text-right'],
+    //                 ]
+    //             )
+    //         ],
+
+    //         [
+    //             'headerName' => $cvin,
+    //             'children' => array_merge(
+    //                 array_map(fn($loc) => ['field' => "cvin_" . strtolower($loc), 'headerName' => $loc, 'width' => 80, 'cellClass' => 'text-right'], $locbr),
+    //                 [
+    //                     ['field' => 'cvin_damage',      'headerName' => 'DAMAGE',     'width' => 100, 'cellClass' => 'text-right'],
+    //                     ['field' => 'cvin_dlr_transit', 'headerName' => 'DLR TST',    'width' => 110, 'cellClass' => 'text-right'],
+    //                     ['field' => 'cvin_oem_transit', 'headerName' => 'OEM TST',    'width' => 110, 'cellClass' => 'text-right'],
+    //                 ]
+    //             )
+    //         ],
+
+    //         [
+    //             'headerName' => 'GLOBAL DATA',
+    //             'children' => [
+    //                 ['field' => 'tst_max_age',  'headerName' => 'TST MAX AGE', 'width' => 140],
+    //                 ['field' => 'stock_max_age', 'headerName' => 'PHY MAX AGE', 'width' => 140],
+    //                 ['field' => 'stock_gt_60',  'headerName' => 'AGE > 60D',   'width' => 120, 'cellClass' => 'text-right'],
+    //                 ['field' => 'bkng',         'headerName' => 'BOOKED',      'width' => 120, 'cellClass' => 'text-right'],
+    //                 ['field' => 'enq',          'headerName' => 'HOT ENQ',     'width' => 120, 'cellClass' => 'text-right'],
+    //                 ['field' => 'lordr',        'headerName' => 'LIVE ORDERS', 'width' => 130, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+    //     ];
+
+    //     $gridConfig = [
+    //         'columns' => $columns,
+    //         'data'    => $data,
+    //         'ovin'    => $ovin,
+    //         'cvin'    => $cvin,
+    //         'locbr'   => $locbr,
+    //     ];
+
+    //     $this->data['gridConfig'] = $gridConfig;
+
+    //     return view('booking.stock', $this->data);
+    // }
 
 
     // Render the AG Grid view for live order report
@@ -8887,1055 +8887,1055 @@ class BookingCrudController extends CrudController
         return view('booking.live-order', $this->data);
     }
 
-    public function fetchCbrData()
-    {
-        $now = Carbon::now();
-        $mtdStart = $now->copy()->startOfMonth();
-        $ytdStart = $now->copy()->startOfYear();
-
-        // Cache the query for 1 hour
-        $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
-            // Bulk fetch bookings
-            $bookings = DB::table('xlr8_booking_master as bm')
-                ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
-                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-                ->whereIn('bm.status', [1, 4, 6, 8])
-                ->select(
-                    'bm.id',
-                    'bm.status',
-                    'bm.b_type',
-                    'bm.fin_mode',
-                    'bm.buyer_type',
-                    'bm.pending',
-                    'bm.order',
-                    'bm.dms_so',
-                    'bm.booking_amount',
-                    'bm.created_at',
-                    DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
-                    'em.value as seg',
-                    'vm.oem_model as model',
-                    'vm.oem_variant as variant',
-                    'vm.color as clr',
-                    'vm.code'
-                )
-                ->get()
-                ->groupBy('group_key');
-
-            // Bulk fetch booking amounts
-            $bookingAmounts = DB::table('xlr8_booking_amount')
-                ->where('status', 1)
-                ->select('bid', DB::raw('SUM(amount) as total_amount'))
-                ->groupBy('bid')
-                ->pluck('total_amount', 'bid');
-
-            // Bulk fetch live orders
-            $liveOrders = DB::table('xlr8_vehicle_master as vm')
-                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-                ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
-                ->groupBy('group_key')
-                ->pluck('lorder', 'group_key');
-
-            // Bulk fetch stock
-            $stocksRaw = DB::table('xlr8_stock_master as sm')
-                ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
-                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-                ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
-                ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_code, COUNT(sm.id) as quantity')
-                ->groupBy('group_key', 'ul.branch_code')
-                ->get();
-
-            $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
-                return $group->groupBy('branch_code')->map(fn($bg) => $bg->sum('quantity'));
-            });
-
-            // Bulk fetch exchange and scrappage pending statuses
-            $exchanges = DB::table('xlr8_exchange')
-                ->whereIn('verification_status', [0, null])
-                ->select('bid', 'purchase_type')
-                ->get()
-                ->groupBy('bid')
-                ->map(function ($group) {
-                    return [
-                        'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
-                        'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
-                    ];
-                });
-
-            // Bulk fetch finance pending statuses
-            $finances = DB::table('xlr8_booking_finance')
-                ->whereIn('verification_status', [0, null])
-                ->pluck('bid')
-                ->mapWithKeys(fn($bid) => [$bid => 1]);
-
-            $data = collect();
-            $index = 1;
-
-            foreach ($bookings as $groupKey => $groupBookings) {
-                [$seg, $model, $variant, $clr] = explode('|', $groupKey);
-
-                $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
-
-                $total_bookings = $liveGroup->count();
-                if ($total_bookings === 0) continue;
-
-                $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
-                $chr_bookings = $liveGroup->where('b_type', 'Dealer')->count();
-
-                $max_age_days = $liveGroup->max(
-                    fn($booking) => abs(Carbon::parse($booking->created_at)->diffInDays(now()))
-                );
-
-                $age_gt_60 = $liveGroup->filter(fn($booking) => abs(Carbon::parse($booking->created_at)->diffInDays(now()))
-                    > 60)->count();
-
-                $live_orders = $liveOrders->get($groupKey, 0);
-
-                $dummy_bookings = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', 'dummy')->count();
-
-                $on_hold = $liveGroup->where('status', 6)->count();
-
-                $verify = $liveGroup->where('order', 1)->count();
-
-                $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
-
-                $payments = $liveGroup->filter(function ($booking) use ($bookingAmounts) {
-                    $total_amount = $bookingAmounts->get($booking->id, 0);
-                    return $total_amount < $booking->booking_amount;
-                })->count();
-
-                $data_pending = $liveGroup->where('pending', '>', 0)->count();
-
-                $refunds = $groupBookings->where('status', 4)->count();
-
-                $cash = $liveGroup->where('fin_mode', 'Cash')->count();
-                $cash_pct = $total_bookings > 0 ? round(($cash / $total_bookings) * 100, 2) : 0;
-
-                $inhouse = $liveGroup->where('fin_mode', 'In-house')->count();
-                $inhouse_pct = $total_bookings > 0 ? round(($inhouse / $total_bookings) * 100, 2) : 0;
-
-                $self = $liveGroup->where('fin_mode', 'Customer-Self')->count();
-                $self_pct = $total_bookings > 0 ? round(($self / $total_bookings) * 100, 2) : 0;
-
-                $finance_pending = $liveGroup->filter(fn($booking) => $finances->get($booking->id, 0) > 0)->count();
-
-                $mtd_live = $liveGroup->where('created_at', '>=', $mtdStart);
-                $mtd_total = $mtd_live->count();
-                $mtd_inhouse = $mtd_live->where('fin_mode', 'In-house')->count();
-                $mtd_finance = $mtd_total > 0 ? round(($mtd_inhouse / $mtd_total) * 100, 2) : 0;
-
-                $ytd_live = $liveGroup->where('created_at', '>=', $ytdStart);
-                $ytd_total = $ytd_live->count();
-                $ytd_inhouse = $ytd_live->where('fin_mode', 'In-house')->count();
-                $ytd_finance = $ytd_total > 0 ? round(($ytd_inhouse / $ytd_total) * 100, 2) : 0;
-
-                $exchange_inhouse = $liveGroup->where('buyer_type', 'Exchange')->count();
-                $exchange_pct = $total_bookings > 0 ? round(($exchange_inhouse / $total_bookings) * 100, 2) : 0;
-                $exchange_pending = $liveGroup->filter(fn($booking) => ($exchanges->get($booking->id)['exchange_pending'] ?? 0) > 0)->count();
-
-                $mtd_exchange_inhouse = $mtd_live->where('buyer_type', 'Exchange')->count();
-                $mtd_exchange = $mtd_total > 0 ? round(($mtd_exchange_inhouse / $mtd_total) * 100, 2) : 0;
-
-                $ytd_exchange_inhouse = $ytd_live->where('buyer_type', 'Exchange')->count();
-                $ytd_exchange = $ytd_total > 0 ? round(($ytd_exchange_inhouse / $ytd_total) * 100, 2) : 0;
-
-                $scrappage_inhouse = $liveGroup->where('buyer_type', 'Scrappage')->count();
-                $scrappage_pct = $total_bookings > 0 ? round(($scrappage_inhouse / $total_bookings) * 100, 2) : 0;
-                $scrappage_pending = $liveGroup->filter(fn($booking) => ($exchanges->get($booking->id)['scrappage_pending'] ?? 0) > 0)->count();
-
-                $mtd_scrappage_inhouse = $mtd_live->where('buyer_type', 'Scrappage')->count();
-                $mtd_scrappage = $mtd_total > 0 ? round(($mtd_scrappage_inhouse / $mtd_total) * 100, 2) : 0;
-
-                $ytd_scrappage_inhouse = $ytd_live->where('buyer_type', 'Scrappage')->count();
-                $ytd_scrappage = $ytd_total > 0 ? round(($ytd_scrappage_inhouse / $ytd_total) * 100, 2) : 0;
-
-                $stock_group = $stocks->get($groupKey, collect());
-                $stock_total = $stock_group->values()->sum();
-                $stock_bkn = $stock_group->get(1, 0);
-                $stock_chr = $stock_group->get(2, 0);
-
-                $data->push([
-                    'sno' => $index++,
-                    'seg' => $seg,
-                    'model' => $model,
-                    'variant' => $variant,
-                    'clr' => $clr,
-                    'stock_total' => $stock_total,
-                    'stock_bkn' => $stock_bkn,
-                    'stock_chr' => $stock_chr,
-                    'total_bookings' => $total_bookings,
-                    'bkn_bookings' => $bkn_bookings,
-                    'chr_bookings' => $chr_bookings,
-                    // 'max_age' => $max_age_days ? $max_age_days . ' D' : '',
-                    'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
-                    'age_gt_60d' => $age_gt_60,
-                    'live_orders' => $live_orders,
-                    'dummy_bookings' => $dummy_bookings,
-                    'on_hold' => $on_hold,
-                    'verify' => $verify,
-                    'orders' => $orders,
-                    'payments' => $payments,
-                    'data' => $data_pending,
-                    'refund' => $refunds,
-                    'cash' => $cash,
-                    'cash_pct' => number_format($cash_pct, 2) . '%',
-                    'inhouse' => $inhouse,
-                    'inhouse_pct' => number_format($inhouse_pct, 2) . '%',
-                    'self' => $self,
-                    'self_pct' => number_format($self_pct, 2) . '%',
-                    'finance_pending' => $finance_pending,
-                    'mtd' => number_format($mtd_finance, 2) . '%',
-                    'ytd' => number_format($ytd_finance, 2) . '%',
-                    'exchange_inhouse' => $exchange_inhouse,
-                    'exchange_inhouse_pct' => number_format($exchange_pct, 2) . '%',
-                    'exchange_pending' => $exchange_pending,
-                    'exchange_mtd' => number_format($mtd_exchange, 2) . '%',
-                    'exchange_ytd' => number_format($ytd_exchange, 2) . '%',
-                    'scrappage_inhouse' => $scrappage_inhouse,
-                    'scrappage_inhouse_pct' => number_format($scrappage_pct, 2) . '%',
-                    'scrappage_pending' => $scrappage_pending,
-                    'scrappage_mtd' => number_format($mtd_scrappage, 2) . '%',
-                    'scrappage_ytd' => number_format($ytd_scrappage, 2) . '%',
-                ]);
-            }
-
-            return $data;
-        });
-
-        $tbr = [
-            'seg' => 'Total',
-            'total_bookings' => $data->sum('total_bookings'),
-            'bkn_bookings' => $data->sum('bkn_bookings'),
-            'chr_bookings' => $data->sum('chr_bookings'),
-            'stock_total' => $data->sum('stock_total'),
-            'stock_bkn' => $data->sum('stock_bkn'),
-            'stock_chr' => $data->sum('stock_chr'),
-            'max_age' => $data->max('max_age') ? str_replace(' D', '', $data->max('max_age')) . ' D' : '',
-            'age_gt_60d' => $data->sum('age_gt_60d'),
-            'live_orders' => $data->sum('live_orders'),
-            'dummy_bookings' => $data->sum('dummy_bookings'),
-            'on_hold' => $data->sum('on_hold'),
-            'verify' => $data->sum('verify'),
-            'orders' => $data->sum('orders'),
-            'payments' => $data->sum('payments'),
-            'data' => $data->sum('data'),
-            'refund' => $data->sum('refund'),
-            'cash' => $data->sum('cash'),
-            'cash_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['cash_pct'])), 2) . '%' : '0.00%',
-            'inhouse' => $data->sum('inhouse'),
-            'inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['inhouse_pct'])), 2) . '%' : '0.00%',
-            'self' => $data->sum('self'),
-            'self_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['self_pct'])), 2) . '%' : '0.00%',
-            'finance_pending' => $data->sum('finance_pending'),
-            'mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['mtd'])), 2) . '%' : '0.00%',
-            'ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['ytd'])), 2) . '%' : '0.00%',
-            'exchange_inhouse' => $data->sum('exchange_inhouse'),
-            'exchange_inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_inhouse_pct'])), 2) . '%' : '0.00%',
-            'exchange_pending' => $data->sum('exchange_pending'),
-            'exchange_mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_mtd'])), 2) . '%' : '0.00%',
-            'exchange_ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_ytd'])), 2) . '%' : '0.00%',
-            'scrappage_inhouse' => $data->sum('scrappage_inhouse'),
-            'scrappage_inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_inhouse_pct'])), 2) . '%' : '0.00%',
-            'scrappage_pending' => $data->sum('scrappage_pending'),
-            'scrappage_mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_mtd'])), 2) . '%' : '0.00%',
-            'scrappage_ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_ytd'])), 2) . '%' : '0.00%',
-        ];
-
-        $stkbr = [
-            'stock_total' => DB::table('xlr8_stock_master')->count('id'),
-            'stock_bkn' => DB::table('xlr8_stock_master')
-                ->join('xlr8_us_location', 'xlr8_stock_master.location_code', '=', 'xlr8_us_location.id')
-                ->where('xlr8_us_location.branch_code', 1)
-                ->count('xlr8_stock_master.id'),
-            'stock_chr' => DB::table('xlr8_stock_master')
-                ->join('xlr8_us_location', 'xlr8_stock_master.location_code', '=', 'xlr8_us_location.id')
-                ->where('xlr8_us_location.branch_code', 2)
-                ->count('xlr8_stock_master.id'),
-        ];
-
-        $title = 'Consolidated Booking Report';
-        $filename = 'CnsldtBkngRprt_' . $now->format('Y-m-d-H-i-s') . '.xlsx';
-
-        $header = [
-            ['title' => 'S.No.', 'field' => 'sno', 'hozAlign' => 'center', 'formatter' => 'plaintext'],
-            [
-                'title' => 'Vehicle Info',
-                'columns' => [
-                    ['title' => 'Segment', 'field' => 'seg', 'headerFilter' => 'select'],
-                    ['title' => 'Model', 'field' => 'model', 'headerFilter' => 'select'],
-                    ['title' => 'Variant', 'field' => 'variant', 'headerFilter' => 'select'],
-                    ['title' => 'Color', 'field' => 'clr', 'headerFilter' => 'select'],
-                ]
-            ],
-            [
-                'title' => 'Stock',
-                'columns' => [
-                    ['title' => 'Total', 'field' => 'stock_total', 'bottomCalc' => 'sum'],
-                    ['title' => 'BKN', 'field' => 'stock_bkn', 'bottomCalc' => 'sum'],
-                    ['title' => 'CHR', 'field' => 'stock_chr', 'bottomCalc' => 'sum'],
-                ]
-            ],
-            [
-                'title' => 'Bookings',
-                'columns' => [
-                    ['title' => 'Total', 'field' => 'total_bookings', 'bottomCalc' => 'sum'],
-                    ['title' => 'BKN', 'field' => 'bkn_bookings', 'bottomCalc' => 'sum'],
-                    ['title' => 'CHR', 'field' => 'chr_bookings', 'bottomCalc' => 'sum'],
-                ]
-            ],
-            [
-                'title' => 'Global Info',
-                'columns' => [
-                    ['title' => 'Max Age', 'field' => 'max_age', 'bottomCalc' => function ($values) {
-                        $max = collect($values)->map(fn($val) => (int) str_replace(' D', '', $val))->max();
-                        return $max . ' D';
-                    }],
-                    ['title' => 'Age > 60D', 'field' => 'age_gt_60d', 'bottomCalc' => function ($values) {
-                        $max = collect($values)->map(fn($val) => (int) str_replace(' D', '', $val))->max();
-                        return $max . ' D';
-                    }],
-                    ['title' => 'Live Orders', 'field' => 'live_orders', 'bottomCalc' => 'sum'],
-                    ['title' => 'Dummy Bookings', 'field' => 'dummy_bookings', 'bottomCalc' => 'sum'],
-                    ['title' => 'On Hold', 'field' => 'on_hold', 'bottomCalc' => 'sum'],
-                ]
-            ],
-            [
-                'title' => 'Pending Actions',
-                'columns' => [
-                    ['title' => 'Verify', 'field' => 'verify', 'bottomCalc' => 'sum'],
-                    ['title' => 'Orders', 'field' => 'orders', 'bottomCalc' => 'sum'],
-                    ['title' => 'Payments', 'field' => 'payments', 'bottomCalc' => 'sum'],
-                    ['title' => 'Data', 'field' => 'data', 'bottomCalc' => 'sum'],
-                    ['title' => 'Refund', 'field' => 'refund', 'bottomCalc' => 'sum'],
-                ]
-            ],
-            [
-                'title' => 'Finance',
-                'columns' => [
-                    ['title' => 'Cash', 'field' => 'cash'],
-                    ['title' => 'Cash %', 'field' => 'cash_pct', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                    ['title' => 'In-house', 'field' => 'inhouse'],
-                    ['title' => 'In-house %', 'field' => 'inhouse_pct', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                    ['title' => 'Self', 'field' => 'self'],
-                    ['title' => 'Self %', 'field' => 'self_pct', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                    ['title' => 'Pending', 'field' => 'finance_pending'],
-                    ['title' => 'MTD', 'field' => 'mtd', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                    ['title' => 'YTD', 'field' => 'ytd', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                ]
-            ],
-            [
-                'title' => 'Exchange',
-                'columns' => [
-                    ['title' => 'In-house', 'field' => 'exchange_inhouse'],
-                    ['title' => 'In-house %', 'field' => 'exchange_inhouse_pct', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                    ['title' => 'Pending', 'field' => 'exchange_pending'],
-                    ['title' => 'MTD', 'field' => 'exchange_mtd', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                    ['title' => 'YTD', 'field' => 'exchange_ytd', 'bottomCalc' => function ($values) {
-                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
-                        return number_format($avg, 2) . '%';
-                    }],
-                ]
-            ],
-            [
-                'title' => 'Scrappage',
-                'columns' => [
-                    ['title' => 'In-house', 'field' => 'scrappage_inhouse'],
-                    ['title' => 'In-house %', 'field' => 'scrappage_inhouse_pct'],
-                    ['title' => 'Pending', 'field' => 'scrappage_pending'],
-                    ['title' => 'MTD', 'field' => 'scrappage_mtd'],
-                    ['title' => 'YTD', 'field' => 'scrappage_ytd'],
-                ]
-            ],
-        ];
-
-        return [$header, $data, $tbr, $stkbr, $filename, $title];
-    }
-
-    public function consolidatedBookingReport(Request $request)
-    {
-        $this->crud->hasAccessOrFail('list');
-
-        $this->data['crud'] = $this->crud;
-        $this->data['title'] = 'Consolidated Booking Report';
-
-        $now = Carbon::now();
-
-        // ────────────────────────────────────────────────
-        // Exact same complex logic jo photo mein data de raha tha
-        // ────────────────────────────────────────────────
-        $bookings = DB::table('xlr8_booking_master as bm')
-            ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
-            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->whereIn('bm.status', [1, 4, 6, 8])
-            ->select(
-                'bm.id',
-                'bm.status',
-                'bm.b_type',
-                'bm.fin_mode',
-                'bm.buyer_type',
-                'bm.pending',
-                'bm.order',
-                'bm.dms_so',
-                'bm.booking_amount',
-                'bm.created_at',
-                DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
-                'em.value as seg',
-                'vm.oem_model as model',
-                'vm.oem_variant as variant',
-                'vm.color as clr',
-                'vm.code'
-            )
-            ->get()
-            ->groupBy('group_key');
-
-        $bookingAmounts = DB::table('xlr8_booking_amount')
-            ->where('status', 1)
-            ->select('bid', DB::raw('SUM(amount) as total_amount'))
-            ->groupBy('bid')
-            ->pluck('total_amount', 'bid');
-
-        $liveOrders = DB::table('xlr8_vehicle_master as vm')
-            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
-            ->groupBy('group_key')
-            ->pluck('lorder', 'group_key');
-
-        $stocksRaw = DB::table('xlr8_stock_master as sm')
-            ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
-            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
-            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_code, COUNT(sm.id) as quantity')
-            ->groupBy('group_key', 'ul.branch_code')
-            ->get();
-
-        $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
-            return $group->groupBy('branch_code')->map(fn($bg) => $bg->sum('quantity'));
-        });
-
-        $exchanges = DB::table('xlr8_exchange')
-            ->whereIn('verification_status', [0, null])
-            ->select('bid', 'purchase_type')
-            ->get()
-            ->groupBy('bid')
-            ->map(function ($group) {
-                return [
-                    'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
-                    'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
-                ];
-            });
-
-        $finances = DB::table('xlr8_booking_finance')
-            ->whereIn('verification_status', [0, null])
-            ->pluck('bid')
-            ->mapWithKeys(fn($bid) => [$bid => 1]);
-
-        // ────────────────────────────────────────────────
-        // Data Processing (exact same as your old fetchCbrData)
-        // ────────────────────────────────────────────────
-        $gridData = [];
-        $sno = 1;
-
-        foreach ($bookings as $groupKey => $groupBookings) {
-            [$seg, $model, $variant, $clr] = explode('|', $groupKey);
-
-            $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
-
-            $total_bookings = $liveGroup->count();
-            if ($total_bookings === 0) continue;
-
-            $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
-            $churu_bookings = $liveGroup->where('b_type', 'Dealer')->count();
-
-            $max_age_days = $liveGroup->max(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)));
-
-            $age_gt_60 = $liveGroup->filter(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)) > 60)->count();
-
-            $live_orders = $liveOrders->get($groupKey, 0);
-
-            $dummy_bookings = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', 'dummy')->count();
-
-            $on_hold = $liveGroup->where('status', 6)->count();
-
-            $verify = $liveGroup->where('order', 1)->count();
-
-            $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
-
-            $payments = $liveGroup->filter(function ($b) use ($bookingAmounts) {
-                return ($bookingAmounts->get($b->id, 0) ?? 0) < $b->booking_amount;
-            })->count();
-
-            $data_pending = $liveGroup->where('pending', '>', 0)->count();
-
-            $refund = $groupBookings->where('status', 4)->count();
-
-            $cash = $liveGroup->where('fin_mode', 'Cash')->count();
-            $cash_pct = $total_bookings ? round($cash / $total_bookings * 100, 2) : 0;
-
-            $inhouse = $liveGroup->where('fin_mode', 'In-house')->count();
-            $inhouse_pct = $total_bookings ? round($inhouse / $total_bookings * 100, 2) : 0;
-
-            $self = $liveGroup->where('fin_mode', 'Customer-Self')->count();
-            $self_pct = $total_bookings ? round($self / $total_bookings * 100, 2) : 0;
-
-            $finance_pending = $liveGroup->filter(fn($b) => $finances->get($b->id, 0))->count();
-
-            $stock_group = $stocks->get($groupKey, collect());
-            $stock_total = $stock_group->values()->sum();
-            $stock_bkn = $stock_group->get(1, 0); // BIKANER
-            $stock_churu = $stock_group->get(2, 0); // CHURU
-
-            $gridData[] = [
-                'sno' => $sno++,
-                'seg' => $seg,
-                'model' => $model,
-                'variant' => $variant,
-                'clr' => $clr,
-                'stock_total' => $stock_total,
-                'stock_bikaner' => $stock_bkn,
-                'stock_churu' => $stock_churu,
-                'booking_total' => $total_bookings,
-                'booking_bikaner' => $bkn_bookings,
-                'booking_churu' => $churu_bookings,
-                'hot_enq_total' => 0, // agar hot enquiry hai to add kar dena
-                'hot_enq_bikaner' => 0,
-                'hot_enq_churu' => 0,
-                'finance_total' => $cash + $inhouse + $self,
-                'finance_bikaner' => 0,
-                'finance_churu' => 0,
-                'finance_pending' => $finance_pending,
-                'exchange_total' => $liveGroup->where('buyer_type', 'Exchange')->count(),
-                'exchange_bikaner' => 0,
-                'exchange_churu' => 0,
-                'exchange_pending' => $liveGroup->filter(fn($b) => $exchanges->get($b->id)['exchange_pending'] ?? 0)->count(),
-                'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
-                // 'max_age' => $max_age_days ? $max_age_days . ' D' : '0 D',
-                'age_gt_60d' => $age_gt_60,
-                'live_orders' => $live_orders,
-                'dummy_bookings' => $dummy_bookings,
-                'on_hold' => $on_hold,
-                'order_verification' => $verify,
-                'order_creation' => $orders,
-                'booking_creation' => $total_bookings,
-                'customer_data' => $data_pending,
-                'book_canc' => 0,
-                'refund' => $refund,
-            ];
-        }
-
-        // ────────────────────────────────────────────────
-        // Columns – exact photo jaisa
-        // ────────────────────────────────────────────────
-        $columns = [
-            [
-                'field'   => 'sno',
-                'headerName' => 'S.No.',
-                'width'   => 80,
-                'pinned'  => 'left',
-                'filter'  => false,
-                'sortable' => false,     // optional but good for serial number
-            ],
-
-            [
-                'headerName' => 'Vehicle Info',
-                'headerClass' => 'group-vehicle-info',
-                'children' => [
-                    ['field' => 'seg', 'headerName' => 'Segment', 'width' => 140],
-                    ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
-                    ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
-                    ['field' => 'clr', 'headerName' => 'Color', 'width' => 140],
-                ]
-            ],
-
-            [
-                'headerName' => 'STOCK',
-                'headerClass' => 'group-stock',
-                'children' => [
-                    ['field' => 'stock_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
-                ]
-            ],
-
-            [
-                'headerName' => 'BOOKING',
-                'headerClass' => 'group-booking',
-                'children' => [
-                    ['field' => 'booking_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'booking_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'booking_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
-                ]
-            ],
-
-            [
-                'headerName' => 'HOT ENQ',
-                'headerClass' => 'group-hot-enq',
-                'children' => [
-                    ['field' => 'hot_enq_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'hot_enq_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'hot_enq_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
-                ]
-            ],
-
-            [
-                'headerName' => 'INT IN FINANCE',
-                'headerClass' => 'group-finance',
-                'children' => [
-                    ['field' => 'finance_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'finance_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'finance_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'finance_pending', 'headerName' => 'PENDING', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
-                ]
-            ],
-
-            [
-                'headerName' => 'INT IN EXCHANGE',
-                'headerClass' => 'group-exchange',
-                'children' => [
-                    ['field' => 'exchange_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'exchange_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'exchange_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'exchange_pending', 'headerName' => 'PENDING', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
-                ]
-            ],
-
-            [
-                'headerName' => 'GLOBAL INFO',
-                'headerClass' => 'group-global',
-                'children' => [
-                    ['field' => 'max_age', 'headerName' => 'MAX AGE', 'width' => 100],
-                    ['field' => 'age_gt_60d', 'headerName' => 'AGE > 60D', 'width' => 110, 'cellClass' => 'text-right'],
-                    ['field' => 'live_orders', 'headerName' => 'LIVE ORDERS', 'width' => 120, 'cellClass' => 'text-right'],
-                    ['field' => 'dummy_bookings', 'headerName' => 'DUMMY BOOKINGS', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'on_hold', 'headerName' => 'ON HOLD', 'width' => 100, 'cellClass' => 'text-right'],
-                    ['field' => 'order_verification', 'headerName' => 'ORDER VERIFICATION', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'customer_data', 'headerName' => 'CUSTOMER DATA', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'book_canc', 'headerName' => 'BOOK CANC', 'width' => 120, 'cellClass' => 'text-right'],
-                    ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 100, 'cellClass' => 'text-right'],
-                ]
-            ],
-        ];
-
-        $gridConfig = [
-            'columns' => $columns,
-            'data' => $gridData,
-        ];
-
-        $this->data['gridConfig'] = $gridConfig;
-
-        if (empty($gridData)) {
-            session()->flash('info', 'No consolidated booking data found.');
-        }
-
-        return view('booking.consolidated-booking', $this->data);
-    }
-
-    public function branchBookingReport(Request $request)
-    {
-        $this->crud->hasAccessOrFail('list');
-
-        $this->data['crud'] = $this->crud;
-        $this->data['title'] = 'Branch Booking Report';
-
-        $now = Carbon::now();
-
-        // ────────────────────────────────────────────────
-        // Grouped bookings by vehicle
-        // ────────────────────────────────────────────────
-        $bookings = DB::table('xlr8_booking_master as bm')
-            ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
-            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->whereIn('bm.status', [1, 4, 6, 8])
-            ->select(
-                'bm.id',
-                'bm.status',
-                'bm.b_type',
-                'bm.created_at',
-                'bm.pending',
-                'bm.order',
-                'bm.dms_so',
-                'bm.booking_amount',
-                DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
-                'em.value as seg',
-                'vm.oem_model as model',
-                'vm.oem_variant as variant',
-                'vm.color as clr'
-            )
-            ->get()
-            ->groupBy('group_key');
-
-        // ────────────────────────────────────────────────
-        // Branch-wise stock (multiple branches as per photo)
-        // ────────────────────────────────────────────────
-        $stocksRaw = DB::table('xlr8_stock_master as sm')
-            ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
-            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
-            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.name as branch_name, COUNT(sm.id) as quantity')
-            ->groupBy('group_key', 'ul.name')
-            ->get();
-
-        $stocks = $stocksRaw->groupBy('group_key')->map(fn($g) => $g->pluck('quantity', 'branch_name')->toArray());
-
-        // ────────────────────────────────────────────────
-        // Grid Data – photo ke exact fields
-        // ────────────────────────────────────────────────
-        $gridData = [];
-        $sno = 1;
-
-        foreach ($bookings as $groupKey => $groupBookings) {
-            [$seg, $model, $variant, $clr] = explode('|', $groupKey);
-
-            $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
-
-            $total_bookings = $liveGroup->count();
-            if ($total_bookings === 0) continue;
-
-            $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
-            $churu_bookings = $liveGroup->where('b_type', 'Dealer')->count();
-
-            $max_age_days = $liveGroup->max(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)));
-
-            $age_gt_60 = $liveGroup->filter(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)) > 60)->count();
-
-            $on_hold = $liveGroup->where('status', 6)->count();
-
-            $verify = $liveGroup->where('order', 1)->count();
-
-            $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
-
-            $payments = $liveGroup->filter(function ($b) {
-                $paid = DB::table('xlr8_booking_amount')
-                    ->where('bid', $b->id)
-                    ->where('status', 1)
-                    ->sum('amount');
-                return $paid < ($b->booking_amount ?? 0);
-            })->count();
-
-            $customer_data = $liveGroup->where('pending', '>', 0)->count();
-
-            $refund = $groupBookings->where('status', 4)->count();
-
-            $dummy_bookings = $groupBookings->where('b_type', 'dummy')->count();
-
-            $stock_group = $stocks->get($groupKey, []);
-
-            $gridData[] = [
-                'sno'                 => $sno++,
-                'seg'                 => $seg,
-                'model'               => $model,
-                'variant'             => $variant,
-                'clr'                 => $clr,
-
-                // STOCK – yeh already perfect hai
-                'stock_total'         => array_sum($stock_group),
-                'stock_bikaner'       => $stock_group['BIKANER'] ?? 0,
-                'stock_churu'         => $stock_group['CHURU'] ?? 0,
-                'stock_khajuwala'     => $stock_group['KHAJUWALA'] ?? 0,
-                'stock_kolayat'       => $stock_group['KOLAYAT'] ?? 0,
-                'stock_lunkaransar'   => $stock_group['LUNKARANSAR'] ?? 0,
-                'stock_other'         => array_sum(array_diff_key($stock_group, array_flip(['BIKANER', 'CHURU', 'KHAJUWALA', 'KOLAYAT', 'LUNKARANSAR']))),
-
-                // Bookings count – yeh bhi sahi hai
-                'total_bookings'      => $total_bookings,
-
-                // GLOBAL INFO – yeh sab sahi se aa rahe hain
-                'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
-                'age_gt_60d'          => $age_gt_60,
-                'dummy_bookings'      => $dummy_bookings,
-                'on_hold'             => $on_hold,
-                'refund'              => $refund,
-
-                // PENDING ACTIONS – yeh bhi sahi hai
-                'order_verification'  => $verify,
-                'order_creation'      => $orders,
-                'booking_creation'    => $total_bookings,
-                'customer_payment'    => $payments,
-                'customer_data'       => $customer_data,
-                'book_canc'           => 0,  // agar cancellation status alag se track hota hai to yahan add kar dena
-
-                // Abhi ke liye zero – real data ke liye comment daal raha hoon
-                'hot_enq_total'       => 0,     // future: enquiry_master se hot/high intent enquiries count karna
-                'hot_enq_bikaner'     => 0,
-                'hot_enq_churu'       => 0,
-
-                'finance_total'       => 0,     // future: finance table join ya finance_status flag se count
-                'finance_bikaner'     => 0,
-                'finance_churu'       => 0,
-                'finance_pending'     => $payments,   // abhi payment pending ko finance pending maan rahe hain (temporary)
-
-                'exchange_total'      => 0,     // future: exchange table ya exchange_status se count
-                'exchange_bikaner'    => 0,
-                'exchange_churu'      => 0,
-                'exchange_pending'    => 0,
-
-                'lie_orders'          => 0,     // future: lost interest enquiry ya cancelled due to interest loss
-            ];
-        }
-
-        // ────────────────────────────────────────────────
-        // Columns – EXACTLY photo jaisa (sab groups + sub-columns)
-        // ────────────────────────────────────────────────
-        $columns = [
-            ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 70, 'pinned' => 'left'],
-
-            [
-                'headerName' => 'Vehicle Info',
-                'headerClass' => 'group-vehicle-info',
-                'children' => [
-                    ['field' => 'seg', 'headerName' => 'Segment', 'width' => 140],
-                    ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
-                    ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
-                    ['field' => 'clr', 'headerName' => 'Color', 'width' => 140],
-                ]
-            ],
-
-            [
-                'headerName' => 'STOCK',
-                'headerClass' => 'group-stock',
-                'children' => [
-                    ['field' => 'stock_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
-                ]
-            ],
-
-            [
-                'headerName' => 'SELECTED BRANCH LOCATIONS',
-                'headerClass' => 'group-selected-branch',
-                'children' => [
-                    ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_khajuwala', 'headerName' => 'KHAJUWALA', 'width' => 100, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_kolayat', 'headerName' => 'KOLAYAT', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_lunkaransar', 'headerName' => 'LUNKARANSAR', 'width' => 110, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_other', 'headerName' => 'OTHER', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
-                ]
-            ],
-
-            [
-                'headerName' => 'HOT ENQ',
-                'headerClass' => 'group-hot-enq',
-                'children' => [
-                    ['field' => 'hot_enq_total',   'headerName' => 'TOTAL',    'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'hot_enq_bikaner', 'headerName' => 'BIKANER',  'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'hot_enq_churu',   'headerName' => 'CHURU',    'width' => 90, 'cellClass' => 'text-right'],
-                ],
-            ],
-
-            [
-                'headerName' => 'INT IN FINANCE',
-                'headerClass' => 'group-finance',
-                'children' => [
-                    ['field' => 'finance_total',     'headerName' => 'TOTAL',         'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'finance_bikaner',   'headerName' => 'BIKANER',       'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'finance_churu',     'headerName' => 'CHURU',         'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'finance_pending',   'headerName' => 'PENDING ACTION', 'width' => 130, 'cellClass' => 'text-right fw-bold'],
-                ],
-            ],
-
-            [
-                'headerName' => 'INT IN EXCH',
-                'headerClass' => 'group-exchange',
-                'children' => [
-                    ['field' => 'exchange_total',    'headerName' => 'TOTAL',         'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'exchange_bikaner',  'headerName' => 'BIKANER',       'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'exchange_churu',    'headerName' => 'CHURU',         'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'exchange_pending',  'headerName' => 'PENDING ACTION', 'width' => 130, 'cellClass' => 'text-right fw-bold'],
-                ],
-            ],
-
-            [
-                'headerName' => 'GLOBAL INFO',
-                'headerClass' => 'group-global',
-                'children' => [
-                    ['field' => 'max_age', 'headerName' => 'MAX AGE', 'width' => 100],
-                    ['field' => 'age_gt_60d', 'headerName' => 'AGE > 60D', 'width' => 110, 'cellClass' => 'text-right'],
-                    ['field' => 'lie_orders', 'headerName' => 'LIE ORDERS', 'width' => 100, 'cellClass' => 'text-right'],
-                    ['field' => 'dummy_bookings', 'headerName' => 'DUMMY BOOKINGS', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'on_hold', 'headerName' => 'ON HOLD', 'width' => 100, 'cellClass' => 'text-right'],
-                    ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 90, 'cellClass' => 'text-right'],
-                ]
-            ],
-
-            [
-                'headerName' => 'PENDING ACTIONS',
-                'headerClass' => 'group-pending',
-                'children' => [
-                    ['field' => 'order_verification', 'headerName' => 'ORDER VERIFICATION', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'customer_payment', 'headerName' => 'CUSTOMER PAMENT', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'customer_data', 'headerName' => 'CUSTOMER DATA', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'book_canc', 'headerName' => 'BOOK CANC.', 'width' => 120, 'cellClass' => 'text-right'],
-                ]
-            ],
-        ];
-
-        $gridConfig = [
-            'columns' => $columns,
-            'data' => $gridData,
-        ];
-
-        $this->data['gridConfig'] = $gridConfig;
-
-        if (empty($gridData)) {
-            session()->flash('info', 'No branch booking data found.');
-        }
-
-        return view('booking.branch-booking', $this->data);
-    }
-
-    public function pendingActionsReport(Request $request)
-    {
-        $this->crud->hasAccessOrFail('list');
-
-        $this->data['crud'] = $this->crud;
-        $this->data['title'] = 'Pending Actions Report';
-
-        // Quick check if any pending records exist
-        $pendingCount = DB::table('xlr8_booking_master')->whereIn('status', [1, 6, 8])->count();
-        if ($pendingCount === 0) {
-            session()->flash('info', 'No pending bookings found (status 1,6,8 not present in table).');
-        }
-
-        $query = DB::table('xlr8_booking_master as b')
-            ->leftJoin('xlr8_vehicle_master as vm', 'b.vh_id', '=', 'vm.id')
-            ->leftJoin('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
-            ->leftJoin('xlr8_us_location as loc', 'b.location_code', '=', 'loc.id')
-            ->whereIn('b.status', [1, 6, 8])
-            ->selectRaw('
-            COALESCE(em.value, "Unknown") as segment,
-            COALESCE(vm.oem_model, "Unknown") as model,
-            COALESCE(vm.oem_variant, "Unknown") as variant,
-            COALESCE(vm.color, "Unknown") as color,
-            COUNT(b.id) as total_bookings,
-            SUM(CASE WHEN b.order = 1 THEN 1 ELSE 0 END) as order_verif,
-            SUM(CASE WHEN b.order = 2 AND b.dms_so IS NULL THEN 1 ELSE 0 END) as order_creation,
-            SUM(CASE WHEN b.pending > 0 THEN 1 ELSE 0 END) as customer_data,
-            SUM(CASE WHEN b.status = 4 THEN 1 ELSE 0 END) as refund,
-            SUM(CASE WHEN b.status = 4 THEN 1 ELSE 0 END) as book_canc,
-            loc.abbr as branch_abbr
-        ')
-            ->groupByRaw('em.value, vm.oem_model, vm.oem_variant, vm.color, loc.abbr');
-
-        $pendings = $query->get();
-
-        // ────────────────────────────────────────────────
-        // Group by vehicle + branch counts
-        // ────────────────────────────────────────────────
-        $gridData = [];
-        $grouped = $pendings->groupBy(function ($item) {
-            return $item->segment . '|' . $item->model . '|' . $item->variant . '|' . $item->color;
-        });
-
-        $sno = 1;
-
-        foreach ($grouped as $groupKey => $rows) {
-            [$seg, $model, $variant, $clr] = explode('|', $groupKey);
-
-            $total_bookings = $rows->sum('total_bookings');
-
-            if ($total_bookings == 0) continue;
-
-            $bkn = $rows->where('branch_abbr', 'BKN')->sum('total_bookings');
-            $chr = $rows->where('branch_abbr', 'CHR')->sum('total_bookings');
-
-            $gridData[] = [
-                'sno' => $sno++,
-                'segment' => $seg,
-                'model' => $model,
-                'variant' => $variant,
-                'color' => $clr,
-                'total_bookings' => (int)$total_bookings,
-                'bkn' => (int)$bkn,
-                'chr' => (int)$chr,
-                'exchange' => 0,
-                'finance' => 0,
-                'order_verif' => (int)$rows->sum('order_verif'),
-                'order_creation' => (int)$rows->sum('order_creation'),
-                'booking_creation' => (int)$total_bookings,
-                'customer_payment' => 0,
-                'kyc_data' => (int)$rows->sum('customer_data'),
-                'book_canc' => (int)$rows->sum('book_canc'),
-                'refund' => (int)$rows->sum('refund'),
-            ];
-        }
-
-        // ────────────────────────────────────────────────
-        // Columns (your blade already expects these)
-        // ────────────────────────────────────────────────
-        $columns = [
-            ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 70, 'pinned' => 'left'],
-
-            [
-                'headerName' => 'Vehicle Info',
-                'headerClass' => 'group-vehicle-info',
-                'children' => [
-                    ['field' => 'segment', 'headerName' => 'Segment', 'width' => 140],
-                    ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
-                    ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
-                    ['field' => 'color', 'headerName' => 'Color', 'width' => 140],
-                ]
-            ],
-
-            [
-                'headerName' => 'Bookings',
-                'headerClass' => 'group-booking',
-                'children' => [
-                    ['field' => 'total_bookings', 'headerName' => 'Total', 'width' => 90, 'cellClass' => 'text-right'],
-                    ['field' => 'bkn', 'headerName' => 'BKN', 'width' => 70, 'cellClass' => 'text-right'],
-                    ['field' => 'chr', 'headerName' => 'CHR', 'width' => 70, 'cellClass' => 'text-right'],
-                    ['field' => 'exchange', 'headerName' => 'EXCHANGE', 'width' => 110, 'cellClass' => 'text-right'],
-                    ['field' => 'finance', 'headerName' => 'FINANCE', 'width' => 110, 'cellClass' => 'text-right'],
-                ]
-            ],
-
-            [
-                'headerName' => 'PENDING ACTIONS',
-                'headerClass' => 'group-pending',
-                'children' => [
-                    ['field' => 'order_verif', 'headerName' => 'ORDER VERIFICATION', 'width' => 160, 'cellClass' => 'text-right'],
-                    ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
-                    ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 160, 'cellClass' => 'text-right'],
-                    ['field' => 'customer_payment', 'headerName' => 'CUSTOMER PAYMENT', 'width' => 160, 'cellClass' => 'text-right'],
-                    ['field' => 'kyc_data', 'headerName' => 'KYC DATA', 'width' => 110, 'cellClass' => 'text-right'],
-                    ['field' => 'book_canc', 'headerName' => 'BOOK CANC.', 'width' => 110, 'cellClass' => 'text-right'],
-                    ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 110, 'cellClass' => 'text-right'],
-                ]
-            ],
-        ];
-
-        $gridConfig = [
-            'columns' => $columns,
-            'data' => $gridData,
-        ];
-
-        $this->data['gridConfig'] = $gridConfig;
-
-        return view('booking.pending-actions', $this->data);
-    }
+    // public function fetchCbrData()
+    // {
+    //     $now = Carbon::now();
+    //     $mtdStart = $now->copy()->startOfMonth();
+    //     $ytdStart = $now->copy()->startOfYear();
+
+    //     // Cache the query for 1 hour
+    //     $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
+    //         // Bulk fetch bookings
+    //         $bookings = DB::table('xlr8_booking_master as bm')
+    //             ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+    //             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //             ->whereIn('bm.status', [1, 4, 6, 8])
+    //             ->select(
+    //                 'bm.id',
+    //                 'bm.status',
+    //                 'bm.b_type',
+    //                 'bm.fin_mode',
+    //                 'bm.buyer_type',
+    //                 'bm.pending',
+    //                 'bm.order',
+    //                 'bm.dms_so',
+    //                 'bm.booking_amount',
+    //                 'bm.created_at',
+    //                 DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+    //                 'em.value as seg',
+    //                 'vm.oem_model as model',
+    //                 'vm.oem_variant as variant',
+    //                 'vm.color as clr',
+    //                 'vm.code'
+    //             )
+    //             ->get()
+    //             ->groupBy('group_key');
+
+    //         // Bulk fetch booking amounts
+    //         $bookingAmounts = DB::table('xlr8_booking_amount')
+    //             ->where('status', 1)
+    //             ->select('bid', DB::raw('SUM(amount) as total_amount'))
+    //             ->groupBy('bid')
+    //             ->pluck('total_amount', 'bid');
+
+    //         // Bulk fetch live orders
+    //         $liveOrders = DB::table('xlr8_vehicle_master as vm')
+    //             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //             ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
+    //             ->groupBy('group_key')
+    //             ->pluck('lorder', 'group_key');
+
+    //         // Bulk fetch stock
+    //         $stocksRaw = DB::table('xlr8_stock_master as sm')
+    //             ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+    //             ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //             ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
+    //             ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_code, COUNT(sm.id) as quantity')
+    //             ->groupBy('group_key', 'ul.branch_code')
+    //             ->get();
+
+    //         $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
+    //             return $group->groupBy('branch_code')->map(fn($bg) => $bg->sum('quantity'));
+    //         });
+
+    //         // Bulk fetch exchange and scrappage pending statuses
+    //         $exchanges = DB::table('xlr8_exchange')
+    //             ->whereIn('verification_status', [0, null])
+    //             ->select('bid', 'purchase_type')
+    //             ->get()
+    //             ->groupBy('bid')
+    //             ->map(function ($group) {
+    //                 return [
+    //                     'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
+    //                     'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
+    //                 ];
+    //             });
+
+    //         // Bulk fetch finance pending statuses
+    //         $finances = DB::table('xlr8_booking_finance')
+    //             ->whereIn('verification_status', [0, null])
+    //             ->pluck('bid')
+    //             ->mapWithKeys(fn($bid) => [$bid => 1]);
+
+    //         $data = collect();
+    //         $index = 1;
+
+    //         foreach ($bookings as $groupKey => $groupBookings) {
+    //             [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+    //             $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
+
+    //             $total_bookings = $liveGroup->count();
+    //             if ($total_bookings === 0) continue;
+
+    //             $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+    //             $chr_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+
+    //             $max_age_days = $liveGroup->max(
+    //                 fn($booking) => abs(Carbon::parse($booking->created_at)->diffInDays(now()))
+    //             );
+
+    //             $age_gt_60 = $liveGroup->filter(fn($booking) => abs(Carbon::parse($booking->created_at)->diffInDays(now()))
+    //                 > 60)->count();
+
+    //             $live_orders = $liveOrders->get($groupKey, 0);
+
+    //             $dummy_bookings = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', 'dummy')->count();
+
+    //             $on_hold = $liveGroup->where('status', 6)->count();
+
+    //             $verify = $liveGroup->where('order', 1)->count();
+
+    //             $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+
+    //             $payments = $liveGroup->filter(function ($booking) use ($bookingAmounts) {
+    //                 $total_amount = $bookingAmounts->get($booking->id, 0);
+    //                 return $total_amount < $booking->booking_amount;
+    //             })->count();
+
+    //             $data_pending = $liveGroup->where('pending', '>', 0)->count();
+
+    //             $refunds = $groupBookings->where('status', 4)->count();
+
+    //             $cash = $liveGroup->where('fin_mode', 'Cash')->count();
+    //             $cash_pct = $total_bookings > 0 ? round(($cash / $total_bookings) * 100, 2) : 0;
+
+    //             $inhouse = $liveGroup->where('fin_mode', 'In-house')->count();
+    //             $inhouse_pct = $total_bookings > 0 ? round(($inhouse / $total_bookings) * 100, 2) : 0;
+
+    //             $self = $liveGroup->where('fin_mode', 'Customer-Self')->count();
+    //             $self_pct = $total_bookings > 0 ? round(($self / $total_bookings) * 100, 2) : 0;
+
+    //             $finance_pending = $liveGroup->filter(fn($booking) => $finances->get($booking->id, 0) > 0)->count();
+
+    //             $mtd_live = $liveGroup->where('created_at', '>=', $mtdStart);
+    //             $mtd_total = $mtd_live->count();
+    //             $mtd_inhouse = $mtd_live->where('fin_mode', 'In-house')->count();
+    //             $mtd_finance = $mtd_total > 0 ? round(($mtd_inhouse / $mtd_total) * 100, 2) : 0;
+
+    //             $ytd_live = $liveGroup->where('created_at', '>=', $ytdStart);
+    //             $ytd_total = $ytd_live->count();
+    //             $ytd_inhouse = $ytd_live->where('fin_mode', 'In-house')->count();
+    //             $ytd_finance = $ytd_total > 0 ? round(($ytd_inhouse / $ytd_total) * 100, 2) : 0;
+
+    //             $exchange_inhouse = $liveGroup->where('buyer_type', 'Exchange')->count();
+    //             $exchange_pct = $total_bookings > 0 ? round(($exchange_inhouse / $total_bookings) * 100, 2) : 0;
+    //             $exchange_pending = $liveGroup->filter(fn($booking) => ($exchanges->get($booking->id)['exchange_pending'] ?? 0) > 0)->count();
+
+    //             $mtd_exchange_inhouse = $mtd_live->where('buyer_type', 'Exchange')->count();
+    //             $mtd_exchange = $mtd_total > 0 ? round(($mtd_exchange_inhouse / $mtd_total) * 100, 2) : 0;
+
+    //             $ytd_exchange_inhouse = $ytd_live->where('buyer_type', 'Exchange')->count();
+    //             $ytd_exchange = $ytd_total > 0 ? round(($ytd_exchange_inhouse / $ytd_total) * 100, 2) : 0;
+
+    //             $scrappage_inhouse = $liveGroup->where('buyer_type', 'Scrappage')->count();
+    //             $scrappage_pct = $total_bookings > 0 ? round(($scrappage_inhouse / $total_bookings) * 100, 2) : 0;
+    //             $scrappage_pending = $liveGroup->filter(fn($booking) => ($exchanges->get($booking->id)['scrappage_pending'] ?? 0) > 0)->count();
+
+    //             $mtd_scrappage_inhouse = $mtd_live->where('buyer_type', 'Scrappage')->count();
+    //             $mtd_scrappage = $mtd_total > 0 ? round(($mtd_scrappage_inhouse / $mtd_total) * 100, 2) : 0;
+
+    //             $ytd_scrappage_inhouse = $ytd_live->where('buyer_type', 'Scrappage')->count();
+    //             $ytd_scrappage = $ytd_total > 0 ? round(($ytd_scrappage_inhouse / $ytd_total) * 100, 2) : 0;
+
+    //             $stock_group = $stocks->get($groupKey, collect());
+    //             $stock_total = $stock_group->values()->sum();
+    //             $stock_bkn = $stock_group->get(1, 0);
+    //             $stock_chr = $stock_group->get(2, 0);
+
+    //             $data->push([
+    //                 'sno' => $index++,
+    //                 'seg' => $seg,
+    //                 'model' => $model,
+    //                 'variant' => $variant,
+    //                 'clr' => $clr,
+    //                 'stock_total' => $stock_total,
+    //                 'stock_bkn' => $stock_bkn,
+    //                 'stock_chr' => $stock_chr,
+    //                 'total_bookings' => $total_bookings,
+    //                 'bkn_bookings' => $bkn_bookings,
+    //                 'chr_bookings' => $chr_bookings,
+    //                 // 'max_age' => $max_age_days ? $max_age_days . ' D' : '',
+    //                 'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
+    //                 'age_gt_60d' => $age_gt_60,
+    //                 'live_orders' => $live_orders,
+    //                 'dummy_bookings' => $dummy_bookings,
+    //                 'on_hold' => $on_hold,
+    //                 'verify' => $verify,
+    //                 'orders' => $orders,
+    //                 'payments' => $payments,
+    //                 'data' => $data_pending,
+    //                 'refund' => $refunds,
+    //                 'cash' => $cash,
+    //                 'cash_pct' => number_format($cash_pct, 2) . '%',
+    //                 'inhouse' => $inhouse,
+    //                 'inhouse_pct' => number_format($inhouse_pct, 2) . '%',
+    //                 'self' => $self,
+    //                 'self_pct' => number_format($self_pct, 2) . '%',
+    //                 'finance_pending' => $finance_pending,
+    //                 'mtd' => number_format($mtd_finance, 2) . '%',
+    //                 'ytd' => number_format($ytd_finance, 2) . '%',
+    //                 'exchange_inhouse' => $exchange_inhouse,
+    //                 'exchange_inhouse_pct' => number_format($exchange_pct, 2) . '%',
+    //                 'exchange_pending' => $exchange_pending,
+    //                 'exchange_mtd' => number_format($mtd_exchange, 2) . '%',
+    //                 'exchange_ytd' => number_format($ytd_exchange, 2) . '%',
+    //                 'scrappage_inhouse' => $scrappage_inhouse,
+    //                 'scrappage_inhouse_pct' => number_format($scrappage_pct, 2) . '%',
+    //                 'scrappage_pending' => $scrappage_pending,
+    //                 'scrappage_mtd' => number_format($mtd_scrappage, 2) . '%',
+    //                 'scrappage_ytd' => number_format($ytd_scrappage, 2) . '%',
+    //             ]);
+    //         }
+
+    //         return $data;
+    //     });
+
+    //     $tbr = [
+    //         'seg' => 'Total',
+    //         'total_bookings' => $data->sum('total_bookings'),
+    //         'bkn_bookings' => $data->sum('bkn_bookings'),
+    //         'chr_bookings' => $data->sum('chr_bookings'),
+    //         'stock_total' => $data->sum('stock_total'),
+    //         'stock_bkn' => $data->sum('stock_bkn'),
+    //         'stock_chr' => $data->sum('stock_chr'),
+    //         'max_age' => $data->max('max_age') ? str_replace(' D', '', $data->max('max_age')) . ' D' : '',
+    //         'age_gt_60d' => $data->sum('age_gt_60d'),
+    //         'live_orders' => $data->sum('live_orders'),
+    //         'dummy_bookings' => $data->sum('dummy_bookings'),
+    //         'on_hold' => $data->sum('on_hold'),
+    //         'verify' => $data->sum('verify'),
+    //         'orders' => $data->sum('orders'),
+    //         'payments' => $data->sum('payments'),
+    //         'data' => $data->sum('data'),
+    //         'refund' => $data->sum('refund'),
+    //         'cash' => $data->sum('cash'),
+    //         'cash_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['cash_pct'])), 2) . '%' : '0.00%',
+    //         'inhouse' => $data->sum('inhouse'),
+    //         'inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['inhouse_pct'])), 2) . '%' : '0.00%',
+    //         'self' => $data->sum('self'),
+    //         'self_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['self_pct'])), 2) . '%' : '0.00%',
+    //         'finance_pending' => $data->sum('finance_pending'),
+    //         'mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['mtd'])), 2) . '%' : '0.00%',
+    //         'ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['ytd'])), 2) . '%' : '0.00%',
+    //         'exchange_inhouse' => $data->sum('exchange_inhouse'),
+    //         'exchange_inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_inhouse_pct'])), 2) . '%' : '0.00%',
+    //         'exchange_pending' => $data->sum('exchange_pending'),
+    //         'exchange_mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_mtd'])), 2) . '%' : '0.00%',
+    //         'exchange_ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_ytd'])), 2) . '%' : '0.00%',
+    //         'scrappage_inhouse' => $data->sum('scrappage_inhouse'),
+    //         'scrappage_inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_inhouse_pct'])), 2) . '%' : '0.00%',
+    //         'scrappage_pending' => $data->sum('scrappage_pending'),
+    //         'scrappage_mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_mtd'])), 2) . '%' : '0.00%',
+    //         'scrappage_ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_ytd'])), 2) . '%' : '0.00%',
+    //     ];
+
+    //     $stkbr = [
+    //         'stock_total' => DB::table('xlr8_stock_master')->count('id'),
+    //         'stock_bkn' => DB::table('xlr8_stock_master')
+    //             ->join('xlr8_us_location', 'xlr8_stock_master.location_code', '=', 'xlr8_us_location.id')
+    //             ->where('xlr8_us_location.branch_code', 1)
+    //             ->count('xlr8_stock_master.id'),
+    //         'stock_chr' => DB::table('xlr8_stock_master')
+    //             ->join('xlr8_us_location', 'xlr8_stock_master.location_code', '=', 'xlr8_us_location.id')
+    //             ->where('xlr8_us_location.branch_code', 2)
+    //             ->count('xlr8_stock_master.id'),
+    //     ];
+
+    //     $title = 'Consolidated Booking Report';
+    //     $filename = 'CnsldtBkngRprt_' . $now->format('Y-m-d-H-i-s') . '.xlsx';
+
+    //     $header = [
+    //         ['title' => 'S.No.', 'field' => 'sno', 'hozAlign' => 'center', 'formatter' => 'plaintext'],
+    //         [
+    //             'title' => 'Vehicle Info',
+    //             'columns' => [
+    //                 ['title' => 'Segment', 'field' => 'seg', 'headerFilter' => 'select'],
+    //                 ['title' => 'Model', 'field' => 'model', 'headerFilter' => 'select'],
+    //                 ['title' => 'Variant', 'field' => 'variant', 'headerFilter' => 'select'],
+    //                 ['title' => 'Color', 'field' => 'clr', 'headerFilter' => 'select'],
+    //             ]
+    //         ],
+    //         [
+    //             'title' => 'Stock',
+    //             'columns' => [
+    //                 ['title' => 'Total', 'field' => 'stock_total', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'BKN', 'field' => 'stock_bkn', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'CHR', 'field' => 'stock_chr', 'bottomCalc' => 'sum'],
+    //             ]
+    //         ],
+    //         [
+    //             'title' => 'Bookings',
+    //             'columns' => [
+    //                 ['title' => 'Total', 'field' => 'total_bookings', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'BKN', 'field' => 'bkn_bookings', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'CHR', 'field' => 'chr_bookings', 'bottomCalc' => 'sum'],
+    //             ]
+    //         ],
+    //         [
+    //             'title' => 'Global Info',
+    //             'columns' => [
+    //                 ['title' => 'Max Age', 'field' => 'max_age', 'bottomCalc' => function ($values) {
+    //                     $max = collect($values)->map(fn($val) => (int) str_replace(' D', '', $val))->max();
+    //                     return $max . ' D';
+    //                 }],
+    //                 ['title' => 'Age > 60D', 'field' => 'age_gt_60d', 'bottomCalc' => function ($values) {
+    //                     $max = collect($values)->map(fn($val) => (int) str_replace(' D', '', $val))->max();
+    //                     return $max . ' D';
+    //                 }],
+    //                 ['title' => 'Live Orders', 'field' => 'live_orders', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Dummy Bookings', 'field' => 'dummy_bookings', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'On Hold', 'field' => 'on_hold', 'bottomCalc' => 'sum'],
+    //             ]
+    //         ],
+    //         [
+    //             'title' => 'Pending Actions',
+    //             'columns' => [
+    //                 ['title' => 'Verify', 'field' => 'verify', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Orders', 'field' => 'orders', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Payments', 'field' => 'payments', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Data', 'field' => 'data', 'bottomCalc' => 'sum'],
+    //                 ['title' => 'Refund', 'field' => 'refund', 'bottomCalc' => 'sum'],
+    //             ]
+    //         ],
+    //         [
+    //             'title' => 'Finance',
+    //             'columns' => [
+    //                 ['title' => 'Cash', 'field' => 'cash'],
+    //                 ['title' => 'Cash %', 'field' => 'cash_pct', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //                 ['title' => 'In-house', 'field' => 'inhouse'],
+    //                 ['title' => 'In-house %', 'field' => 'inhouse_pct', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //                 ['title' => 'Self', 'field' => 'self'],
+    //                 ['title' => 'Self %', 'field' => 'self_pct', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //                 ['title' => 'Pending', 'field' => 'finance_pending'],
+    //                 ['title' => 'MTD', 'field' => 'mtd', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //                 ['title' => 'YTD', 'field' => 'ytd', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //             ]
+    //         ],
+    //         [
+    //             'title' => 'Exchange',
+    //             'columns' => [
+    //                 ['title' => 'In-house', 'field' => 'exchange_inhouse'],
+    //                 ['title' => 'In-house %', 'field' => 'exchange_inhouse_pct', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //                 ['title' => 'Pending', 'field' => 'exchange_pending'],
+    //                 ['title' => 'MTD', 'field' => 'exchange_mtd', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //                 ['title' => 'YTD', 'field' => 'exchange_ytd', 'bottomCalc' => function ($values) {
+    //                     $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+    //                     return number_format($avg, 2) . '%';
+    //                 }],
+    //             ]
+    //         ],
+    //         [
+    //             'title' => 'Scrappage',
+    //             'columns' => [
+    //                 ['title' => 'In-house', 'field' => 'scrappage_inhouse'],
+    //                 ['title' => 'In-house %', 'field' => 'scrappage_inhouse_pct'],
+    //                 ['title' => 'Pending', 'field' => 'scrappage_pending'],
+    //                 ['title' => 'MTD', 'field' => 'scrappage_mtd'],
+    //                 ['title' => 'YTD', 'field' => 'scrappage_ytd'],
+    //             ]
+    //         ],
+    //     ];
+
+    //     return [$header, $data, $tbr, $stkbr, $filename, $title];
+    // }
+
+    // public function consolidatedBookingReport(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Consolidated Booking Report';
+
+    //     $now = Carbon::now();
+
+    //     // ────────────────────────────────────────────────
+    //     // Exact same complex logic jo photo mein data de raha tha
+    //     // ────────────────────────────────────────────────
+    //     $bookings = DB::table('xlr8_booking_master as bm')
+    //         ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+    //         ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //         ->whereIn('bm.status', [1, 4, 6, 8])
+    //         ->select(
+    //             'bm.id',
+    //             'bm.status',
+    //             'bm.b_type',
+    //             'bm.fin_mode',
+    //             'bm.buyer_type',
+    //             'bm.pending',
+    //             'bm.order',
+    //             'bm.dms_so',
+    //             'bm.booking_amount',
+    //             'bm.created_at',
+    //             DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+    //             'em.value as seg',
+    //             'vm.oem_model as model',
+    //             'vm.oem_variant as variant',
+    //             'vm.color as clr',
+    //             'vm.code'
+    //         )
+    //         ->get()
+    //         ->groupBy('group_key');
+
+    //     $bookingAmounts = DB::table('xlr8_booking_amount')
+    //         ->where('status', 1)
+    //         ->select('bid', DB::raw('SUM(amount) as total_amount'))
+    //         ->groupBy('bid')
+    //         ->pluck('total_amount', 'bid');
+
+    //     $liveOrders = DB::table('xlr8_vehicle_master as vm')
+    //         ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //         ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
+    //         ->groupBy('group_key')
+    //         ->pluck('lorder', 'group_key');
+
+    //     $stocksRaw = DB::table('xlr8_stock_master as sm')
+    //         ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+    //         ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //         ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
+    //         ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_code, COUNT(sm.id) as quantity')
+    //         ->groupBy('group_key', 'ul.branch_code')
+    //         ->get();
+
+    //     $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
+    //         return $group->groupBy('branch_code')->map(fn($bg) => $bg->sum('quantity'));
+    //     });
+
+    //     $exchanges = DB::table('xlr8_exchange')
+    //         ->whereIn('verification_status', [0, null])
+    //         ->select('bid', 'purchase_type')
+    //         ->get()
+    //         ->groupBy('bid')
+    //         ->map(function ($group) {
+    //             return [
+    //                 'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
+    //                 'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
+    //             ];
+    //         });
+
+    //     $finances = DB::table('xlr8_booking_finance')
+    //         ->whereIn('verification_status', [0, null])
+    //         ->pluck('bid')
+    //         ->mapWithKeys(fn($bid) => [$bid => 1]);
+
+    //     // ────────────────────────────────────────────────
+    //     // Data Processing (exact same as your old fetchCbrData)
+    //     // ────────────────────────────────────────────────
+    //     $gridData = [];
+    //     $sno = 1;
+
+    //     foreach ($bookings as $groupKey => $groupBookings) {
+    //         [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+    //         $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
+
+    //         $total_bookings = $liveGroup->count();
+    //         if ($total_bookings === 0) continue;
+
+    //         $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+    //         $churu_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+
+    //         $max_age_days = $liveGroup->max(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)));
+
+    //         $age_gt_60 = $liveGroup->filter(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)) > 60)->count();
+
+    //         $live_orders = $liveOrders->get($groupKey, 0);
+
+    //         $dummy_bookings = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', 'dummy')->count();
+
+    //         $on_hold = $liveGroup->where('status', 6)->count();
+
+    //         $verify = $liveGroup->where('order', 1)->count();
+
+    //         $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+
+    //         $payments = $liveGroup->filter(function ($b) use ($bookingAmounts) {
+    //             return ($bookingAmounts->get($b->id, 0) ?? 0) < $b->booking_amount;
+    //         })->count();
+
+    //         $data_pending = $liveGroup->where('pending', '>', 0)->count();
+
+    //         $refund = $groupBookings->where('status', 4)->count();
+
+    //         $cash = $liveGroup->where('fin_mode', 'Cash')->count();
+    //         $cash_pct = $total_bookings ? round($cash / $total_bookings * 100, 2) : 0;
+
+    //         $inhouse = $liveGroup->where('fin_mode', 'In-house')->count();
+    //         $inhouse_pct = $total_bookings ? round($inhouse / $total_bookings * 100, 2) : 0;
+
+    //         $self = $liveGroup->where('fin_mode', 'Customer-Self')->count();
+    //         $self_pct = $total_bookings ? round($self / $total_bookings * 100, 2) : 0;
+
+    //         $finance_pending = $liveGroup->filter(fn($b) => $finances->get($b->id, 0))->count();
+
+    //         $stock_group = $stocks->get($groupKey, collect());
+    //         $stock_total = $stock_group->values()->sum();
+    //         $stock_bkn = $stock_group->get(1, 0); // BIKANER
+    //         $stock_churu = $stock_group->get(2, 0); // CHURU
+
+    //         $gridData[] = [
+    //             'sno' => $sno++,
+    //             'seg' => $seg,
+    //             'model' => $model,
+    //             'variant' => $variant,
+    //             'clr' => $clr,
+    //             'stock_total' => $stock_total,
+    //             'stock_bikaner' => $stock_bkn,
+    //             'stock_churu' => $stock_churu,
+    //             'booking_total' => $total_bookings,
+    //             'booking_bikaner' => $bkn_bookings,
+    //             'booking_churu' => $churu_bookings,
+    //             'hot_enq_total' => 0, // agar hot enquiry hai to add kar dena
+    //             'hot_enq_bikaner' => 0,
+    //             'hot_enq_churu' => 0,
+    //             'finance_total' => $cash + $inhouse + $self,
+    //             'finance_bikaner' => 0,
+    //             'finance_churu' => 0,
+    //             'finance_pending' => $finance_pending,
+    //             'exchange_total' => $liveGroup->where('buyer_type', 'Exchange')->count(),
+    //             'exchange_bikaner' => 0,
+    //             'exchange_churu' => 0,
+    //             'exchange_pending' => $liveGroup->filter(fn($b) => $exchanges->get($b->id)['exchange_pending'] ?? 0)->count(),
+    //             'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
+    //             // 'max_age' => $max_age_days ? $max_age_days . ' D' : '0 D',
+    //             'age_gt_60d' => $age_gt_60,
+    //             'live_orders' => $live_orders,
+    //             'dummy_bookings' => $dummy_bookings,
+    //             'on_hold' => $on_hold,
+    //             'order_verification' => $verify,
+    //             'order_creation' => $orders,
+    //             'booking_creation' => $total_bookings,
+    //             'customer_data' => $data_pending,
+    //             'book_canc' => 0,
+    //             'refund' => $refund,
+    //         ];
+    //     }
+
+    //     // ────────────────────────────────────────────────
+    //     // Columns – exact photo jaisa
+    //     // ────────────────────────────────────────────────
+    //     $columns = [
+    //         [
+    //             'field'   => 'sno',
+    //             'headerName' => 'S.No.',
+    //             'width'   => 80,
+    //             'pinned'  => 'left',
+    //             'filter'  => false,
+    //             'sortable' => false,     // optional but good for serial number
+    //         ],
+
+    //         [
+    //             'headerName' => 'Vehicle Info',
+    //             'headerClass' => 'group-vehicle-info',
+    //             'children' => [
+    //                 ['field' => 'seg', 'headerName' => 'Segment', 'width' => 140],
+    //                 ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
+    //                 ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
+    //                 ['field' => 'clr', 'headerName' => 'Color', 'width' => 140],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'STOCK',
+    //             'headerClass' => 'group-stock',
+    //             'children' => [
+    //                 ['field' => 'stock_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'BOOKING',
+    //             'headerClass' => 'group-booking',
+    //             'children' => [
+    //                 ['field' => 'booking_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'booking_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'booking_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'HOT ENQ',
+    //             'headerClass' => 'group-hot-enq',
+    //             'children' => [
+    //                 ['field' => 'hot_enq_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'hot_enq_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'hot_enq_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'INT IN FINANCE',
+    //             'headerClass' => 'group-finance',
+    //             'children' => [
+    //                 ['field' => 'finance_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'finance_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'finance_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'finance_pending', 'headerName' => 'PENDING', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'INT IN EXCHANGE',
+    //             'headerClass' => 'group-exchange',
+    //             'children' => [
+    //                 ['field' => 'exchange_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'exchange_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'exchange_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'exchange_pending', 'headerName' => 'PENDING', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'GLOBAL INFO',
+    //             'headerClass' => 'group-global',
+    //             'children' => [
+    //                 ['field' => 'max_age', 'headerName' => 'MAX AGE', 'width' => 100],
+    //                 ['field' => 'age_gt_60d', 'headerName' => 'AGE > 60D', 'width' => 110, 'cellClass' => 'text-right'],
+    //                 ['field' => 'live_orders', 'headerName' => 'LIVE ORDERS', 'width' => 120, 'cellClass' => 'text-right'],
+    //                 ['field' => 'dummy_bookings', 'headerName' => 'DUMMY BOOKINGS', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'on_hold', 'headerName' => 'ON HOLD', 'width' => 100, 'cellClass' => 'text-right'],
+    //                 ['field' => 'order_verification', 'headerName' => 'ORDER VERIFICATION', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'customer_data', 'headerName' => 'CUSTOMER DATA', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'book_canc', 'headerName' => 'BOOK CANC', 'width' => 120, 'cellClass' => 'text-right'],
+    //                 ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 100, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+    //     ];
+
+    //     $gridConfig = [
+    //         'columns' => $columns,
+    //         'data' => $gridData,
+    //     ];
+
+    //     $this->data['gridConfig'] = $gridConfig;
+
+    //     if (empty($gridData)) {
+    //         session()->flash('info', 'No consolidated booking data found.');
+    //     }
+
+    //     return view('booking.consolidated-booking', $this->data);
+    // }
+
+    // public function branchBookingReport(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Branch Booking Report';
+
+    //     $now = Carbon::now();
+
+    //     // ────────────────────────────────────────────────
+    //     // Grouped bookings by vehicle
+    //     // ────────────────────────────────────────────────
+    //     $bookings = DB::table('xlr8_booking_master as bm')
+    //         ->join('xlr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+    //         ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //         ->whereIn('bm.status', [1, 4, 6, 8])
+    //         ->select(
+    //             'bm.id',
+    //             'bm.status',
+    //             'bm.b_type',
+    //             'bm.created_at',
+    //             'bm.pending',
+    //             'bm.order',
+    //             'bm.dms_so',
+    //             'bm.booking_amount',
+    //             DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+    //             'em.value as seg',
+    //             'vm.oem_model as model',
+    //             'vm.oem_variant as variant',
+    //             'vm.color as clr'
+    //         )
+    //         ->get()
+    //         ->groupBy('group_key');
+
+    //     // ────────────────────────────────────────────────
+    //     // Branch-wise stock (multiple branches as per photo)
+    //     // ────────────────────────────────────────────────
+    //     $stocksRaw = DB::table('xlr8_stock_master as sm')
+    //         ->join('xlr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+    //         ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //         ->join('xlr8_us_location as ul', 'sm.location_code', '=', 'ul.id')
+    //         ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.name as branch_name, COUNT(sm.id) as quantity')
+    //         ->groupBy('group_key', 'ul.name')
+    //         ->get();
+
+    //     $stocks = $stocksRaw->groupBy('group_key')->map(fn($g) => $g->pluck('quantity', 'branch_name')->toArray());
+
+    //     // ────────────────────────────────────────────────
+    //     // Grid Data – photo ke exact fields
+    //     // ────────────────────────────────────────────────
+    //     $gridData = [];
+    //     $sno = 1;
+
+    //     foreach ($bookings as $groupKey => $groupBookings) {
+    //         [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+    //         $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
+
+    //         $total_bookings = $liveGroup->count();
+    //         if ($total_bookings === 0) continue;
+
+    //         $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+    //         $churu_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+
+    //         $max_age_days = $liveGroup->max(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)));
+
+    //         $age_gt_60 = $liveGroup->filter(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)) > 60)->count();
+
+    //         $on_hold = $liveGroup->where('status', 6)->count();
+
+    //         $verify = $liveGroup->where('order', 1)->count();
+
+    //         $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+
+    //         $payments = $liveGroup->filter(function ($b) {
+    //             $paid = DB::table('xlr8_booking_amount')
+    //                 ->where('bid', $b->id)
+    //                 ->where('status', 1)
+    //                 ->sum('amount');
+    //             return $paid < ($b->booking_amount ?? 0);
+    //         })->count();
+
+    //         $customer_data = $liveGroup->where('pending', '>', 0)->count();
+
+    //         $refund = $groupBookings->where('status', 4)->count();
+
+    //         $dummy_bookings = $groupBookings->where('b_type', 'dummy')->count();
+
+    //         $stock_group = $stocks->get($groupKey, []);
+
+    //         $gridData[] = [
+    //             'sno'                 => $sno++,
+    //             'seg'                 => $seg,
+    //             'model'               => $model,
+    //             'variant'             => $variant,
+    //             'clr'                 => $clr,
+
+    //             // STOCK – yeh already perfect hai
+    //             'stock_total'         => array_sum($stock_group),
+    //             'stock_bikaner'       => $stock_group['BIKANER'] ?? 0,
+    //             'stock_churu'         => $stock_group['CHURU'] ?? 0,
+    //             'stock_khajuwala'     => $stock_group['KHAJUWALA'] ?? 0,
+    //             'stock_kolayat'       => $stock_group['KOLAYAT'] ?? 0,
+    //             'stock_lunkaransar'   => $stock_group['LUNKARANSAR'] ?? 0,
+    //             'stock_other'         => array_sum(array_diff_key($stock_group, array_flip(['BIKANER', 'CHURU', 'KHAJUWALA', 'KOLAYAT', 'LUNKARANSAR']))),
+
+    //             // Bookings count – yeh bhi sahi hai
+    //             'total_bookings'      => $total_bookings,
+
+    //             // GLOBAL INFO – yeh sab sahi se aa rahe hain
+    //             'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
+    //             'age_gt_60d'          => $age_gt_60,
+    //             'dummy_bookings'      => $dummy_bookings,
+    //             'on_hold'             => $on_hold,
+    //             'refund'              => $refund,
+
+    //             // PENDING ACTIONS – yeh bhi sahi hai
+    //             'order_verification'  => $verify,
+    //             'order_creation'      => $orders,
+    //             'booking_creation'    => $total_bookings,
+    //             'customer_payment'    => $payments,
+    //             'customer_data'       => $customer_data,
+    //             'book_canc'           => 0,  // agar cancellation status alag se track hota hai to yahan add kar dena
+
+    //             // Abhi ke liye zero – real data ke liye comment daal raha hoon
+    //             'hot_enq_total'       => 0,     // future: enquiry_master se hot/high intent enquiries count karna
+    //             'hot_enq_bikaner'     => 0,
+    //             'hot_enq_churu'       => 0,
+
+    //             'finance_total'       => 0,     // future: finance table join ya finance_status flag se count
+    //             'finance_bikaner'     => 0,
+    //             'finance_churu'       => 0,
+    //             'finance_pending'     => $payments,   // abhi payment pending ko finance pending maan rahe hain (temporary)
+
+    //             'exchange_total'      => 0,     // future: exchange table ya exchange_status se count
+    //             'exchange_bikaner'    => 0,
+    //             'exchange_churu'      => 0,
+    //             'exchange_pending'    => 0,
+
+    //             'lie_orders'          => 0,     // future: lost interest enquiry ya cancelled due to interest loss
+    //         ];
+    //     }
+
+    //     // ────────────────────────────────────────────────
+    //     // Columns – EXACTLY photo jaisa (sab groups + sub-columns)
+    //     // ────────────────────────────────────────────────
+    //     $columns = [
+    //         ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 70, 'pinned' => 'left'],
+
+    //         [
+    //             'headerName' => 'Vehicle Info',
+    //             'headerClass' => 'group-vehicle-info',
+    //             'children' => [
+    //                 ['field' => 'seg', 'headerName' => 'Segment', 'width' => 140],
+    //                 ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
+    //                 ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
+    //                 ['field' => 'clr', 'headerName' => 'Color', 'width' => 140],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'STOCK',
+    //             'headerClass' => 'group-stock',
+    //             'children' => [
+    //                 ['field' => 'stock_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'SELECTED BRANCH LOCATIONS',
+    //             'headerClass' => 'group-selected-branch',
+    //             'children' => [
+    //                 ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_khajuwala', 'headerName' => 'KHAJUWALA', 'width' => 100, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_kolayat', 'headerName' => 'KOLAYAT', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_lunkaransar', 'headerName' => 'LUNKARANSAR', 'width' => 110, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_other', 'headerName' => 'OTHER', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'HOT ENQ',
+    //             'headerClass' => 'group-hot-enq',
+    //             'children' => [
+    //                 ['field' => 'hot_enq_total',   'headerName' => 'TOTAL',    'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'hot_enq_bikaner', 'headerName' => 'BIKANER',  'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'hot_enq_churu',   'headerName' => 'CHURU',    'width' => 90, 'cellClass' => 'text-right'],
+    //             ],
+    //         ],
+
+    //         [
+    //             'headerName' => 'INT IN FINANCE',
+    //             'headerClass' => 'group-finance',
+    //             'children' => [
+    //                 ['field' => 'finance_total',     'headerName' => 'TOTAL',         'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'finance_bikaner',   'headerName' => 'BIKANER',       'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'finance_churu',     'headerName' => 'CHURU',         'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'finance_pending',   'headerName' => 'PENDING ACTION', 'width' => 130, 'cellClass' => 'text-right fw-bold'],
+    //             ],
+    //         ],
+
+    //         [
+    //             'headerName' => 'INT IN EXCH',
+    //             'headerClass' => 'group-exchange',
+    //             'children' => [
+    //                 ['field' => 'exchange_total',    'headerName' => 'TOTAL',         'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'exchange_bikaner',  'headerName' => 'BIKANER',       'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'exchange_churu',    'headerName' => 'CHURU',         'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'exchange_pending',  'headerName' => 'PENDING ACTION', 'width' => 130, 'cellClass' => 'text-right fw-bold'],
+    //             ],
+    //         ],
+
+    //         [
+    //             'headerName' => 'GLOBAL INFO',
+    //             'headerClass' => 'group-global',
+    //             'children' => [
+    //                 ['field' => 'max_age', 'headerName' => 'MAX AGE', 'width' => 100],
+    //                 ['field' => 'age_gt_60d', 'headerName' => 'AGE > 60D', 'width' => 110, 'cellClass' => 'text-right'],
+    //                 ['field' => 'lie_orders', 'headerName' => 'LIE ORDERS', 'width' => 100, 'cellClass' => 'text-right'],
+    //                 ['field' => 'dummy_bookings', 'headerName' => 'DUMMY BOOKINGS', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'on_hold', 'headerName' => 'ON HOLD', 'width' => 100, 'cellClass' => 'text-right'],
+    //                 ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 90, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'PENDING ACTIONS',
+    //             'headerClass' => 'group-pending',
+    //             'children' => [
+    //                 ['field' => 'order_verification', 'headerName' => 'ORDER VERIFICATION', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'customer_payment', 'headerName' => 'CUSTOMER PAMENT', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'customer_data', 'headerName' => 'CUSTOMER DATA', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'book_canc', 'headerName' => 'BOOK CANC.', 'width' => 120, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+    //     ];
+
+    //     $gridConfig = [
+    //         'columns' => $columns,
+    //         'data' => $gridData,
+    //     ];
+
+    //     $this->data['gridConfig'] = $gridConfig;
+
+    //     if (empty($gridData)) {
+    //         session()->flash('info', 'No branch booking data found.');
+    //     }
+
+    //     return view('booking.branch-booking', $this->data);
+    // }
+
+    // public function pendingActionsReport(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Pending Actions Report';
+
+    //     // Quick check if any pending records exist
+    //     $pendingCount = DB::table('xlr8_booking_master')->whereIn('status', [1, 6, 8])->count();
+    //     if ($pendingCount === 0) {
+    //         session()->flash('info', 'No pending bookings found (status 1,6,8 not present in table).');
+    //     }
+
+    //     $query = DB::table('xlr8_booking_master as b')
+    //         ->leftJoin('xlr8_vehicle_master as vm', 'b.vh_id', '=', 'vm.id')
+    //         ->leftJoin('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+    //         ->leftJoin('xlr8_us_location as loc', 'b.location_code', '=', 'loc.id')
+    //         ->whereIn('b.status', [1, 6, 8])
+    //         ->selectRaw('
+    //         COALESCE(em.value, "Unknown") as segment,
+    //         COALESCE(vm.oem_model, "Unknown") as model,
+    //         COALESCE(vm.oem_variant, "Unknown") as variant,
+    //         COALESCE(vm.color, "Unknown") as color,
+    //         COUNT(b.id) as total_bookings,
+    //         SUM(CASE WHEN b.order = 1 THEN 1 ELSE 0 END) as order_verif,
+    //         SUM(CASE WHEN b.order = 2 AND b.dms_so IS NULL THEN 1 ELSE 0 END) as order_creation,
+    //         SUM(CASE WHEN b.pending > 0 THEN 1 ELSE 0 END) as customer_data,
+    //         SUM(CASE WHEN b.status = 4 THEN 1 ELSE 0 END) as refund,
+    //         SUM(CASE WHEN b.status = 4 THEN 1 ELSE 0 END) as book_canc,
+    //         loc.abbr as branch_abbr
+    //     ')
+    //         ->groupByRaw('em.value, vm.oem_model, vm.oem_variant, vm.color, loc.abbr');
+
+    //     $pendings = $query->get();
+
+    //     // ────────────────────────────────────────────────
+    //     // Group by vehicle + branch counts
+    //     // ────────────────────────────────────────────────
+    //     $gridData = [];
+    //     $grouped = $pendings->groupBy(function ($item) {
+    //         return $item->segment . '|' . $item->model . '|' . $item->variant . '|' . $item->color;
+    //     });
+
+    //     $sno = 1;
+
+    //     foreach ($grouped as $groupKey => $rows) {
+    //         [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+    //         $total_bookings = $rows->sum('total_bookings');
+
+    //         if ($total_bookings == 0) continue;
+
+    //         $bkn = $rows->where('branch_abbr', 'BKN')->sum('total_bookings');
+    //         $chr = $rows->where('branch_abbr', 'CHR')->sum('total_bookings');
+
+    //         $gridData[] = [
+    //             'sno' => $sno++,
+    //             'segment' => $seg,
+    //             'model' => $model,
+    //             'variant' => $variant,
+    //             'color' => $clr,
+    //             'total_bookings' => (int)$total_bookings,
+    //             'bkn' => (int)$bkn,
+    //             'chr' => (int)$chr,
+    //             'exchange' => 0,
+    //             'finance' => 0,
+    //             'order_verif' => (int)$rows->sum('order_verif'),
+    //             'order_creation' => (int)$rows->sum('order_creation'),
+    //             'booking_creation' => (int)$total_bookings,
+    //             'customer_payment' => 0,
+    //             'kyc_data' => (int)$rows->sum('customer_data'),
+    //             'book_canc' => (int)$rows->sum('book_canc'),
+    //             'refund' => (int)$rows->sum('refund'),
+    //         ];
+    //     }
+
+    //     // ────────────────────────────────────────────────
+    //     // Columns (your blade already expects these)
+    //     // ────────────────────────────────────────────────
+    //     $columns = [
+    //         ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 70, 'pinned' => 'left'],
+
+    //         [
+    //             'headerName' => 'Vehicle Info',
+    //             'headerClass' => 'group-vehicle-info',
+    //             'children' => [
+    //                 ['field' => 'segment', 'headerName' => 'Segment', 'width' => 140],
+    //                 ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
+    //                 ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
+    //                 ['field' => 'color', 'headerName' => 'Color', 'width' => 140],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'Bookings',
+    //             'headerClass' => 'group-booking',
+    //             'children' => [
+    //                 ['field' => 'total_bookings', 'headerName' => 'Total', 'width' => 90, 'cellClass' => 'text-right'],
+    //                 ['field' => 'bkn', 'headerName' => 'BKN', 'width' => 70, 'cellClass' => 'text-right'],
+    //                 ['field' => 'chr', 'headerName' => 'CHR', 'width' => 70, 'cellClass' => 'text-right'],
+    //                 ['field' => 'exchange', 'headerName' => 'EXCHANGE', 'width' => 110, 'cellClass' => 'text-right'],
+    //                 ['field' => 'finance', 'headerName' => 'FINANCE', 'width' => 110, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+
+    //         [
+    //             'headerName' => 'PENDING ACTIONS',
+    //             'headerClass' => 'group-pending',
+    //             'children' => [
+    //                 ['field' => 'order_verif', 'headerName' => 'ORDER VERIFICATION', 'width' => 160, 'cellClass' => 'text-right'],
+    //                 ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+    //                 ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 160, 'cellClass' => 'text-right'],
+    //                 ['field' => 'customer_payment', 'headerName' => 'CUSTOMER PAYMENT', 'width' => 160, 'cellClass' => 'text-right'],
+    //                 ['field' => 'kyc_data', 'headerName' => 'KYC DATA', 'width' => 110, 'cellClass' => 'text-right'],
+    //                 ['field' => 'book_canc', 'headerName' => 'BOOK CANC.', 'width' => 110, 'cellClass' => 'text-right'],
+    //                 ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 110, 'cellClass' => 'text-right'],
+    //             ]
+    //         ],
+    //     ];
+
+    //     $gridConfig = [
+    //         'columns' => $columns,
+    //         'data' => $gridData,
+    //     ];
+
+    //     $this->data['gridConfig'] = $gridConfig;
+
+    //     return view('booking.pending-actions', $this->data);
+    // }
     public function checkFieldPayment($id)
     {
         $booking = Booking::findOrFail($id);

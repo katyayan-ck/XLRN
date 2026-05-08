@@ -1,68 +1,83 @@
 <?php
 namespace App\Models\Admin;
 
-use App\Models\BaseModel;
-use Backpack\CRUD\app\Models\Traits\CrudTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Designation extends BaseModel
+/**
+ * Table: xlr8_admin_designation
+ * POST-MIGRATION: desig_code column DROPPED. Only `code` exists.
+ * is_top_mgmt and parent_desig_code were ADDED by migration.
+ * All cross-table soft-refs (employee.desig_code, post.desig_code,
+ * desig_dept_tree.desig_code) point to THIS table's `code` column.
+ */
+class Designation extends Model
 {
-    use CrudTrait, HasFactory;
+    use SoftDeletes;
 
     protected $table = 'xlr8_admin_designation';
 
     protected $fillable = [
-        'code', 'name', 'description',
-        'hierarchy_level', 'rank', 'is_top_level_mgmt', 'is_active',
+        'code',            // ← ONLY authoritative key. desig_code is GONE.
+        'name', 'description',
+        'hierarchy_level', 'rank', 'category',
+        'is_top_mgmt',        // added by migration
+        'parent_desig_code',  // added by migration — soft ref to code in same table
+        'is_active',
     ];
 
     protected $casts = [
-        'hierarchy_level'   => 'integer',
-        'rank'              => 'integer',
-        'is_top_level_mgmt' => 'boolean',
-        'is_active'         => 'boolean',
-        'created_at'        => 'datetime',
-        'updated_at'        => 'datetime',
-        'deleted_at'        => 'datetime',
+        'is_active'       => 'boolean',
+        'is_top_mgmt'     => 'boolean',
+        'hierarchy_level' => 'integer',
+        'rank'            => 'integer',
     ];
 
+    public function getRouteKeyName(): string { return 'code'; }
+
+    // ── Relations ─────────────────────────────────────────────────────────────
+    /** employee.desig_code → designation.code */
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class, 'desig_code', 'code');
     }
 
+    /** desig_dept_tree.desig_code → designation.code */
+    public function designationTree(): HasMany
+    {
+        return $this->hasMany(DesigDeptTree::class, 'desig_code', 'code');
+    }
+
+    /** xlr8_iam_roles.desig_code → designation.code */
     public function posts(): HasMany
     {
-        return $this->hasMany(\App\Models\IAM\Post::class, 'desig_code', 'code');
+        return $this->hasMany(\App\Models\Iam\Post::class, 'desig_code', 'code');
     }
 
-    /**
-     * Get dept-tree entries showing who this desig reports to in each dept
-     */
-    public function deptTreeEntries(): HasMany
+    /** Self-ref: parent_desig_code → code */
+    public function parentDesignation()
     {
-        return $this->hasMany(DesignationDeptTree::class, 'desig_code', 'code');
+        return $this->belongsTo(static::class, 'parent_desig_code', 'code');
     }
 
-    /**
-     * Get the reporting-to designation within a specific department
-     */
-    public function reportsToInDept(string $deptCode): ?Designation
+    public function childDesignations(): HasMany
     {
-        $tree = DesignationDeptTree::where('desig_code', $this->code)
-            ->where(fn($q) => $q->where('dept_code', $deptCode)->orWhere('dept_code', 'ALL'))
-            ->first();
-
-        return $tree?->reportsToDesignation;
+        return $this->hasMany(static::class, 'parent_desig_code', 'code');
     }
 
-    public function scopeByRank($q) { return $q->orderBy('rank'); }
-    public function scopeTlm($q)    { return $q->where('is_top_level_mgmt', true); }
+    // ── Scopes ────────────────────────────────────────────────────────────────
+    public function scopeActive($q)                  { return $q->where('is_active', 1); }
+    public function scopeTopMgmt($q)                 { return $q->where('is_top_mgmt', true); }
+    public function scopeAtLevel($q, int $level)     { return $q->where('hierarchy_level', $level); }
+    public function scopeInCategory($q, string $cat) { return $q->where('category', ucwords(strtolower($cat))); }
 
-    public static function generateCode(string $prefix = 'DES'): string
+    // ── Mutators ──────────────────────────────────────────────────────────────
+    public function setCodeAttribute(string $v): void
     {
-        $lastId = static::withTrashed()->max('id') ?? 0;
-        return strtoupper($prefix) . str_pad($lastId + 1, 3, '0', STR_PAD_LEFT);
+        $this->attributes['code'] = strtoupper(trim($v));
     }
+
+    // ── Accessors ─────────────────────────────────────────────────────────────
+    public function getLabelAttribute(): string { return "{$this->code} — {$this->name}"; }
 }
