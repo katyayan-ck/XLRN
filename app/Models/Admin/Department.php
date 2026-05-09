@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, BelongsToMany};
 
 /**
@@ -12,36 +14,43 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, BelongsToMany};
  */
 class Department extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, CrudTrait;
 
     protected $table = 'xlr8_admin_department';
 
     protected $fillable = [
-        'code', 'name', 'description',
-        'parent_department_id', 'branch_id', 'head_emp_code',
+        'code',
+        'name',
+        'description',
+        'parent_department_code',
+        'branch_code',
+        'head_code',
         'is_active',
     ];
 
     protected $casts = ['is_active' => 'boolean'];
 
-    public function getRouteKeyName(): string { return 'code'; }
+    public function getRouteKeyName(): string
+    {
+        return 'code';
+    }
 
     // ── Relations ─────────────────────────────────────────────────────────────
     /** Head employee: head_emp_code → employee.code */
     public function head(): BelongsTo
     {
-        return $this->belongsTo(Employee::class, 'head_emp_code', 'code');
+        return $this->belongsTo(Employee::class, 'head_code', 'code');
     }
 
     /** Parent department (id-based — schema uses integer FK) */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(static::class, 'parent_department_id', 'id');
+        return $this->belongsTo(static::class, 'parent_department_code', 'code');
     }
 
     public function children(): HasMany
     {
-        return $this->hasMany(static::class, 'parent_department_id', 'id');
+        return $this->hasMany(static::class, 'parent_department_code', 'code');
     }
 
     /** Divisions: division.dept_code → department.code */
@@ -61,7 +70,13 @@ class Department extends Model
     {
         return $this->hasMany(\App\Models\Iam\Post::class, 'dept_code', 'code');
     }
-
+    /**
+     * Department belongs to a Branch
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_code', 'code');
+    }
     /**
      * Employees via pivot.
      * Pivot table: xlr8_admin_emp_department_pivot
@@ -77,12 +92,18 @@ class Department extends Model
             'code',          // local key on department
             'code'           // owner key on employee
         )->withPivot('division_code', 'assignment_type', 'is_current', 'from_date', 'to_date')
-         ->withTimestamps();
+            ->withTimestamps();
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
-    public function scopeActive($q)   { return $q->where('is_active', true); }
-    public function scopeTopLevel($q) { return $q->whereNull('parent_department_id'); }
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true);
+    }
+    public function scopeTopLevel($q)
+    {
+        return $q->whereNull('parent_department_code');
+    }
 
     // ── Mutators ──────────────────────────────────────────────────────────────
     public function setCodeAttribute(string $v): void

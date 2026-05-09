@@ -2,13 +2,14 @@
 
 namespace App\Models\Admin;
 
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeeLocationAssignment extends Model
 {
-    use SoftDeletes;
+    use CrudTrait;
 
     protected $table = 'xlr8_admin_emp_location_pivot';
 

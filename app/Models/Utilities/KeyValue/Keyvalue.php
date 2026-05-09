@@ -6,86 +6,64 @@ use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Traits\HasTreeStructure;
+use Illuminate\Database\Eloquent\Builder;
 
 class Keyvalue extends BaseModel
 {
     use CrudTrait;
     use HasFactory;
     use HasTreeStructure;
+
     protected $table = 'xlr8_utils_keyvalue';
+
     protected $fillable = [
-        'keyword_master_id',
-        'key',
-        'value',
-        'details',
-        'parent_id',
-        'level',
-        'extra_data',
-        'status'
+        'keyword_code',
+        'code',
+        'key', 'value', 'details',
+        'parent_id', 'level', 'path',
+        'extra_data', 'status', 'is_active'
     ];
 
     protected $casts = [
         'extra_data' => 'array',
-        'level' => 'integer',
-        'status' => 'integer',
+        'level'      => 'integer',
+        'status'     => 'integer',
+        'is_active'  => 'boolean',
     ];
+
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::saving(function ($model) {
+            $model->keyword_code = strtoupper(trim($model->keyword_code ?? ''));
+            $model->code         = strtoupper(trim($model->code ?? $model->key ?? ''));
+            $model->key          = strtoupper(trim($model->key ?? ''));
+        });
+    }
 
     public function keywordMaster()
     {
-        return $this->belongsTo(KeywordMaster::class);
+        return $this->belongsTo(KeywordMaster::class, 'keyword_code', 'code');
     }
 
     public function parent()
     {
-        return $this->belongsTo(self::class, 'parent_id');
+        return $this->belongsTo(static::class, 'parent_id');
     }
 
     public function children()
     {
-        return $this->hasMany(self::class, 'parent_id');
+        return $this->hasMany(static::class, 'parent_id');
     }
 
-    public function registerMediaCollections(): void
+    public function scopeActive(Builder $query): Builder
     {
-        parent::registerMediaCollections();
-        $this->addMediaCollection('attachments')
-            ->singleFile() // Or multiple if needed
-            ->useDisk('public');
+        return $query->where('is_active', true);
     }
 
-    public static function getEnum(string $keyword, bool $activeOnly = true, bool $recursive = false): array
+    public function scopeForKeyword(Builder $query, string $keywordCode): Builder
     {
-        $master = KeywordMaster::where('keyword', $keyword)->first();
-        if (!$master) return [];
-
-        $query = self::where('keyword_master_id', $master->id);
-        if ($activeOnly) $query->where('status', 1);
-
-        if ($recursive) {
-            return $query->with('children')->whereNull('parent_id')->get()->toArray();
-        }
-        return $query->pluck('value', 'key')->toArray();
-    }
-
-    public static function getKeywordId(string $keyword): ?int
-    {
-        return KeywordMaster::where('keyword', $keyword)->value('id');
-    }
-
-    public static function getValueId(string $keyword, string $valKey): ?int
-    {
-        $masterId = self::getKeywordId($keyword);
-        return self::where('keyword_master_id', $masterId)->where('key', $valKey)->value('id');
-    }
-
-    public function scopeForKeyword($query, string $keyword)
-    {
-        $masterId = self::getKeywordId($keyword);
-        return $query->where('keyword_master_id', $masterId);
-    }
-
-    public function scopeRoots($query)
-    {
-        return $query->whereNull('parent_id');
+        return $query->where('keyword_code', strtoupper($keywordCode));
     }
 }

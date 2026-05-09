@@ -27,9 +27,9 @@ class EmpPostAssignmentFactory extends Factory
     }
 
     protected $casts = [
-    'from_date' => 'date:Y-m-d',   // ← returns string not Carbon
-    'to_date'   => 'date:Y-m-d',   // ← returns string not Carbon
-];
+        'from_date' => 'date:Y-m-d',   // ← returns string not Carbon
+        'to_date'   => 'date:Y-m-d',   // ← returns string not Carbon
+    ];
 
     public function closed(?string $toDate = null): static
     {

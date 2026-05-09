@@ -36,7 +36,7 @@ class DepartmentCrudController extends CrudController
                 'id',
                 'code',
                 'name',
-                'branch_id',
+                'branch_code',
                 'description',
                 'is_active'
             ])
@@ -94,18 +94,22 @@ class DepartmentCrudController extends CrudController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code'        => 'required|string|unique:xlr8_admin_department,code',
+            'code'        => 'required|string|unique:xlr8_admin_department,code|max:255',
             'name'        => 'required|string|max:255',
-            'branch_id'   => 'required|exists:xlr8_admin_branch,id',
+            'branch_code' => 'required|exists:xlr8_admin_branch,code',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);
 
-        Department::create($validated);
+        try {
+            Department::create($validated);
 
-        \Alert::success('Department created successfully!')->flash();
-
-        return redirect(backpack_url('department'));
+            \Alert::success('Department created successfully!')->flash();
+            return redirect(backpack_url('department'));
+        } catch (\Exception $e) {
+            \Alert::error('Error creating department: ' . $e->getMessage())->flash();
+            return redirect()->back()->withInput();
+        }
     }
 
     public function edit($id)
@@ -128,7 +132,7 @@ class DepartmentCrudController extends CrudController
         $validated = $request->validate([
             'code'        => 'required|string|unique:xlr8_admin_department,code,' . $id,
             'name'        => 'required|string|max:255',
-            'branch_id'   => 'required|exists:xlr8_admin_branch,id',
+            'branch_code'   => 'required|exists:xlr8_admin_branch,code',
             'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);

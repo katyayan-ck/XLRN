@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Models\BaseModel;
+use App\Models\EnumMaster;
+use App\Models\Module\Booking\Booking;
+use App\Models\XVehicleStock;
 class XVehicleMaster extends BaseModel
 {
     use SoftDeletes;

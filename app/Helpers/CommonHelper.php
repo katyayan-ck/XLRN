@@ -11,6 +11,7 @@ use App\Models\Vehicle\Variant;
 use App\Models\Vehicle\Color;       // ← Added this
 use App\Models\Admin\Branch;
 use App\Models\Admin\Location;
+use App\Models\EnumMaster;
 
 class CommonHelper
 {
@@ -132,5 +133,21 @@ class CommonHelper
             ->where('vehicle_variant_code', strtoupper(trim($variantCode)))
             ->orderBy('name')
             ->get();
+    }
+
+    public static function enumValueById($id)
+    {
+        if (empty($id) || !is_numeric($id)) {
+            return null;
+        }
+
+        static $cache = [];
+
+        if (!isset($cache[$id])) {
+            $cache[$id] = \App\Models\EnumMaster::where('id', $id)
+                ->value('value');
+        }
+
+        return $cache[$id];
     }
 }

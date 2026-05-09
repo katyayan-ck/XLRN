@@ -1,6 +1,8 @@
 <?php
+
 namespace App\Models\Admin;
 
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
@@ -12,20 +14,25 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
  */
 class Division extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, CrudTrait;
 
     protected $table = 'xlr8_admin_division';
 
     protected $fillable = [
         'dept_code',   // replaces department_id (dropped by migration)
-        'code', 'name', 'description',
-        'head_id',     // integer — person.id (still in schema)
+        'code',
+        'name',
+        'description',
+        'head_',     // integer — person.id (still in schema)
         'is_active',
     ];
 
     protected $casts = ['is_active' => 'boolean'];
 
-    public function getRouteKeyName(): string { return 'code'; }
+    public function getRouteKeyName(): string
+    {
+        return 'code';
+    }
 
     // ── Relations ─────────────────────────────────────────────────────────────
     /** dept_code → xlr8_admin_department.code (Eloquent-only, no DB FK) */
@@ -53,8 +60,14 @@ class Division extends Model
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
-    public function scopeActive($q)               { return $q->where('is_active', true); }
-    public function scopeForDept($q, string $d)   { return $q->where('dept_code', strtoupper(trim($d))); }
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true);
+    }
+    public function scopeForDept($q, string $d)
+    {
+        return $q->where('dept_code', strtoupper(trim($d)));
+    }
 
     // ── Mutators ──────────────────────────────────────────────────────────────
     public function setCodeAttribute(string $v): void

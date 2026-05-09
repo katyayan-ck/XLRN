@@ -294,262 +294,262 @@ class Booking extends BaseModel  implements HasMedia
     /**
      * Dynamic Aggregation Methods
      */
-    // public static function getDynamicBookingCounts($condition = null)
-    // {
-    //     $query = self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at');
+    public static function getDynamicBookingCounts($condition = null)
+    {
+        $query = self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at');
 
-    //     if ($condition) {
-    //         $query->$condition();
-    //     }
+        if ($condition) {
+            $query->$condition();
+        }
 
-    //     $branches = Branches::whereNull('deleted_at')->pluck('abbr', 'id')->toArray();
-    //     $locations = Location::whereNull('deleted_at')->pluck('abbr', 'id')->toArray();
+        $branches = Branches::whereNull('deleted_at')->pluck('abbr', 'id')->toArray();
+        $locations = Location::whereNull('deleted_at')->pluck('abbr', 'id')->toArray();
 
-    //     $branchColumns = [];
-    //     foreach ($branches as $id => $abbr) {
-    //         $sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
-    //         $branchColumns["bookings_branch_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_booking_master.branch_id = $id THEN xcelr8_booking_master.id END)");
-    //     }
+        $branchColumns = [];
+        foreach ($branches as $id => $abbr) {
+            $sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
+            $branchColumns["bookings_branch_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_booking_master.branch_id = $id THEN xcelr8_booking_master.id END)");
+        }
 
-    //     $locationColumns = [];
-    //     foreach ($locations as $id => $abbr) {
-    //         $sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
-    //         $locationColumns[" booking_location_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_booking_master.location_id = $id THEN xcelr8_booking_master.id END)");
-    //     }
+        $locationColumns = [];
+        foreach ($locations as $id => $abbr) {
+            $sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
+            $locationColumns[" booking_location_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_booking_master.location_id = $id THEN xcelr8_booking_master.id END)");
+        }
 
-    //     return $query->select([
-    //         DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //         'xcelr8_vehicle_master.custom_model as model',
-    //         'xcelr8_vehicle_master.custom_variant as variant',
-    //         'xcelr8_vehicle_master.color',
-    //         DB::raw('COUNT(DISTINCT xcelr8_booking_master.id) as bookings_total'),
-    //         DB::raw('COUNT(DISTINCT CASE WHEN xcelr8_booking_master.location_id IS NULL OR xcelr8_booking_master.location_id = 0 THEN xcelr8_booking_master.id END) as bookings_other'),
-    //         DB::raw('MAX(DATEDIFF(CURDATE(), xcelr8_booking_master.booking_date)) as tst_max_age'),
-    //         ...$branchColumns,
-    //         ...$locationColumns
-    //     ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+        return $query->select([
+            DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+            'xcelr8_vehicle_master.custom_model as model',
+            'xcelr8_vehicle_master.custom_variant as variant',
+            'xcelr8_vehicle_master.color',
+            DB::raw('COUNT(DISTINCT xcelr8_booking_master.id) as bookings_total'),
+            DB::raw('COUNT(DISTINCT CASE WHEN xcelr8_booking_master.location_id IS NULL OR xcelr8_booking_master.location_id = 0 THEN xcelr8_booking_master.id END) as bookings_other'),
+            DB::raw('MAX(DATEDIFF(CURDATE(), xcelr8_booking_master.booking_date)) as tst_max_age'),
+            ...$branchColumns,
+            ...$locationColumns
+        ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
-    // public static function getFinanceCounts($type, $timeFrame = null)
-    // {
-    //     $query = self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->whereHas('finances', function ($q) use ($type) {
-    //             $q->where('verification_status', 1)->where('status', 2);
-    //         })
-    //         ->where('finance', $type);
+    public static function getFinanceCounts($type, $timeFrame = null)
+    {
+        $query = self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->whereHas('finances', function ($q) use ($type) {
+                $q->where('verification_status', 1)->where('status', 2);
+            })
+            ->where('finance', $type);
 
-    //     if ($timeFrame === 'mtd') {
-    //         $query->where('booking_date', '>=', now()->subDays(30));
-    //     } elseif ($timeFrame === 'ytd') {
-    //         $query->where('booking_date', '>=', now()->subDays(365));
-    //     }
+        if ($timeFrame === 'mtd') {
+            $query->where('booking_date', '>=', now()->subDays(30));
+        } elseif ($timeFrame === 'ytd') {
+            $query->where('booking_date', '>=', now()->subDays(365));
+        }
 
-    //     return $query->select([
-    //         DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //         'xcelr8_vehicle_master.custom_model as model',
-    //         'xcelr8_vehicle_master.custom_variant as variant',
-    //         'xcelr8_vehicle_master.color',
-    //         DB::raw("COUNT(DISTINCT xcelr8_finance.id) as finance_" . strtolower(str_replace(' ', '_', $type))),
-    //         DB::raw("(COUNT(DISTINCT xcelr8_finance.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') THEN xcelr8_booking_master.id END), 0)) * 100 as finance_" . strtolower(str_replace(' ', '_', $type)) . "_percent")
-    //     ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->join('xcelr8_finance', 'xcelr8_booking_master.id', '=', 'xcelr8_finance.booking_id')
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+        return $query->select([
+            DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+            'xcelr8_vehicle_master.custom_model as model',
+            'xcelr8_vehicle_master.custom_variant as variant',
+            'xcelr8_vehicle_master.color',
+            DB::raw("COUNT(DISTINCT xcelr8_finance.id) as finance_" . strtolower(str_replace(' ', '_', $type))),
+            DB::raw("(COUNT(DISTINCT xcelr8_finance.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') THEN xcelr8_booking_master.id END), 0)) * 100 as finance_" . strtolower(str_replace(' ', '_', $type)) . "_percent")
+        ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->join('xcelr8_finance', 'xcelr8_booking_master.id', '=', 'xcelr8_finance.booking_id')
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
-    // public static function getFinanceMTDPercent($type)
-    // {
-    //     $query = self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->whereHas('finances', function ($q) use ($type) {
-    //             $q->where('verification_status', 1)->where('status', 2);
-    //         })
-    //         ->where('finance', $type)
-    //         ->where('booking_date', '>=', now()->subDays(30));
+    public static function getFinanceMTDPercent($type)
+    {
+        $query = self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->whereHas('finances', function ($q) use ($type) {
+                $q->where('verification_status', 1)->where('status', 2);
+            })
+            ->where('finance', $type)
+            ->where('booking_date', '>=', now()->subDays(30));
 
-    //     return $query->select([
-    //         DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //         'xcelr8_vehicle_master.custom_model as model',
-    //         'xcelr8_vehicle_master.custom_variant as variant',
-    //         'xcelr8_vehicle_master.color',
-    //         DB::raw("(COUNT(DISTINCT xcelr8_finance.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 30 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as finance_" . strtolower(str_replace(' ', '_', $type)) . "_mtd_percent")
-    //     ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->join('xcelr8_finance', 'xcelr8_booking_master.id', '=', 'xcelr8_finance.booking_id')
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+        return $query->select([
+            DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+            'xcelr8_vehicle_master.custom_model as model',
+            'xcelr8_vehicle_master.custom_variant as variant',
+            'xcelr8_vehicle_master.color',
+            DB::raw("(COUNT(DISTINCT xcelr8_finance.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 30 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as finance_" . strtolower(str_replace(' ', '_', $type)) . "_mtd_percent")
+        ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->join('xcelr8_finance', 'xcelr8_booking_master.id', '=', 'xcelr8_finance.booking_id')
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
-    // public static function getFinanceYTDPercent($type)
-    // {
-    //     $query = self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->whereHas('finances', function ($q) use ($type) {
-    //             $q->where('verification_status', 1)->where('status', 2);
-    //         })
-    //         ->where('finance', $type)
-    //         ->where('booking_date', '>=', now()->subDays(365));
+    public static function getFinanceYTDPercent($type)
+    {
+        $query = self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->whereHas('finances', function ($q) use ($type) {
+                $q->where('verification_status', 1)->where('status', 2);
+            })
+            ->where('finance', $type)
+            ->where('booking_date', '>=', now()->subDays(365));
 
-    //     return $query->select([
-    //         DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //         'xcelr8_vehicle_master.custom_model as model',
-    //         'xcelr8_vehicle_master.custom_variant as variant',
-    //         'xcelr8_vehicle_master.color',
-    //         DB::raw("(COUNT(DISTINCT xcelr8_finance.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 365 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as finance_" . strtolower(str_replace(' ', '_', $type)) . "_ytd_percent")
-    //     ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->join('xcelr8_finance', 'xcelr8_booking_master.id', '=', 'xcelr8_finance.booking_id')
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+        return $query->select([
+            DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+            'xcelr8_vehicle_master.custom_model as model',
+            'xcelr8_vehicle_master.custom_variant as variant',
+            'xcelr8_vehicle_master.color',
+            DB::raw("(COUNT(DISTINCT xcelr8_finance.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 365 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as finance_" . strtolower(str_replace(' ', '_', $type)) . "_ytd_percent")
+        ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->join('xcelr8_finance', 'xcelr8_booking_master.id', '=', 'xcelr8_finance.booking_id')
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
-    // public static function getExchangeScrappageCounts($type, $timeFrame = null)
-    // {
-    //     $query = self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->whereHas('exchanges', function ($q) use ($type) {
-    //             $q->where('verification_status', 1)->where('status', 2)->where('purchase_type', $type);
-    //         });
+    public static function getExchangeScrappageCounts($type, $timeFrame = null)
+    {
+        $query = self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->whereHas('exchanges', function ($q) use ($type) {
+                $q->where('verification_status', 1)->where('status', 2)->where('purchase_type', $type);
+            });
 
-    //     if ($timeFrame === 'mtd') {
-    //         $query->where('booking_date', '>=', now()->subDays(30));
-    //     } elseif ($timeFrame === 'ytd') {
-    //         $query->where('booking_date', '>=', now()->subDays(365));
-    //     }
+        if ($timeFrame === 'mtd') {
+            $query->where('booking_date', '>=', now()->subDays(30));
+        } elseif ($timeFrame === 'ytd') {
+            $query->where('booking_date', '>=', now()->subDays(365));
+        }
 
-    //     return $query->select([
-    //         DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //         'xcelr8_vehicle_master.custom_model as model',
-    //         'xcelr8_vehicle_master.custom_variant as variant',
-    //         'xcelr8_vehicle_master.color',
-    //         DB::raw("COUNT(DISTINCT xcelr8_exchange.id) as " . strtolower(str_replace(' ', '_', $type)) . "_inhouse"),
-    //         DB::raw("(COUNT(DISTINCT xcelr8_exchange.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') THEN xcelr8_booking_master.id END), 0)) * 100 as " . strtolower(str_replace(' ', '_', $type)) . "_inhouse_percent")
-    //     ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->join('xcelr8_exchange', 'xcelr8_booking_master.id', '=', 'xcelr8_exchange.booking_id')
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+        return $query->select([
+            DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+            'xcelr8_vehicle_master.custom_model as model',
+            'xcelr8_vehicle_master.custom_variant as variant',
+            'xcelr8_vehicle_master.color',
+            DB::raw("COUNT(DISTINCT xcelr8_exchange.id) as " . strtolower(str_replace(' ', '_', $type)) . "_inhouse"),
+            DB::raw("(COUNT(DISTINCT xcelr8_exchange.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') THEN xcelr8_booking_master.id END), 0)) * 100 as " . strtolower(str_replace(' ', '_', $type)) . "_inhouse_percent")
+        ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->join('xcelr8_exchange', 'xcelr8_booking_master.id', '=', 'xcelr8_exchange.booking_id')
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
-    // public static function getExchangeScrappageMTDPercent($type)
-    // {
-    //     $query = self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->whereHas('exchanges', function ($q) use ($type) {
-    //             $q->where('verification_status', 1)->where('status', 2)->where('purchase_type', $type);
-    //         })
-    //         ->where('booking_date', '>=', now()->subDays(30));
+    public static function getExchangeScrappageMTDPercent($type)
+    {
+        $query = self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->whereHas('exchanges', function ($q) use ($type) {
+                $q->where('verification_status', 1)->where('status', 2)->where('purchase_type', $type);
+            })
+            ->where('booking_date', '>=', now()->subDays(30));
 
-    //     return $query->select([
-    //         DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //         'xcelr8_vehicle_master.custom_model as model',
-    //         'xcelr8_vehicle_master.custom_variant as variant',
-    //         'xcelr8_vehicle_master.color',
-    //         DB::raw("(COUNT(DISTINCT xcelr8_exchange.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 30 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as " . strtolower(str_replace(' ', '_', $type)) . "_mtd_percent")
-    //     ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->join('xcelr8_exchange', 'xcelr8_booking_master.id', '=', 'xcelr8_exchange.booking_id')
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+        return $query->select([
+            DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+            'xcelr8_vehicle_master.custom_model as model',
+            'xcelr8_vehicle_master.custom_variant as variant',
+            'xcelr8_vehicle_master.color',
+            DB::raw("(COUNT(DISTINCT xcelr8_exchange.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 30 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as " . strtolower(str_replace(' ', '_', $type)) . "_mtd_percent")
+        ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->join('xcelr8_exchange', 'xcelr8_booking_master.id', '=', 'xcelr8_exchange.booking_id')
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
-    // public static function getExchangeScrappageYTDPercent($type)
-    // {
-    //     $query = self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->whereHas('exchanges', function ($q) use ($type) {
-    //             $q->where('verification_status', 1)->where('status', 2)->where('purchase_type', $type);
-    //         })
-    //         ->where('booking_date', '>=', now()->subDays(365));
+    public static function getExchangeScrappageYTDPercent($type)
+    {
+        $query = self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->whereHas('exchanges', function ($q) use ($type) {
+                $q->where('verification_status', 1)->where('status', 2)->where('purchase_type', $type);
+            })
+            ->where('booking_date', '>=', now()->subDays(365));
 
-    //     return $query->select([
-    //         DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //         'xcelr8_vehicle_master.custom_model as model',
-    //         'xcelr8_vehicle_master.custom_variant as variant',
-    //         'xcelr8_vehicle_master.color',
-    //         DB::raw("(COUNT(DISTINCT xcelr8_exchange.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 365 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as " . strtolower(str_replace(' ', '_', $type)) . "_ytd_percent")
-    //     ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->join('xcelr8_exchange', 'xcelr8_booking_master.id', '=', 'xcelr8_exchange.booking_id')
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+        return $query->select([
+            DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+            'xcelr8_vehicle_master.custom_model as model',
+            'xcelr8_vehicle_master.custom_variant as variant',
+            'xcelr8_vehicle_master.color',
+            DB::raw("(COUNT(DISTINCT xcelr8_exchange.id) / NULLIF(COUNT(DISTINCT CASE WHEN xcelr8_booking_master.status = 2 AND xcelr8_booking_master.finance NOT IN ('Cash OOT', 'Customer self OOT') AND xcelr8_booking_master.booking_date >= CURDATE() - INTERVAL 365 DAY THEN xcelr8_booking_master.id END), 0)) * 100 as " . strtolower(str_replace(' ', '_', $type)) . "_ytd_percent")
+        ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->join('xcelr8_exchange', 'xcelr8_booking_master.id', '=', 'xcelr8_exchange.booking_id')
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
     // /**
     //  * Age-Based Metrics
     //  */
-    // public static function getTSTMaxAge()
-    // {
-    //     return self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->select([
-    //             DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //             'xcelr8_vehicle_master.custom_model as model',
-    //             'xcelr8_vehicle_master.custom_variant as variant',
-    //             'xcelr8_vehicle_master.color',
-    //             DB::raw('MAX(DATEDIFF(CURDATE(), xcelr8_booking_master.booking_date)) as tst_max_age')
-    //         ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+    public static function getTSTMaxAge()
+    {
+        return self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->select([
+                DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+                'xcelr8_vehicle_master.custom_model as model',
+                'xcelr8_vehicle_master.custom_variant as variant',
+                'xcelr8_vehicle_master.color',
+                DB::raw('MAX(DATEDIFF(CURDATE(), xcelr8_booking_master.booking_date)) as tst_max_age')
+            ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 
-    // public static function getBookingsOlderThan($days)
-    // {
-    //     return self::query()->whereHas('vehicle', function ($q) {
-    //         $q->whereNull('deleted_at')->where('status', 1);
-    //     })->whereNull('deleted_at')
-    //         ->whereRaw('DATEDIFF(CURDATE(), booking_date) > ?', [$days])
-    //         ->select([
-    //             DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
-    //             'xcelr8_vehicle_master.custom_model as model',
-    //             'xcelr8_vehicle_master.custom_variant as variant',
-    //             'xcelr8_vehicle_master.color',
-    //             DB::raw('COUNT(DISTINCT xcelr8_booking_master.id) as bookings_older_than_' . $days . '_days')
-    //         ])
-    //         ->join('xcelr8_vehicle_master', function ($join) {
-    //             $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
-    //                 ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
-    //         })
-    //         ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
-    //         ->get();
-    // }
+    public static function getBookingsOlderThan($days)
+    {
+        return self::query()->whereHas('vehicle', function ($q) {
+            $q->whereNull('deleted_at')->where('status', 1);
+        })->whereNull('deleted_at')
+            ->whereRaw('DATEDIFF(CURDATE(), booking_date) > ?', [$days])
+            ->select([
+                DB::raw('(SELECT value FROM bmpl_enum_master WHERE id = xcelr8_vehicle_master.segment_id) as segment'),
+                'xcelr8_vehicle_master.custom_model as model',
+                'xcelr8_vehicle_master.custom_variant as variant',
+                'xcelr8_vehicle_master.color',
+                DB::raw('COUNT(DISTINCT xcelr8_booking_master.id) as bookings_older_than_' . $days . '_days')
+            ])
+            ->join('xcelr8_vehicle_master', function ($join) {
+                $join->on('xcelr8_vehicle_master.id', '=', 'xcelr8_booking_master.vh_id')
+                    ->orOn('xcelr8_vehicle_master.code', '=', 'xcelr8_booking_master.model_code');
+            })
+            ->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
+            ->get();
+    }
 }

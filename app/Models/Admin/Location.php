@@ -1,23 +1,40 @@
 <?php
+
 namespace App\Models\Admin;
 
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
 class Location extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, CrudTrait;
 
     protected $table = 'xlr8_admin_location';
 
     protected $fillable = [
-        'branch_code', 'code', 'name', 'description',
-        'phone', 'email', 'address', 'city', 'state', 'pincode',
-        'latitude', 'longitude', 'is_active',
+        'branch_code',
+        'code',
+        'name',
+        'description',
+        'phone',
+        'email',
+        'address',
+        'city',
+        'state',
+        'pincode',
+        'latitude',
+        'longitude',
+        'is_active',
         // 7 location-type flags (added by migration):
-        'is_sales_location', 'is_workshop', 'is_parts_location',
-        'is_stock_location', 'is_office_only', 'is_mwh', 'is_lmmws',
+        'is_sales_location',
+        'is_workshop',
+        'is_parts_location',
+        'is_stock_location',
+        'is_office_only',
+        'is_mwh',
+        'is_lmmws',
     ];
 
     protected $casts = [
@@ -33,7 +50,10 @@ class Location extends Model
         'longitude'         => 'float',
     ];
 
-    public function getRouteKeyName(): string { return 'code'; }
+    public function getRouteKeyName(): string
+    {
+        return 'code';
+    }
 
     // ── Relations ─────────────────────────────────────────────────────────────
     /** branch_code → xlr8_admin_branch.branch_code */
@@ -54,11 +74,26 @@ class Location extends Model
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
-    public function scopeActive($q)             { return $q->where('is_active', true); }
-    public function scopeForBranch($q, $code)   { return $q->where('branch_code', $code); }
-    public function scopeSalesLocations($q)     { return $q->where('is_sales_location', true); }
-    public function scopeWorkshops($q)          { return $q->where('is_workshop', true); }
-    public function scopePartsLocations($q)     { return $q->where('is_parts_location', true); }
+    public function scopeActive($q)
+    {
+        return $q->where('is_active', true);
+    }
+    public function scopeForBranch($q, $code)
+    {
+        return $q->where('branch_code', $code);
+    }
+    public function scopeSalesLocations($q)
+    {
+        return $q->where('is_sales_location', true);
+    }
+    public function scopeWorkshops($q)
+    {
+        return $q->where('is_workshop', true);
+    }
+    public function scopePartsLocations($q)
+    {
+        return $q->where('is_parts_location', true);
+    }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
     public function getTypeTagsAttribute(): array

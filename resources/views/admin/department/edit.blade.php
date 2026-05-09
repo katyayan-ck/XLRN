@@ -58,7 +58,7 @@
                             </div>
 
                             <div class="col-md-4 mb-3">
-                                <label>Department Code <span class="text-danger">*</span></label>
+                                <label>Department Code <span class="text-danger">*</span></label>(5 Digit Code)
                                 <input type="text" name="code" class="form-control"
                                     value="{{ old('code', $department->code) }}" required>
                             </div>
@@ -71,11 +71,12 @@
 
                             <div class="col-md-4 mb-3">
                                 <label>Branch <span class="text-danger">*</span></label>
-                                <select name="branch_id" class="form-control form-select" required>
+                                <select name="branch_code" class="form-control form-select" required>
                                     <option value="">Select Branch</option>
                                     @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}" {{ old('branch_id', $department->branch_id) ==
-                                        $branch->id ? 'selected' : '' }}>
+                                    <option value="{{ $branch->code }}" {{ old('branch_code', $department->branch_code)
+                                        ==
+                                        $branch->code ? 'selected' : '' }}>
                                         {{ $branch->name }}
                                     </option>
                                     @endforeach

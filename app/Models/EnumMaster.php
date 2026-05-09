@@ -12,7 +12,7 @@ class EnumMaster extends BaseModel
 {
     //use QueryCacheable;
     public $cacheFor = 60 * 60 * 24;
-    // protected $table = 'bmpl_enum_master';
+    protected $table = 'bmpl_enum_master';
 
     protected $fillable = [];
     protected $guarded = ['id'];
