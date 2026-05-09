@@ -260,6 +260,27 @@ class User extends Authenticatable
         return $this->user_type === 'Emp' && !empty($this->employee_code);
     }
 
+    // Add these accessors
+public function getAllEmailsAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_emails ?? collect();
+}
+
+public function getAllMobilesAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_mobiles ?? collect();
+}
+
+public function getAllAddressesAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_addresses ?? collect();
+}
+
+public function getAllBankingAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_banking ?? collect();
+}
+
     // ─────────────────────────────────────────────────────────────
     // Scopes
     // ─────────────────────────────────────────────────────────────

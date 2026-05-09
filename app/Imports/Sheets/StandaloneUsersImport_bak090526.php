@@ -81,20 +81,9 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
     private function createOrUpdatePerson(array $row, string $personCode, int $rowIndex): bool
     {
         $now = Carbon::now();
-
-        // Split full name into first/middle/last
-        $fullName = $this->s($this->getValue($row, ['employee_name', 'Employee Name*']));
-        $nameParts = array_values(array_filter(explode(' ', $fullName)));
-        $firstName  = $nameParts[0] ?? '';
-        $middleName = $nameParts[1] ?? '';
-        $lastName   = implode(' ', array_slice($nameParts, 2)) ?: ($nameParts[1] ?? '');
-
         $data = [
             'person_code'  => $personCode,
-            'display_name' => $fullName,
-            'first_name'   => $firstName,
-            'middle_name'  => $middleName,
-            'last_name'    => $lastName,
+            'display_name' => $this->s($this->getValue($row, ['employee_name', 'Employee Name*'])),
             'gender'       => $this->s($this->getValue($row, ['gender', 'Gender'])),
             'dob'          => $this->parseDate($this->getValue($row, ['date_of_birth', 'Date of Birth'])),
             'marital_status'=> $this->s($this->getValue($row, ['marital_status', 'Marital Status'])),
@@ -113,7 +102,6 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
             $this->logRow($rowIndex, '✅ CREATED (Person)', "person_code = {$personCode}");
         }
 
-        // Primary Mobile
         $mobile = $this->cleanPhone($this->getValue($row, ['personal_contact_number', 'Personal Contact Number*']));
         if ($mobile) {
             DB::table('xlr8_admin_person_contacts')->updateOrInsert(
@@ -122,7 +110,6 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
             );
         }
 
-        // Primary Email
         $email = $this->n($this->getValue($row, ['official_mail_id', 'Official Mail ID', 'personal_mail_id']));
         if ($email) {
             DB::table('xlr8_admin_person_contacts')->updateOrInsert(
@@ -130,43 +117,6 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
                 ['contact_detail' => $email, 'updated_at' => $now]
             );
         }
-
-        // Person Address
-        $addr1 = $this->getValue($row, ['address_line_1', 'Address Line 1']);
-        if ($addr1 || $this->getValue($row, ['city', 'City'])) {
-            DB::table('xlr8_admin_person_addresses')->updateOrInsert(
-                ['person_code' => $personCode, 'address_type' => 'Primary'],
-                [
-                    'address_line_1' => $addr1,
-                    'address_line_2' => $this->getValue($row, ['address_line_2', 'Address Line 2']),
-                    'city'           => $this->getValue($row, ['city', 'City']),
-                    'state'          => $this->getValue($row, ['state', 'State']),
-                    'pincode'        => $this->getValue($row, ['pincode', 'Pincode']),
-                    'country'        => 'India',
-                    'updated_at'     => $now,
-                ]
-            );
-            $this->logRow($rowIndex, '✅ CREATED/UPDATED (Address)', "person_code = {$personCode}");
-        }
-
-        // Person Banking
-        $bankName = $this->getValue($row, ['bank_name', 'Bank Name']);
-        $accountNo = $this->getValue($row, ['account_number', 'Account Number']);
-        if ($bankName && $accountNo) {
-            DB::table('xlr8_admin_person_banking_details')->updateOrInsert(
-                ['person_code' => $personCode, 'account_type' => 'Primary'],
-                [
-                    'bank_name'          => $bankName,
-                    'account_number'     => $accountNo,
-                    'ifsc_code'          => $this->getValue($row, ['ifsc_code', 'IFSC Code']),
-                    'account_holder_name'=> $fullName,
-                    'account_nature'     => 'Savings',
-                    'updated_at'         => $now,
-                ]
-            );
-            $this->logRow($rowIndex, '✅ CREATED/UPDATED (Banking)', "person_code = {$personCode}");
-        }
-
         return true;
     }
 
@@ -213,7 +163,7 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
         $data = [
             'username'       => $username,
             'password'       => $password,
-            'user_type'      => $userType,
+            'user_type'      => $userType,           // ← correct column
             'person_code'    => $personCode,
             'employee_code'  => $empCode,
             'is_active'      => 1,

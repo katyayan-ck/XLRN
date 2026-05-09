@@ -209,3 +209,45 @@ S4.5 — Schema Cleanup Migrations
     Add missing columns to xlr8iamprocess
 
     Backfill branchcode short-code on existing xlr8adminbranch rows
+
+## [Sprint 5] — 2026-05-09
+
+### Added / Enhanced
+
+**Standalone Users Import (`StandaloneUsersImport.php`)**
+
+- Full Person → Employee → User creation from `users_import` sheet
+- Name splitting: `first_name`, `middle_name`, `last_name` from `Employee Name*`
+- Creates/updates `xlr8_admin_person_addresses` and `xlr8_admin_person_banking_details`
+- Creates/updates primary mobile + email in `xlr8_admin_person_contacts`
+- Post assignment with automatic sequencing (`SLS_CNS_BKN` → `SLS_CNS_BKN_002` etc.)
+- Full per-row console + log output with success/fail status
+
+**Keyword / KeyValue System – Complete Modernization**
+
+- Natural-key architecture: `KeywordMaster.code` + `Keyvalue.keyword_code + code`
+- All codes forced to UPPERCASE on save and lookup
+- Full `BaseModel` compliance (audit fields, soft deletes, `is_active`)
+- Retained `KeywordMaster` for metadata (`is_active`, description, extra_data, tree settings)
+- Updated `Keyvalue` with `HasTreeStructure` support
+- `KeywordValueService` – backward compatible + new clean `getCode()` / `getByCode()` API
+
+**Model Accessor Enhancements**
+
+- `Person.php`: `first_name`, `middle_name`, `last_name`, `full_name`, `all_emails`, `all_mobiles`, `all_addresses`, `all_banking`
+- `Employee.php`: Proxy accessors for primary/all emails, mobiles, addresses, banking
+- `User.php`: Proxy accessors for primary/all emails, mobiles, addresses, banking
+- Consistent access: `$user->primary_email`, `$employee->all_addresses`, `$person->primary_bank` etc.
+
+**Unit Tests**
+
+- `RBACPersonEmployeeUserTest.php` – comprehensive test suite covering KeywordValueService, Person, Employee, User models and all new accessors
+- Uses `DatabaseTransactions` (safe on existing DB)
+
+### Commands Executed
+
+```bash
+php artisan migrate
+php artisan optimize:clear
+php artisan test --filter=RBACPersonEmployeeUserTest
+```

@@ -355,10 +355,7 @@ public function getPostOnDate(string|\Carbon\Carbon $date): ?\App\Models\Admin\E
             ?? $this->code;
     }
 
-    public function getPrimaryMobileAttribute(): ?string
-    {
-        return $this->person?->primary_mobile;
-    }
+
 
     public function getIsActiveAttribute(): bool
     {
@@ -372,6 +369,46 @@ public function getPostOnDate(string|\Carbon\Carbon $date): ?\App\Models\Admin\E
         $diff = $this->joining_date->diff($end);
         return "{$diff->y}y {$diff->m}m";
     }
+    // Add these accessors
+public function getPrimaryEmailAttribute(): ?string
+{
+    return $this->person?->primary_email;
+}
+
+public function getPrimaryMobileAttribute(): ?string
+{
+    return $this->person?->primary_mobile;
+}
+
+public function getAllEmailsAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_emails ?? collect();
+}
+
+public function getAllMobilesAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_mobiles ?? collect();
+}
+
+public function getPrimaryAddressAttribute(): ?PersonAddress
+{
+    return $this->person?->primary_address;
+}
+
+public function getAllAddressesAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_addresses ?? collect();
+}
+
+public function getPrimaryBankAttribute(): ?PersonBankingDetail
+{
+    return $this->person?->primary_bank;
+}
+
+public function getAllBankingAttribute(): \Illuminate\Support\Collection
+{
+    return $this->person?->all_banking ?? collect();
+}
 
     // ── Business logic ────────────────────────────────────────────────────────
 

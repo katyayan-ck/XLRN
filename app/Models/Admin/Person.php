@@ -201,6 +201,26 @@ class Person extends Model implements HasMedia
             ->whereNull('deleted_at')
             ->first();
     }
+    // Add at the end of accessors section
+public function getAllEmailsAttribute(): \Illuminate\Support\Collection
+{
+    return $this->emailContacts()->pluck('contact_detail');
+}
+
+public function getAllMobilesAttribute(): \Illuminate\Support\Collection
+{
+    return $this->mobileContacts()->pluck('contact_detail');
+}
+
+public function getAllAddressesAttribute(): \Illuminate\Support\Collection
+{
+    return $this->addresses;
+}
+
+public function getAllBankingAttribute(): \Illuminate\Support\Collection
+{
+    return $this->bankingDetails;
+}
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
