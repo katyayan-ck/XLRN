@@ -125,68 +125,71 @@ class User extends Authenticatable
         return $this->employee?->primary_div_code;
     }
 
-    /** All branches assigned to this user (primary + additional) */
-    public function branches(): BelongsToMany
-    {
-        return $this->employee?->belongsToMany(
-            \App\Models\Admin\Branch::class,
-            'xlr8_admin_emp_branch_pivot',
-            'employee_code', 'branch_code',
-            'code', 'branch_code'
-        ) ?? collect();
-    }
+public function branches()
+{
+    return $this->hasManyThrough(
+        \App\Models\Admin\Branch::class,
+        \App\Models\Admin\EmpBranchPivot::class,
+        'employee_code', 'code',
+        'employee_code', 'branch_code'
+    )->whereNull('to_date');
+}
 
-    /** All locations assigned to this user */
-    public function locations(): BelongsToMany
-    {
-        return $this->employee?->belongsToMany(
-            \App\Models\Admin\Location::class,
-            'xlr8_admin_emp_location_pivot',
-            'employee_code', 'location_code',
-            'code', 'code'
-        ) ?? collect();
-    }
+public function locations()
+{
+    return $this->hasManyThrough(
+        \App\Models\Admin\Location::class,
+        \App\Models\Admin\EmpLocationPivot::class,
+        'employee_code', 'code',
+        'employee_code', 'location_code'
+    )->whereNull('to_date');
+}
 
-    /** All departments assigned to this user */
-    public function departments(): BelongsToMany
-    {
-        return $this->employee?->belongsToMany(
-            \App\Models\Admin\Department::class,
-            'xlr8_admin_emp_department_pivot',
-            'employee_code', 'dept_code',
-            'code', 'code'
-        ) ?? collect();
-    }
+public function departments()
+{
+    return $this->hasManyThrough(
+        \App\Models\Admin\Department::class,
+        \App\Models\Admin\EmpDepartmentPivot::class,
+        'employee_code', 'code',
+        'employee_code', 'dept_code'
+    )->whereNull('to_date');
+}
 
-    /** All divisions assigned to this user */
-    public function divisions(): BelongsToMany
-    {
-        return $this->employee?->belongsToMany(
-            \App\Models\Admin\Division::class,
-            'xlr8_admin_emp_department_pivot',
-            'employee_code', 'division_code',
-            'code', 'code'
-        ) ?? collect();
-    }
+public function divisions()
+{
+    return $this->hasManyThrough(
+        \App\Models\Admin\Division::class,
+        \App\Models\Admin\EmpDivisionPivot::class,
+        'employee_code', 'code',
+        'employee_code', 'div_code'
+    )->whereNull('to_date');
+}
+
 
     // ─────────────────────────────────────────────────────────────
     // Post & Role Assignments
     // ─────────────────────────────────────────────────────────────
-    public function posts(): HasMany
-    {
-        return $this->hasManyThrough(
-            Post::class,
-            \App\Models\Admin\EmpPostAssignment::class,
-            'emp_code', 'post_code',
-            'employee_code', 'post_code'
-        )->whereNull('to_date');
-    }
+public function posts()
+{
+    return $this->hasManyThrough(
+        \App\Models\IAM\Post::class,
+        \App\Models\Admin\EmpPostAssignment::class,
+        'emp_code',          // ← pivot uses emp_code
+        'post_code',
+        'employee_code',
+        'post_code'
+    )
+    ->whereNull('to_date')
+    ->where('is_post', 1)
+    ->select('xlr8_iam_roles.*');
+}
 
-    /** Currently assigned primary post */
-    public function primaryPost(): ?string
-    {
-        return $this->posts()->where('assignment_type', 'primary')->value('post_code');
-    }
+public function primaryPost(): ?string
+{
+    return $this->posts()
+        ->where('assignment_type', 'primary')
+        ->value('xlr8_iam_roles.post_code');
+}
 
     /** First active post (convenience) */
     public function post(): ?Post

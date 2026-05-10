@@ -21,9 +21,12 @@ Route::group([
     ),
     'namespace' => 'App\Http\Controllers\Admin',
 ], function () { // custom admin routes
+Route::get('org-demo', [App\Http\Controllers\Admin\OrgDemoController::class, 'index'])->name('backpack.org.demo');
     // Route::get('performance-report', [PerformanceController::class, 'report']);
     Route::get('home', [DashboardController::class, 'index'])
         ->name('backpack.dashboard.home');
+		Route::get('dashboard', [DashboardController::class, 'index'])
+    ->name('backpack.dashboard');
         Route::crud('vehicle-accessory', VehicleAccessoryCrudController::class);
 
 Route::get('vehicle-accessory/import', [VehicleAccessoryCrudController::class, 'showImportForm'])

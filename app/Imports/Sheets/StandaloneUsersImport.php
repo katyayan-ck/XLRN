@@ -1,60 +1,41 @@
 <?php
-
 namespace App\Imports\Sheets;
-
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class StandaloneUsersImport implements ToCollection, WithHeadingRow
 {
     private int $success = 0;
     private int $rowIndex = 1;
-    private bool $headersDumped = false;
 
-    public function collection(Collection $rows)
+    public function collection(\Illuminate\Support\Collection $rows)
     {
-        Log::info('=== Standalone Users Import Started ===');
         echo "\n🚀 Starting standalone Users_Import processing...\n\n";
-
         foreach ($rows as $row) {
             $this->rowIndex++;
             $this->processRow($row->toArray(), $this->rowIndex);
         }
-
         echo "\n✅ Standalone Users Import Completed!\n";
-        echo "Total rows processed: " . ($this->rowIndex - 1) . " | Successful: {$this->success}\n\n";
-        Log::info("Standalone Users Import Finished. Rows: " . ($this->rowIndex - 1) . " | Success: {$this->success}");
     }
 
     private function processRow(array $row, int $rowIndex): void
     {
-        if (!$this->headersDumped) {
-            echo "[DEBUG] First row keys: " . implode(', ', array_keys($row)) . "\n";
-            $this->headersDumped = true;
-        }
-
-        $empCode = $this->getValue($row, ['emp_code', 'emp code', 'Emp Code*']);
-        if (!$empCode) {
-            $this->logRow($rowIndex, '❌ FAIL', 'Missing emp_code');
-            return;
-        }
-
-        echo "\n[Row {$rowIndex}] Processing Emp: {$empCode} - " . $this->s($this->getValue($row, ['employee_name', 'Employee Name*'])) . "\n";
+        $empCode = $this->getValue($row, ['emp_code', 'Emp Code*']);
+        if (!$empCode) return;
 
         $personCode = $this->derivePersonCode($row);
 
-        if (!$this->createOrUpdatePerson($row, $personCode, $rowIndex)) return;
-        if (!$this->createOrUpdateEmployee($row, $empCode, $personCode, $rowIndex)) return;
+        $this->createOrUpdatePerson($row, $personCode, $rowIndex);
+        $this->createOrUpdateEmployee($row, $empCode, $personCode, $rowIndex);
         $this->createOrUpdateUser($row, $empCode, $personCode, $rowIndex);
         $this->assignPrimaryPost($row, $empCode, $rowIndex);
 
         $this->success++;
-        echo "[Row {$rowIndex}] ✅ SUCCESS - All stages completed for {$empCode}\n";
+        echo "[Row {$rowIndex}] ✅ SUCCESS - {$empCode}\n";
     }
 
     private function getValue(array $row, array $keys): ?string
@@ -170,35 +151,72 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
         return true;
     }
 
-    private function createOrUpdateEmployee(array $row, string $empCode, string $personCode, int $rowIndex): bool
-    {
-        $now = Carbon::now();
-        $data = [
-            'code'                => $empCode,
-            'person_code'         => $personCode,
-            'desig_code'          => $this->code($this->getValue($row, ['designation', 'Designation*'])),
-            'primary_branch_code' => $this->code($this->getValue($row, ['primary_branch', 'Primary Branch*'])),
-            'primary_loc_code'    => $this->code($this->getValue($row, ['primary_location', 'Primary Location*'])),
-            'primary_dept_code'   => $this->code($this->getValue($row, ['primary_department', 'Primary Department*'])),
-            'primary_div_code'    => $this->code($this->getValue($row, ['primary_division', 'Primary Division'])),
-            'father_name'         => $this->s($this->getValue($row, ['father_name', 'Father Name'])),
-            'employment_type'     => 'permanent',
-            'employment_status'   => 'active',
-            'joining_date'        => $this->parseDate($this->getValue($row, ['date_of_joining', 'Date of Joining'])),
-            'created_at'          => $now,
-            'updated_at'          => $now,
-        ];
+private function createOrUpdateEmployee(array $row, string $empCode, string $personCode, int $rowIndex): void
+{
+    $now = Carbon::now();
 
-        $exists = DB::table('xlr8_admin_employee')->where('code', $empCode)->exists();
-        if ($exists) {
-            DB::table('xlr8_admin_employee')->where('code', $empCode)->update($data);
-            $this->logRow($rowIndex, '🔄 UPDATED (Employee)', "emp_code = {$empCode}");
-        } else {
-            DB::table('xlr8_admin_employee')->insert($data);
-            $this->logRow($rowIndex, '✅ CREATED (Employee)', "emp_code = {$empCode}");
-        }
-        return true;
-    }
+    $data = [
+        'code'                => $empCode,
+        'person_code'         => $personCode,
+        'desig_code'          => $this->resolveCode('xlr8_admin_designation', 'code', 'name', $this->getValue($row, ['designation', 'Designation*'])),
+        'primary_branch_code' => $this->resolveCode('xlr8_admin_branch', 'code', 'name', $this->getValue($row, ['primary_branch', 'Primary Branch*'])),
+        'primary_loc_code'    => $this->resolveCode('xlr8_admin_location', 'code', 'name', $this->getValue($row, ['primary_location', 'Primary Location*'])),
+        'primary_dept_code'   => $this->resolveCode('xlr8_admin_department', 'code', 'name', $this->getValue($row, ['primary_department', 'Primary Department*'])),
+        'primary_div_code'    => $this->resolveCode('xlr8_admin_division', 'code', 'name', $this->getValue($row, ['primary_division', 'Primary Division'])),
+        'vertical_code'       => $this->resolveCode('xlr8_admin_vertical', 'code', 'name', $this->getValue($row, ['vertical', 'Vertical'])),
+        'segment_code'        => $this->resolveCode('xlr8_vehicle_segment', 'code', 'name', $this->getValue($row, ['segment', 'Segment'])),
+        'sub_segment_code'    => $this->resolveCode('xlr8_vehicle_subsegment', 'code', 'name', $this->getValue($row, ['sub_segment', 'Sub Segment'])),
+        'mile_id'             => $this->getValue($row, ['mile_id', 'Mile ID']),
+        'father_name'         => $this->s($this->getValue($row, ['father_name', 'Father Name'])),
+        'employment_type'     => $this->s($this->getValue($row, ['employment_type'])),
+        'joining_date'        => $this->parseDate($this->getValue($row, ['date_of_joining', 'Date of Joining'])),
+        'created_at'          => $now,
+        'updated_at'          => $now,
+    ];
+
+    DB::table('xlr8_admin_employee')->updateOrInsert(['code' => $empCode], $data);
+
+    // Primary pivots (ALL/ANY skipped, branch_code passed for location pivot)
+    $this->createPrimaryPivot('xlr8_admin_emp_branch_pivot', $empCode, 'branch_code', $data['primary_branch_code']);
+    $this->createPrimaryPivot('xlr8_admin_emp_location_pivot', $empCode, 'location_code', $data['primary_loc_code'], $data['primary_branch_code']);
+    $this->createPrimaryPivot('xlr8_admin_emp_department_pivot', $empCode, 'dept_code', $data['primary_dept_code']);
+    $this->createPrimaryPivot('xlr8_admin_emp_division_pivot', $empCode, 'div_code', $data['primary_div_code']);
+}
+
+private function createPrimaryPivot(string $table, string $empCode, string $fkColumn, ?string $value, ?string $branchCode = null): void
+{
+    if (!$value || in_array(strtoupper(trim($value)), ['ALL', 'ANY', '0', ''])) return;
+
+    $data = [
+        'employee_code' => $empCode,
+        $fkColumn => $value,
+        'from_date' => now()->toDateString(),
+        'to_date' => null,
+    ];
+    if ($branchCode) $data['branch_code'] = $branchCode;
+
+    DB::table($table)->updateOrInsert(
+        ['employee_code' => $empCode, $fkColumn => $value],
+        $data
+    );
+}
+
+private function resolveCode(string $table, string $codeCol, string $nameCol, ?string $input): ?string
+{
+    if (!$input) return null;
+    $val = strtoupper(trim($input));
+    if (in_array($val, ['ALL', 'ANY', '0', ''])) return null;
+
+    // Try exact code first
+    $exists = DB::table($table)->where($codeCol, $val)->exists();
+    if ($exists) return $val;
+
+    // Try name
+    $code = DB::table($table)->where($nameCol, 'LIKE', "%{$val}%")->value($codeCol);
+    return $code ? $code : null;
+}
+
+
 
     private function createOrUpdateUser(array $row, string $empCode, string $personCode, int $rowIndex): void
     {

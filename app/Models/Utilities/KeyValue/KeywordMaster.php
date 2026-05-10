@@ -15,13 +15,12 @@ class KeywordMaster extends BaseModel
     protected $table = 'xlr8_utils_keyword_master';
 
     protected $fillable = [
-        'code', 'keyword', 'details', 'extra_data', 'status', 'is_active'
+        'code', 'keyword', 'description', 'is_active', 'is_recursive'
     ];
 
     protected $casts = [
-        'extra_data' => 'array',
-        'status'     => 'integer',
-        'is_active'  => 'boolean',
+        'is_active'    => 'boolean',
+        'is_recursive' => 'boolean',
     ];
 
     public function keyvalues()

@@ -2,6 +2,40 @@
 
 @section('content')
     <div class="container-fluid">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="la la-user"></i> My Profile & Access</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Name:</strong> {{ $current_user_details['name'] ?? 'N/A' }}<br>
+                                <strong>Username:</strong> {{ $current_user_details['username'] }}<br>
+                                <strong>Type:</strong> {{ $current_user_details['user_type'] }}
+                                @if($current_user_details['is_active']) <span class="badge badge-success">Active</span> @else <span class="badge badge-danger">Inactive</span> @endif
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Primary Branch:</strong> {{ $current_user_details['primary_branch'] ?? '—' }}<br>
+                                <strong>Primary Location:</strong> {{ $current_user_details['primary_location'] ?? '—' }}<br>
+                                <strong>Designation:</strong> {{ $current_user_details['designation'] ?? '—' }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Primary Post:</strong> {{ $current_user_details['primary_post'] ?? '—' }}<br>
+                                <strong>Primary Mobile:</strong> {{ $current_user_details['primary_mobile'] ?? '—' }}<br>
+                                <strong>Primary Email:</strong> {{ $current_user_details['primary_email'] ?? '—' }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>All Branches:</strong> {{ $current_user_details['all_branches']->keys()->join(', ') ?: '—' }}<br>
+                                <strong>All Departments:</strong> {{ $current_user_details['all_departments']->keys()->join(', ') ?: '—' }}<br>
+                                <strong>Roles:</strong> {{ implode(', ', $current_user_details['roles'] ?? []) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="row mb-4">
             <div class="col-md-8">

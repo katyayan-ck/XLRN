@@ -61,16 +61,22 @@ trait HasTreeStructure
      * Update level and path
      */
     protected function updateTreeFields(): void
-    {
-        if ($this->parent_id) {
-            $parent = static::find($this->parent_id);
+{
+    if ($this->parent_id) {
+        $parent = static::find($this->parent_id);
+        if ($parent) {
             $this->level = $parent->level + 1;
             $this->path = $parent->path . '/' . $this->parent_id;
         } else {
+            $this->parent_id = null;
             $this->level = 0;
             $this->path = '';
         }
+    } else {
+        $this->level = 0;
+        $this->path = '';
     }
+}
 
     /**
      * Update all descendants' paths
