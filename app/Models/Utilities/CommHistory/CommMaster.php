@@ -1,60 +1,26 @@
 <?php
-
 namespace App\Models\Utilities\CommHistory;
 
 use App\Models\BaseModel;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-use App\Models\User;
-use App\Models\Core\Keyvalue;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class CommMaster extends BaseModel implements Auditable
+class CommMaster extends BaseModel implements HasMedia
 {
-    use SoftDeletes;
-    use AuditableTrait;
-    protected $table = 'xlr8_communication_master';
+    use InteractsWithMedia;
 
-    //     Add to entities (e.g., Booking.php):
-    // public function commMaster(): \Illuminate\Database\Eloquent\Relations\MorphOne
-    // {
-    //     return $this->morphOne(CommMaster::class, 'entityable');
-    // }
+    protected $table = 'xlr8_utils_comm_master';
+    protected $fillable = ['entityable_type', 'entityable_id', 'title', 'description', 'status_id', 'action_id', 'extra_data'];
+    protected $casts = ['extra_data' => 'array'];
 
-    protected $fillable = [
-        'entityable_type',
-        'entityable_id',
-        'title',
-        'description',
-        'status_id',
-        'actor_id',
-    ];
+    public function entityable(): MorphTo { return $this->morphTo(); }
+    public function threads(): HasMany { return $this->hasMany(CommThread::class, 'comm_master_id'); }
+    public function rootThreads(): HasMany { return $this->threads()->whereNull('parent_id')->with('children'); }
 
-    public function entityable(): MorphTo
+    public function registerMediaCollections(): void
     {
-        return $this->morphTo();
-    }
-
-    public function status(): BelongsTo
-    {
-        return $this->belongsTo(Keyvalue::class, 'status_id');
-    }
-
-    public function actor(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'actor_id');
-    }
-
-    public function threads(): HasMany
-    {
-        return $this->hasMany(CommThread::class);
-    }
-
-    public function rootThreads(): HasMany
-    {
-        return $this->threads()->whereNull('parent_id');
+        $this->addMediaCollection('master_attachments')->useDisk('public');
     }
 }

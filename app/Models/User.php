@@ -2,109 +2,92 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Backpack\CRUD\app\Models\Traits\CrudTrait;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\Admin\Person;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Admin\Employee;
-use App\Models\Admin\UserType;
-use App\Models\IAM\Post;
-use App\Models\IAM\UserDataScope;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Admin\Person;
+use App\Models\Admin\UserScope;
+use Illuminate\Support\Collection;
 
-/**
- * User Model
- *
- * Central authentication model with full RBAC, org scoping and person/employee linking.
- * Uses natural keys (person_code, employee_code) instead of legacy integer IDs.
- */
 class User extends Authenticatable
 {
-    use Notifiable, HasRoles, SoftDeletes;
+    use CrudTrait, Notifiable, SoftDeletes, HasFactory, HasRoles;
 
     protected $table = 'users';
 
-    // ─────────────────────────────────────────────────────────────
-    // Fillable & Casts
-    // ─────────────────────────────────────────────────────────────
     protected $fillable = [
-        'username',           // Immutable login handle
+        'username',
         'password',
-        'user_type',          // Emp | Associate | DSA | Insurer | Cust
-        'person_code',        // Natural FK → xlr8_admin_person.person_code
-        'employee_code',      // Natural FK → xlr8_admin_employee.code (for Emp users)
+        'user_type',
+        'person_code',
+        'employee_code',
+        'user_type_id',
         'avatar',
         'is_active',
         'last_login_at',
+        'remember_token',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
-    protected $hidden = ['password'];
-
-    protected $casts = [
-        'password'      => 'hashed',
-        'is_active'     => 'boolean',
-        'last_login_at' => 'datetime',
-        'created_at'    => 'datetime',
-        'updated_at'    => 'datetime',
-        'deleted_at'    => 'datetime',
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
-    protected string $guard_name = 'web';
+    protected $casts = [
+        'is_active'      => 'boolean',
+        'last_login_at'  => 'datetime',
+        'created_at'     => 'datetime',
+        'updated_at'     => 'datetime',
+        'deleted_at'     => 'datetime',
+    ];
 
     // ─────────────────────────────────────────────────────────────
-    // Boot
+    // RELATIONSHIPS
     // ─────────────────────────────────────────────────────────────
-    protected static function boot(): void
-    {
-        parent::boot();
 
-        static::creating(function (User $user) {
-            if (auth()->check() && empty($user->created_by)) {
-                $user->created_by = auth()->id();
-            }
-        });
-
-        static::updating(function (User $user) {
-            // Username is immutable after creation
-            if ($user->isDirty('username') && !empty($user->getOriginal('username'))) {
-                $user->username = $user->getOriginal('username');
-            }
-            if (auth()->check()) {
-                $user->updated_by = auth()->id();
-            }
-        });
-
-        static::deleting(function (User $user) {
-            if (!$user->isForceDeleting() && auth()->check()) {
-                $user->deleted_by = auth()->id();
-                $user->saveQuietly();
-            }
-        });
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // Core Relations
-    // ─────────────────────────────────────────────────────────────
-    public function person(): BelongsTo
-    {
-        return $this->belongsTo(Person::class, 'person_code', 'person_code');
-    }
-
-    public function employee(): BelongsTo
+    public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_code', 'code');
     }
 
+    public function person()
+    {
+        return $this->belongsTo(Person::class, 'person_code', 'person_code');
+    }
+
+    /**
+     * New: Flexible per-user data scopes (Branch/Location/Department/etc.)
+     */
+    public function scopes()
+    {
+        return $this->hasMany(UserScope::class);
+    }
+
+    public function activeScopes()
+    {
+        return $this->scopes()->active();
+    }
+
+    /**
+     * Designation acts as Spatie Role (for authorization/permissions)
+     * Returns the primary Designation role assigned to this user.
+     */
+    public function designation()
+    {
+        return $this->roles()->where('guard_name', 'web')->first();
+    }
+
     // ─────────────────────────────────────────────────────────────
-    // Organisation Assignments (via Employee pivots)
+    // PRIMARY CODE HELPERS (from Employee)
     // ─────────────────────────────────────────────────────────────
+
     public function primaryBranchCode(): ?string
     {
         return $this->employee?->primary_branch_code;
@@ -125,112 +108,54 @@ class User extends Authenticatable
         return $this->employee?->primary_div_code;
     }
 
-public function branches()
-{
-    return $this->hasManyThrough(
-        \App\Models\Admin\Branch::class,
-        \App\Models\Admin\EmpBranchPivot::class,
-        'employee_code', 'code',
-        'employee_code', 'branch_code'
-    )->whereNull('to_date');
-}
-
-public function locations()
-{
-    return $this->hasManyThrough(
-        \App\Models\Admin\Location::class,
-        \App\Models\Admin\EmpLocationPivot::class,
-        'employee_code', 'code',
-        'employee_code', 'location_code'
-    )->whereNull('to_date');
-}
-
-public function departments()
-{
-    return $this->hasManyThrough(
-        \App\Models\Admin\Department::class,
-        \App\Models\Admin\EmpDepartmentPivot::class,
-        'employee_code', 'code',
-        'employee_code', 'dept_code'
-    )->whereNull('to_date');
-}
-
-public function divisions()
-{
-    return $this->hasManyThrough(
-        \App\Models\Admin\Division::class,
-        \App\Models\Admin\EmpDivisionPivot::class,
-        'employee_code', 'code',
-        'employee_code', 'div_code'
-    )->whereNull('to_date');
-}
-
-
-    // ─────────────────────────────────────────────────────────────
-    // Post & Role Assignments
-    // ─────────────────────────────────────────────────────────────
-public function posts()
-{
-    return $this->hasManyThrough(
-        \App\Models\IAM\Post::class,
-        \App\Models\Admin\EmpPostAssignment::class,
-        'emp_code',          // ← pivot uses emp_code
-        'post_code',
-        'employee_code',
-        'post_code'
-    )
-    ->whereNull('to_date')
-    ->where('is_post', 1)
-    ->select('xlr8_iam_roles.*');
-}
-
-public function primaryPost(): ?string
-{
-    return $this->posts()
-        ->where('assignment_type', 'primary')
-        ->value('xlr8_iam_roles.post_code');
-}
-
-    /** First active post (convenience) */
-    public function post(): ?Post
+    public function primaryVerticalCode(): ?string
     {
-        return $this->posts()->first();
+        return $this->employee?->vertical_code;
+    }
+
+    public function primarySegmentCode(): ?string
+    {
+        return $this->employee?->segment_code;
+    }
+
+    public function primarySubSegmentCode(): ?string
+    {
+        return $this->employee?->sub_segment_code;
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Data Scopes (Branch, Location, Department, etc.)
+    // ALL XXX HELPERS (via Employee pivots - preserved from working version)
     // ─────────────────────────────────────────────────────────────
-    public function dataScopes(): HasMany
+
+    public function branches(): Collection
     {
-        return $this->hasMany(UserDataScope::class);
+        return $this->employee?->branches() ?? collect();
     }
 
-    public function getActiveScopes(): array
+    public function locations(): Collection
     {
-        return $this->dataScopes()
-            ->where('status', 'active')
-            ->get()
-            ->groupBy('scope_type')
-            ->map(fn($group) => $group->pluck('scope_value')->filter()->all())
-            ->toArray();
+        return $this->employee?->locations() ?? collect();
     }
 
-    /**
-     * Check if user has access to a specific scope value
-     * Returns true if wildcard (null) or explicit match
-     */
-    public function hasScope(string $scopeType, $value = null): bool
+    public function departments(): Collection
     {
-        $scopes = $this->getActiveScopes()[$scopeType] ?? [];
-        return empty($scopes) || in_array(null, $scopes) || in_array($value, $scopes);
+        return $this->employee?->departments() ?? collect();
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Accessors & Helpers
-    // ─────────────────────────────────────────────────────────────
-    public function getDisplayNameAttribute(): string
+    public function divisions(): Collection
     {
-        return $this->person?->display_name ?? $this->username;
+        return $this->employee?->divisions() ?? collect();
+    }
+
+    // Add more (segments, verticals, etc.) in Employee model if needed
+
+    // ─────────────────────────────────────────────────────────────
+    // PERSON PROXY ACCESSORS (Mobile / Email / Address / Banking)
+    // ─────────────────────────────────────────────────────────────
+
+    public function getPrimaryMobileAttribute(): ?string
+    {
+        return $this->person?->primary_mobile;
     }
 
     public function getPrimaryEmailAttribute(): ?string
@@ -238,82 +163,108 @@ public function primaryPost(): ?string
         return $this->person?->primary_email;
     }
 
-    public function getPrimaryMobileAttribute(): ?string
+    public function getAllMobilesAttribute()
     {
-        return $this->person?->primary_mobile;
+        return $this->person?->all_mobiles ?? collect();
     }
 
-    public function getOfficialEmailAttribute(): ?string
+    public function getAllEmailsAttribute()
     {
-        return $this->employee?->official_email;
+        return $this->person?->all_emails ?? collect();
     }
 
-    public function getOfficialMobileAttribute(): ?string
+    public function getPrimaryAddressAttribute()
     {
-        return $this->employee?->official_mobile;
+        return $this->person?->primary_address;
     }
 
-    public function isSuperAdmin(): bool
+    public function getAllAddressesAttribute()
     {
-        return $this->hasRole(['super_admin', 'super-admin', 'SuperAdmin']);
+        return $this->person?->all_addresses ?? collect();
     }
 
-    public function isEmployee(): bool
+    public function getPrimaryBankAttribute()
     {
-        return $this->user_type === 'Emp' && !empty($this->employee_code);
+        return $this->person?->primary_bank;
     }
 
-    // Add these accessors
-public function getAllEmailsAttribute(): \Illuminate\Support\Collection
-{
-    return $this->person?->all_emails ?? collect();
-}
-
-public function getAllMobilesAttribute(): \Illuminate\Support\Collection
-{
-    return $this->person?->all_mobiles ?? collect();
-}
-
-public function getAllAddressesAttribute(): \Illuminate\Support\Collection
-{
-    return $this->person?->all_addresses ?? collect();
-}
-
-public function getAllBankingAttribute(): \Illuminate\Support\Collection
-{
-    return $this->person?->all_banking ?? collect();
-}
-
-    // ─────────────────────────────────────────────────────────────
-    // Scopes
-    // ─────────────────────────────────────────────────────────────
-    public function scopeActive($query)
+    public function getAllBankingAttribute()
     {
-        return $query->where('is_active', true)->whereNull('deleted_at');
-    }
-
-    public function scopeEmployees($query)
-    {
-        return $query->where('user_type', 'Emp')->whereNotNull('employee_code');
-    }
-
-    public function scopeSearch($query, string $term)
-    {
-        return $query->where('username', 'like', "%{$term}%")
-            ->orWhereHas('person', fn($p) => $p->where('display_name', 'like', "%{$term}%")
-                ->orWhere('person_code', 'like', "%{$term}%"));
+        return $this->person?->all_banking ?? collect();
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Password Reset / Notifications
+    // NEW USER SCOPE HELPERS (Data Filtering)
     // ─────────────────────────────────────────────────────────────
-    public function getEmailForPasswordReset(): string
+
+    public function hasScope(string $type, string $code): bool
     {
-        return $this->getPrimaryEmailAttribute() ?? '';
+        $type = strtoupper(trim($type));
+        $code = strtoupper(trim($code));
+
+        return $this->activeScopes()
+            ->where('scope_type', $type)
+            ->where('scope_code', $code)
+            ->exists();
     }
 
-    public function routeNotificationForMail(): string
+    public function getScopeCodes(string $type): array
     {
-        return $this->getEmailForPasswordReset();
+        $type = strtoupper(trim($type));
+
+        return $this->activeScopes()
+            ->where('scope_type', $type)
+            ->pluck('scope_code')
+            ->map(fn($c) => strtoupper($c))
+            ->toArray();
+    }
+
+    public function getAllScopes(): array
+    {
+        return $this->activeScopes()
+            ->get()
+            ->groupBy('scope_type')
+            ->map(fn($items) => $items->pluck('scope_code')->map(fn($c) => strtoupper($c))->toArray())
+            ->toArray();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // POSTS / ROLES / PERMISSIONS (Backward Compatible)
+    // ─────────────────────────────────────────────────────────────
+
+    public function posts()
+    {
+        if (!$this->employee) {
+            return collect();
+        }
+
+        // Reuse existing logic from Employee or keep your current implementation
+        return $this->employee->posts();
+    }
+
+    public function primaryPost()
+    {
+        return $this->posts()->where('assignment_type', 'primary')->first();
+    }
+
+    // Spatie methods inherited via HasRoles:
+    // - getRoleNames()
+    // - getAllPermissions()
+    // - hasRole()
+    // - hasPermissionTo()
+    // - assignRole()
+    // - removeRole()
+    // Since Designation is the Role model, these work directly with Designation codes/names.
+
+    // ─────────────────────────────────────────────────────────────
+    // BOOT
+    // ─────────────────────────────────────────────────────────────
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Optional: Auto-assign designation role when employee designation changes
+        // You can add observer or here if needed in future
     }
 }

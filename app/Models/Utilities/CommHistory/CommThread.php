@@ -1,57 +1,30 @@
 <?php
-
 namespace App\Models\Utilities\CommHistory;
 
 use App\Models\BaseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Kalnoy\Nestedset\NodeTrait;
-use OwenIt\Auditing\Contracts\Auditable;
-use OwenIt\Auditing\Auditable as AuditableTrait;
-use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\HasMedia;
-use App\Models\User;
-use App\Models\Core\Keyvalue;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class CommThread extends BaseModel implements Auditable, HasMedia
+class CommThread extends BaseModel implements HasMedia
 {
-    use SoftDeletes;
-    use AuditableTrait;
-    use NodeTrait;
-    use InteractsWithMedia;
-protected $table = 'xlr8_communication_threads';
-    protected $fillable = [
-        'comm_master_id',
-        'parent_id',
-        'actor_id',
-        'action_id',
-        'title',
-        'message_text',
-        'extra_data',
-    ];
+    use NodeTrait, InteractsWithMedia;
 
-    protected $casts = [
-        'extra_data' => 'array',
-    ];
+    protected $table = 'xlr8_utils_comm_thread';
+    protected $fillable = ['comm_master_id', 'parent_id', 'actor_id', 'action_id', 'title', 'body', 'extra_data'];
+    protected $casts = ['extra_data' => 'array'];
 
-    public function commMaster(): BelongsTo
-    {
-        return $this->belongsTo(CommMaster::class);
-    }
-
-    public function actor(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'actor_id');
-    }
-
-    public function action(): BelongsTo
-    {
-        return $this->belongsTo(Keyvalue::class, 'action_id');
-    }
+    public function master(): BelongsTo { return $this->belongsTo(CommMaster::class, 'comm_master_id'); }
+    public function children(): HasMany { return $this->hasMany(self::class, 'parent_id'); }
+    public function actor() { return $this->belongsTo(\App\Models\User::class, 'actor_id'); }
+    public function action() { return $this->belongsTo(\App\Models\Utilities\KeyValue\KeyValue::class, 'action_id'); }
 
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('attachments')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'application/pdf', 'audio/mpeg', 'video/mp4']);
+             ->useDisk('public')
+             ->acceptsMimeTypes(['image/*','application/pdf','audio/*','video/*']);
     }
 }

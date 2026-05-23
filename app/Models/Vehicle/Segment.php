@@ -3,10 +3,12 @@ namespace App\Models\Vehicle;
 
 use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
+use App\Models\Traits\HasCommunications;
 
 class Segment extends BaseModel
 {
     use CrudTrait;
+    use HasCommunications;
 
     protected $table = 'xlr8_vehicle_segment';
 

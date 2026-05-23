@@ -31,7 +31,7 @@ Route::prefix('v1')->group(function () {
     // ║ PROTECTED ROUTES (Authentication + Device Validation) ║
     // ╚════════════════════════════════════════════════════════╝
 
-    Route::middleware(['auth:sanctum', 'validate_device'])->group(function () {
+    Route::middleware(['auth:sanctum', 'validate_device','rbac'])->group(function () {
 
         // Auth routes (protected)
         Route::prefix('auth')->group(function () {
@@ -42,7 +42,7 @@ Route::prefix('v1')->group(function () {
                 ->name('api.auth.logout');
         });
 
-        //DocManager Routes
+        // DocManager Routes
         Route::post('docs/upload', [DocController::class, 'upload']);
         Route::get('docs/my', [DocController::class, 'getMyDocs']);
         Route::post('docs/groups', [DocController::class, 'createGroup']);
@@ -53,10 +53,11 @@ Route::prefix('v1')->group(function () {
         Route::get('docs/analytics', [DocController::class, 'getAnalytics']);
         Route::post('docs/{docId}/approve', [DocController::class, 'approve']);
 
-        //CommMasters routes (protected)
+        // Entity History routes
         Route::get('history/{entityType}/{entityId}', [EntityHistoryController::class, 'getHistory']);
         Route::post('history/{entityType}/{entityId}/thread', [EntityHistoryController::class, 'addThread']);
 
+        // Device Binding Routes
         Route::post('/devices/register', [NotificationController::class, 'registerDevice']);
         Route::get('/devices', [NotificationController::class, 'getDevices']);
         Route::delete('/devices/{id}', [NotificationController::class, 'revokeDevice']);

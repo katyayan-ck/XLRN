@@ -24,52 +24,19 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
 
-        'role' => App\Models\IAM\Role::class,
+        'role' => App\Models\Admin\Designation::class,
 
     ],
 
     'table_names' => [
 
-        /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your roles. We have chosen a basic
-         * default value but you may easily change it to any table you like.
-         */
+    'roles' => 'xlr8_admin_designation',           // ← Changed to our table
 
-        'roles' => 'xlr8_iam_roles',
-
-        /*
-         * When using the "HasPermissions" trait from this package, we need to know which
-         * table should be used to retrieve your permissions. We have chosen a basic
-         * default value but you may easily change it to any table you like.
-         */
-
-        'permissions' => 'xlr8_iam_permissions',
-
-        /*
-         * When using the "HasPermissions" trait from this package, we need to know which
-         * table should be used to retrieve your models permissions. We have chosen a
-         * basic default value but you may easily change it to any table you like.
-         */
-
-        'model_has_permissions' => 'xlr8_iam_model_has_permissions',
-
-        /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your models roles. We have chosen a
-         * basic default value but you may easily change it to any table you like.
-         */
-
-        'model_has_roles' => 'xlr8_iam_model_has_roles',
-
-        /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your roles permissions. We have chosen a
-         * basic default value but you may easily change it to any table you like.
-         */
-
-        'role_has_permissions' => 'xlr8_iam_role_has_permissions',
-    ],
+    'permissions' => 'xlr8_iam_permissions',
+    'model_has_permissions' => 'xlr8_iam_model_has_permissions',
+    'model_has_roles' => 'xlr8_iam_model_has_roles',
+    'role_has_permissions' => 'xlr8_iam_role_has_permissions',
+],
 
     'column_names' => [
         /*
