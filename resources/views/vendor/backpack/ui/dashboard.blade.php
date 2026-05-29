@@ -19,7 +19,7 @@
                         <!-- Basic Info -->
                         <div class="col-md-3">
                             <div class="d-flex align-items-center mb-2">
-                                <img src="{{ $current_user_details['profile_image'] }}" 
+                                <img src="{{ $user->avatar_url }}" 
                                     alt="Profile Photo" 
                                     class="rounded-circle me-3 border" 
                                     width="64" height="64" style="object-fit: cover; border-color: #0D8ABC !important;">

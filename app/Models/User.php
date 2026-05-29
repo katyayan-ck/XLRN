@@ -79,6 +79,46 @@ class User extends Authenticatable
     // ─────────────────────────────────────────────────────────────
     // DASHBOARD HELPERS
     // ─────────────────────────────────────────────────────────────
+    public function getNameAttribute(): string
+    {
+        return $this->display_name ?? $this->username ?? 'N/A';
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->avatar) {
+            return asset('storage/' . $this->avatar);
+        }
+
+        if ($this->person && $this->person->hasMedia('profile_photos')) {
+            return $this->person->getFirstMediaUrl('profile_photos');
+        }
+
+        $colors = [
+            '1abc9c','16a085','2ecc71','27ae60','3498db','2980b9','9b59b6','8e44ad',
+            'e74c3c','c0392b','e67e22','d35400','f39c12','f1c40f','34495e','2c3e50',
+            'e91e63','9c27b0','673ab7','3f51b5','2196f3','03a9f4','00bcd4','009688',
+            '4caf50','8bc34a','cddc39','ff5722','795548'
+        ];
+
+        $bg = $colors[crc32($this->name ?? $this->username) % count($colors)];
+
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name ?? $this->username) 
+            . "&background={$bg}&color=fff&size=128&rounded=true";
+    }
+
+    public function getDesignationAttribute(): string
+    {
+        $employee = $this->employee;
+        if (!$employee) return '—';
+
+        $code = $employee->designation_code ?? $employee->desig_code;
+        if (!$code) return '—';
+
+        $desig = \App\Models\Admin\Designation::where('code', $code)->first();
+        return $desig ? ($desig->name . ' [' . $code . ']') : $code;
+    }
+
     public function getAccessProfileAttribute(): ?array
     {
         return OrgService::getCurrentUser();
