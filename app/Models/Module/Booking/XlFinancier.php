@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
+use App\Models\BaseModel;
 
 class XlFinancier extends BaseModel
 {
@@ -13,7 +14,7 @@ class XlFinancier extends BaseModel
      * @var string
      */
     use SoftDeletes;
-    protected $table = 'xcelr8_financier';
+    protected $table = 'xlr8_booking_financier';
 
     /**
      * The attributes to be fillable from the model.

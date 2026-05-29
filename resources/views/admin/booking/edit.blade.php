@@ -182,19 +182,25 @@
                                 <label for="occupation">Occupation <span class="required-mark">*</span></label>
                                 <select name="occupation" id="occupation" class="form-control select2" required>
                                     <option value="">Please Select...</option>
-                                    <option value="Agriculture" {{ $entry->occ == 'Agriculture' ? 'selected' : ''
-                                        }}>Agriculture</option>
-                                    <option value="Business" {{ $entry->occ == 'Business' ? 'selected' : '' }}>Business
+
+                                    @php
+                                    $occ = trim($entry->occ ?? '');
+                                    @endphp
+
+                                    <option value="Agriculture" {{ $occ==='Agriculture' ? 'selected' : '' }}>Agriculture
                                     </option>
-                                    <option value="Salaried (Govt.)" {{ $entry->occ == 'Salaried (Govt.)' ? 'selected' :
-                                        '' }}>Salaried (Govt.)</option>
-                                    <option value="Salaried (Pvt.)" {{ $entry->occ == 'Salaried (Pvt.)' ? 'selected' :
-                                        '' }}>Salaried (Pvt.)</option>
-                                    <option value="Self Employed (Professional)" {{ $entry->occ == 'Self Employed
-                                        (Professional)' ? 'selected' : '' }}>Self Employed (Professional)</option>
-                                    <option value="Pensioner" {{ $entry->occ == 'Pensioner' ? 'selected' : ''
-                                        }}>Pensioner</option>
-                                    <option value="Other" {{ $entry->occ == 'Other' ? 'selected' : '' }}>Other</option>
+                                    <option value="Business" {{ in_array($occ, ['Business', 'business' ]) ? 'selected'
+                                        : '' }}>Business</option>
+                                    <option value="Salaried (Govt.)" {{ $occ==='Salaried (Govt.)' ? 'selected' : '' }}>
+                                        Salaried (Govt.)</option>
+                                    <option value="Salaried (Pvt.)" {{ $occ==='Salaried (Pvt.)' ? 'selected' : '' }}>
+                                        Salaried (Pvt.)</option>
+                                    <option value="Self Employed (Professional)" {{
+                                        $occ==='Self Employed (Professional)' ? 'selected' : '' }}>Self Employed
+                                        (Professional)</option>
+                                    <option value="Pensioner" {{ $occ==='Pensioner' ? 'selected' : '' }}>Pensioner
+                                    </option>
+                                    <option value="Other" {{ $occ==='Other' ? 'selected' : '' }}>Other</option>
                                 </select>
                             </div>
 
@@ -250,8 +256,8 @@
                                 <select name="branch" id="branch" class="form-control select2" required>
                                     <option value="">Please Select...</option>
                                     @foreach($data['branches'] as $branch)
-                                    <option value="{{ $branch->id }}" {{ $entry->branch_id == $branch->id ? 'selected' :
-                                        '' }}>
+                                    <option value="{{ $branch->code }}" {{ $entry->branch_code == $branch->code ?
+                                        'selected' : '' }}>
                                         {{ $branch->name }}
                                     </option>
                                     @endforeach
@@ -263,21 +269,21 @@
                                 <select name="location_id" id="location" class="form-control select2" required>
                                     <option value="">Please Select...</option>
                                     @foreach($data['locations'] as $location)
-                                    <option value="{{ $location['id'] }}" {{ $entry->location_id == $location['id'] ?
-                                        'selected' : '' }}>
-                                        {{ $location['name'] . ' - ' . $location['code'] }}
+                                    <option value="{{ $location->id ?? $location['id'] ?? '' }}" 
+                                            {{ (string)$entry->location_code === (string)($location->id ?? $location['id'] ?? '') ? 'selected' : '' }}>
+                                        {{ ($location->name ?? $location['name'] ?? '') . ' - ' . ($location->code ?? $location['code'] ?? '') }}
                                     </option>
                                     @endforeach
-                                    <option value="0" {{ $entry->location_id == 0 ? 'selected' : '' }}>OTHER</option>
+                                    <option value="0" {{ $entry->location_code == 0 ? 'selected' : '' }}>OTHER</option>
                                 </select>
                             </div>
 
                             <div class="col-sm-3 form-group" id="location_other_group"
-                                style="{{ $entry->location_id == 0 ? '' : 'display:none;' }}">
+                                style="{{ $entry->location_code == 0 ? '' : 'display:none;' }}">
                                 <label for="location_other">Other Location</label>
                                 <input type="text" name="location_other" id="location_other"
                                     class="form-control uppercase" value="{{ $entry->location_other }}" {{
-                                    $entry->location_id == 0 ? '' : 'disabled' }}>
+                                    $entry->location_code == 0 ? '' : 'disabled' }}>
                             </div>
 
                             <!-- Referred By Details -->
@@ -302,43 +308,42 @@
                                     <label for="ref_customer_name">Customer Name <span class="required-mark"
                                             style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_customer_name" id="ref_customer_name"
-                                        class="form-control uppercase" value="{{ $entry->r_name ?? '' }}"
-                                        {{ $entry->r_name ? 'required' : '' }}>
+                                        class="form-control uppercase" value="{{ $entry->r_name ?? '' }}" {{
+                                        $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_mobile_no">Mobile No. <span class="required-mark"
                                             style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_mobile_no" id="ref_mobile_no" class="form-control"
-                                        value="{{ $entry->r_mobile ?? '' }}"
-                                        {{ $entry->r_name ? 'required' : '' }}>
+                                        value="{{ $entry->r_mobile ?? '' }}" {{ $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_existing_model">Existing Model <span class="required-mark"
                                             style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_existing_model" id="ref_existing_model"
-                                        class="form-control uppercase" value="{{ $entry->r_model ?? '' }}"
-                                        {{ $entry->r_name ? 'required' : '' }}>
+                                        class="form-control uppercase" value="{{ $entry->r_model ?? '' }}" {{
+                                        $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_variant">Variant <span class="required-mark"
                                             style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_variant" id="ref_variant"
-                                        class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}"
-                                        {{ $entry->r_name ? 'required' : '' }}>
+                                        class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}" {{
+                                        $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_chassis_reg_no">Chassis / Regn. No. <span class="required-mark"
                                             style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_chassis_reg_no" id="ref_chassis_reg_no"
-                                        class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}"
-                                        {{ $entry->r_name ? 'required' : '' }}>
+                                        class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}" {{
+                                        $entry->r_name ? 'required' : '' }}>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card mt-4">
+                {{-- <div class="card mt-4">
                     <div class="card-body">
                         <h2 class="mb-4">Purchase Type Details</h2>
                         <div class="row">
@@ -357,14 +362,14 @@
                             </div>
 
                             <div class="col-sm-2 form-group">
-                                <label for="enum_master1">Brand (Make 1) <span class="required-mark"
+                                <label for="enum_master1">Brand (Make 1) <span class="required-mark" id="make1-required"
                                         style="display: none;">*</span></label>
-                                <select name="enum_master1" id="enum_master1" class="form-control select2" disabled>
+                                <select name="enum_master1" id="enum_master1" class="form-control select2">
                                     <option value="">Please Select...</option>
-                                    @foreach ($data['enum_master'] as $enum)
-                                    <option value="{{ $enum->id }}" {{ (int)$entry->exist_oem1 === (int)$enum->id ?
-                                        'selected' : '' }}>
-                                        {{ $enum->value }}
+                                    @foreach($data['enum_master'] ?? [] as $enum)
+                                    <option value="{{ $enum->id ?? $enum['id'] ?? '' }}" {{ ($entry->exist_oem1 ==
+                                        ($enum->id ?? $enum['id'] ?? '')) ? 'selected' : '' }}>
+                                        {{ $enum->value ?? $enum['value'] ?? '' }}
                                     </option>
                                     @endforeach
                                 </select>
@@ -378,14 +383,14 @@
                             </div>
 
                             <div class="col-sm-2 form-group">
-                                <label for="enum_master2">Brand (Make 2) <span class="required-mark"
+                                <label for="enum_master2">Brand (Make 2) <span class="required-mark" id="make2-required"
                                         style="display: none;">*</span></label>
-                                <select name="enum_master2" id="enum_master2" class="form-control select2" disabled>
+                                <select name="enum_master2" id="enum_master2" class="form-control select2">
                                     <option value="">Please Select...</option>
-                                    @foreach ($data['enum_master'] as $enum)
-                                    <option value="{{ $enum->id }}" {{ (int)$entry->exist_oem2 === (int)$enum->id ?
-                                        'selected' : '' }}>
-                                        {{ $enum->value }}
+                                    @foreach($data['enum_master'] ?? [] as $enum)
+                                    <option value="{{ $enum->id ?? $enum['id'] ?? '' }}" {{ ($entry->exist_oem2 ==
+                                        ($enum->id ?? $enum['id'] ?? '')) ? 'selected' : '' }}>
+                                        {{ $enum->value ?? $enum['value'] ?? '' }}
                                     </option>
                                     @endforeach
                                 </select>
@@ -448,6 +453,121 @@
                             </div>
                         </div>
                     </div>
+                </div> --}}
+
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h2 class="mb-4">Purchase Type Details</h2>
+                        <div class="row">
+                            <div class="col-sm-2 form-group">
+                                <label for="buyer_type">Purchase Type <span class="required-mark">*</span></label>
+                                <select name="buyer_type" id="buyer_type" class="form-control select2" required>
+                                    <option value="First time Buyer" {{ $entry->buyer_type == 'First time Buyer' ?
+                                        'selected' : '' }}>First time Buyer</option>
+                                    <option value="Additional Buy" {{ $entry->buyer_type == 'Additional Buy' ?
+                                        'selected' : '' }}>Additional Buy</option>
+                                    <option value="Exchange Buy" {{ $entry->buyer_type == 'Exchange Buy' ? 'selected' :
+                                        '' }}>Exchange Buy</option>
+                                    <option value="Scrappage" {{ $entry->buyer_type == 'Scrappage' ? 'selected' : ''
+                                        }}>Scrappage</option>
+                                </select>
+                            </div>
+
+                            <!-- Brand Make 1 -->
+                            <div class="col-sm-2 form-group">
+                                <label for="enummaster1">Brand (Make 1) <span class="required-mark" id="make1-required"
+                                        style="display: none;">*</span></label>
+                                <select name="enummaster1" id="enummaster1" class="form-control select2">
+                                    <option value="">Please Select...</option>
+                                    @foreach($data['enum_master'] ?? [] as $enum)
+                                    <option value="{{ $enum->code ?? $enum['code'] ?? '' }}" {{ ($entry->exist_oem1 ==
+                                        ($enum->code ?? $enum['code'] ?? '')) ? 'selected' : '' }}>
+                                        {{ $enum->value ?? $enum['value'] ?? '' }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-sm-3 form-group">
+                                <label for="vehicle_details">Model & Variant 1 <span class="required-mark"
+                                        id="veh1-required" style="display: none;">*</span></label>
+                                <input type="text" name="vehicle_details" id="vehicle_details"
+                                    class="form-control uppercase" value="{{ $entry->vh1_detail }}" disabled>
+                            </div>
+
+                            <!-- Brand Make 2 -->
+                            <div class="col-sm-2 form-group">
+                                <label for="enummaster2">Brand (Make 2) <span class="required-mark" id="make2-required"
+                                        style="display: none;">*</span></label>
+                                <select name="enummaster2" id="enummaster2" class="form-control select2">
+                                    <option value="">Please Select...</option>
+                                    @foreach($data['enum_master'] ?? [] as $enum)
+                                    <option value="{{ $enum->code ?? $enum['code'] ?? '' }}" {{ ($entry->exist_oem2 ==
+                                        ($enum->code ?? $enum['code'] ?? '')) ? 'selected' : '' }}>
+                                        {{ $enum->value ?? $enum['value'] ?? '' }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-sm-3 form-group">
+                                <label for="vehicle_details2">Model & Variant 2 <span class="required-mark"
+                                        id="veh2-required" style="display: none;">*</span></label>
+                                <input type="text" name="vehicle_details2" id="vehicle_details2"
+                                    class="form-control uppercase" value="{{ $entry->vh2_detail }}" disabled>
+                            </div>
+
+                            <!-- Rest of the fields (Registration, Year, etc.) remain same -->
+                            <div class="col-sm-4 form-group">
+                                <label for="registration_no">Vehicle Registration No. <span class="required-mark"
+                                        style="display: none;">*</span></label>
+                                <input type="text" name="registration_no" id="registration_no"
+                                    class="form-control uppercase" value="{{ $entry->registration_no }}" disabled>
+                            </div>
+
+                            <div class="col-sm-4 form-group">
+                                <label for="manufacturing_year">Vehicle Manufacturing Year <span class="required-mark"
+                                        style="display: none;">*</span></label>
+                                <input type="number" name="manufacturing_year" id="manufacturing_year"
+                                    class="form-control" value="{{ $entry->make_year }}" disabled>
+                            </div>
+
+                            <div class="col-sm-4 form-group">
+                                <label for="odometer_reading">Vehicle Odometer Reading <span class="required-mark"
+                                        style="display: none;">*</span></label>
+                                <input type="text" name="odometer_reading" id="odometer_reading" class="form-control"
+                                    value="{{ $entry->odo_reading }}" disabled>
+                            </div>
+
+                            <div class="col-sm-3 form-group">
+                                <label for="expected_price">Used Vehicle Expected Price <span class="required-mark"
+                                        style="display: none;">*</span></label>
+                                <input type="number" name="expected_price" id="expected_price" class="form-control"
+                                    value="{{ $entry->expected_price }}" disabled>
+                            </div>
+
+                            <div class="col-sm-3 form-group">
+                                <label for="offered_price">Used Vehicle Offered Price <span class="required-mark"
+                                        style="display: none;">*</span></label>
+                                <input type="number" name="offered_price" id="offered_price" class="form-control"
+                                    value="{{ $entry->offered_price }}" disabled>
+                            </div>
+
+                            <div class="col-sm-3 form-group">
+                                <label for="exchange_bonus">New Vehicle Exchange Bonus <span class="required-mark"
+                                        style="display: none;">*</span></label>
+                                <input type="number" name="exchange_bonus" id="exchange_bonus" class="form-control"
+                                    value="{{ $entry->exchange_bonus }}" disabled>
+                            </div>
+
+                            <div class="col-sm-3 form-group">
+                                <label for="difference">Price Gap</label>
+                                <input type="text" name="difference" id="difference" class="form-control"
+                                    value="{{ $entry->expected_price - ($entry->offered_price + $entry->exchange_bonus) }}"
+                                    readonly>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- NEW: Vehicle Details Card -->
@@ -459,23 +579,44 @@
                             <input type="hidden" name="vh_id" id="vh_id" value="{{ $entry->vh_id }}">
 
                             <!-- Segment -->
+                            @php
+                                \Log::info('🔍 [EDIT-SEGMENT] Pre-selection debug', [
+                                    'entry_segment_code'      => $entry->segment_code,
+                                    'entry_segment_code_type' => gettype($entry->segment_code),
+                                    'segments_count'          => count($data['segments']),
+                                    'all_segment_ids'         => collect($data['segments'])->pluck('code')->toArray(),
+                                    'all_segment_values'      => collect($data['segments'])->pluck('name')->toArray(),
+                                    'strict_match_found'      => collect($data['segments'])->contains(fn($s) => $s->code === $entry->segment_code),
+                                    'loose_match_found'       => collect($data['segments'])->contains(fn($s) => $s->code == $entry->segment_code),
+                                    'matched_segment'         => collect($data['segments'])->first(fn($s) => (string)$s->code === (string)$entry->segment_code),
+                                ]);
+                            @endphp
                             <div class="col-sm-3 form-group">
                                 <label for="segment_id">Segment <span class="required-mark">*</span></label>
-                                <select name="segment_id" id="segment_id" class="form-control select2" required>
+                                <select name="segment_id" id="segment" class="form-control select2" required
+                                    data-selected-segment="{{ $entry->segment_code }}">
                                     <option value="">Please Select...</option>
                                     @foreach($data['segments'] as $seg)
-                                    <option value="{{ $seg['id'] }}" {{ $entry->segment_id == $seg['id'] ? 'selected' :
-                                        '' }}>
-                                        {{ $seg['value'] }}
+                                    @php
+                                        $segSelected = (string)$entry->segment_code === (string)$seg->code;
+                                    @endphp
+                                    <option value="{{ $seg->code }}" {{ $segSelected ? 'selected' : '' }}>
+                                        {{ $seg->name }}
                                     </option>
                                     @endforeach
                                 </select>
+                                @if(app()->environment('local', 'development', 'staging'))
+                                <small class="text-muted d-block mt-1">
+                                    DB: <code>{{ $entry->segment_code }}</code> |
+                                    Available IDs: <code>{{ collect($data['segments'])->pluck('code')->implode(', ') }}</code>
+                                </small>
+                                @endif
                             </div>
 
                             <!-- Model -->
                             <div class="col-sm-3 form-group">
                                 <label for="model">Model <span class="required-mark">*</span></label>
-                                <select name="model" id="model" class="form-control select2" required disabled>
+                                <select name="model" id="model" class="form-control select2" required>
                                     <option value="">Please Select...</option>
                                 </select>
                             </div>
@@ -483,7 +624,7 @@
                             <!-- Variant -->
                             <div class="col-sm-3 form-group">
                                 <label for="variant">Variant <span class="required-mark">*</span></label>
-                                <select name="variant" id="variant" class="form-control select2" required disabled>
+                                <select name="variant" id="variant" class="form-control select2" required>
                                     <option value="">Please Select...</option>
                                 </select>
                             </div>
@@ -491,7 +632,7 @@
                             <!-- Color -->
                             <div class="col-sm-3 form-group">
                                 <label for="color">Color <span class="required-mark">*</span></label>
-                                <select name="color" id="color" class="form-control select2" required disabled>
+                                <select name="color" id="color" class="form-control select2" required>
                                     <option value="">Please Select...</option>
                                 </select>
                             </div>
@@ -504,11 +645,24 @@
                             </div>
 
                             <!-- Accessories -->
+                            @php
+                            $selectedAccessories = array_filter(explode(',', $entry->accessories ?? ''));
+                            @endphp
+
                             <div class="col-sm-4 form-group">
                                 <label for="accessories">Select Accessories</label>
-                                <select name="accessories[]" id="accessories" class="form-control select2" multiple
-                                    disabled>
-                                    <!-- AJAX से fill होगा -->
+
+                                <select name="accessories[]" id="accessories" class="form-control select2" multiple>
+
+                                    @foreach($data['accessories_dropdown'] as $acc)
+
+                                    <option value="{{ $acc['part_no'] }}" data-price="{{ $acc['ndp'] ?? 0 }}" {{
+                                        in_array($acc['part_no'], $selectedAccessories) ? 'selected' : '' }}>
+                                        {{ $acc['display_name'] ?? $acc['item'] }}
+                                    </option>
+
+                                    @endforeach
+
                                 </select>
                             </div>
 
@@ -591,9 +745,12 @@
                                 <select name="saleconsultant" id="saleconsultant" class="form-control select2" required>
                                     <option value="">Please Select...</option>
                                     @foreach($data['saleconsultants'] as $consultant)
-                                    <option value="{{ $consultant->id }}" {{ $entry->consultant == $consultant->id ?
-                                        'selected' : '' }}>
-                                        {{ $consultant->name }} - ({{ $consultant->emp_code }})
+                                    <option value="{{ $consultant->person_code ?? $consultant->id }}" {{ $entry->
+                                        consultant == ($consultant->person_code ?? $consultant->id) ? 'selected' : ''
+                                        }}>
+
+                                        {{ $consultant->username ?? '' }}
+                                        - ({{ $consultant->employee_code ?? '' }})
                                     </option>
                                     @endforeach
                                 </select>
@@ -686,10 +843,13 @@
 
                         <!-- Make Order Checkbox (only for Personal/BEV segments) -->
                         @php
-                        $showMakeOrder = in_array(
-                        collect($data['segments'])->firstWhere('id', $entry->segment_id)->value ?? '',
-                        ['Personal', 'BEV']
-                        );
+                        $matchedSegmentValue = collect($data['segments'])->first(fn($s) => (string)$s->code === (string)$entry->segment_code)?->name ?? '';
+                        $showMakeOrder = in_array($matchedSegmentValue, ['Personal', 'BEV']);
+                        \Log::info('🔍 [EDIT-MAKEORDER] Make Order visibility check', [
+                            'entry_segment_code'    => $entry->segment_code,
+                            'matched_segment_value' => $matchedSegmentValue,
+                            'show_make_order'       => $showMakeOrder,
+                        ]);
                         @endphp
                         <div class="row mt-3" id="make_order_container"
                             style="display: {{ $showMakeOrder ? 'block' : 'none' }};">
@@ -735,7 +895,30 @@
 
 <script>
     $(document).ready(function() {
-    $('.select2').select2({ theme: 'bootstrap-5' });
+    console.log('🚀 [EDIT-INIT] Document ready — initializing Select2');
+    $('.select2').select2({ theme: 'bootstrap-5', width: '100%' });
+
+    // ⚠️ DO NOT trigger 'change' on #segment here — that would fire the
+    // cascade handler and wipe model/variant/color before restoreVehicleDetails() runs.
+    // Only trigger change.select2 (visual refresh only, not the data event).
+    const segVal = $('#segment').val();
+    console.log('🔍 [EDIT-SEGMENT] After Select2 init — #segment val:', segVal,
+                '| PHP data-selected-segment attr:', $('#segment').data('selected-segment'));
+
+    if (!segVal) {
+        // PHP selected attr not picked up — try to force it from data attribute
+        const fallback = $('#segment').data('selected-segment');
+        if (fallback) {
+            console.warn('⚠️ [EDIT-SEGMENT] val() is empty but data-selected-segment =', fallback,
+                         '— forcing #segment value manually');
+            $('#segment').val(String(fallback)).trigger('change.select2');
+            console.log('🔍 [EDIT-SEGMENT] After manual set — #segment val:', $('#segment').val());
+        } else {
+            console.error('❌ [EDIT-SEGMENT] Both val() and data-selected-segment are empty! Check controller segment IDs vs DB segment_code.');
+        }
+    } else {
+        console.log('✅ [EDIT-SEGMENT] Segment pre-selected OK =', segVal);
+    }
 
     // Safe convert any data to array
     function toArray(data) {
@@ -762,13 +945,19 @@
 
             const option = new Option(text, value, false, false);
 
+            // Color options: store model_code for chassis lookup, vid for vh_id
             if (extraData.color) {
-                if (item.model_code) option.dataset.code = item.model_code;
-                if (item.vid) option.dataset.vid = item.vid;
-                if (item.seating) option.dataset.seating = item.seating;
+                option.dataset.code = item.model_code || item.code || '';
+                option.dataset.vid  = item.vid || '';
             }
-            if (extraData.accessory && item.price) {
-                option.dataset.price = item.price;
+
+            // Variant options: store seating_capacity for seating field
+            if (extraData.variant) {
+                option.dataset.seating = item.seating_capacity || item.seating || '';
+            }
+
+            if (extraData.accessory) {
+                option.dataset.price = item.ndp || 0;
             }
 
             $select.append(option);
@@ -811,9 +1000,16 @@
 
     // Page load पर initial label set (क्योंकि category locked है)
 
-    // Segment Change
-    $('#segment_id').on('change', function() {
+    // ==================== CASCADING DROPDOWNS ====================
+    // NOTE: All selectors use #segment (the actual HTML id), NOT #segment_id.
+
+    // Segment Change — USER interaction only (NOT fired on page load).
+    // restoreVehicleDetails() handles the page-load cascade directly via AJAX.
+    $('#segment').on('change', function() {
         const segmentId = $(this).val();
+        console.log('🔄 [SEGMENT-CHANGE] User changed segment → val:', segmentId,
+                    '| text:', $(this).find(':selected').text());
+
         populateSelect2('#model', []);
         populateSelect2('#variant', []);
         populateSelect2('#color', []);
@@ -822,18 +1018,27 @@
         $('#seating').val('');
         $('#apack_amount').val(0);
 
-        if (!segmentId) return;
+        if (!segmentId) {
+            console.warn('⚠️ [SEGMENT-CHANGE] No segmentId — aborting model fetch');
+            return;
+        }
 
         const url = '{{ route("get.models", ":segment_id") }}'.replace(':segment_id', segmentId);
-        $.get(url).done(function(data) {
-            populateSelect2('#model', data, 'name');
-            $('#model').prop('disabled', false);
-        });
+        console.log('📡 [SEGMENT-CHANGE] Fetching models from:', url);
+        $.get(url)
+            .done(function(data) {
+                console.log('✅ [SEGMENT-CHANGE] Models received:', Array.isArray(data) ? data.length : Object.keys(data).length, 'items', data);
+                populateSelect2('#model', data, 'code', 'name');
+                $('#model').prop('disabled', false);
+            })
+            .fail(function(xhr) {
+                console.error('❌ [SEGMENT-CHANGE] get-models XHR failed', xhr.status, xhr.responseText);
+            });
     });
 
-    // Model Change
+    // Model Change — user interaction
     $('#model').on('change', function() {
-        const model = encodeURIComponent($(this).val());
+        const model = $(this).val();
         populateSelect2('#variant', []);
         populateSelect2('#color', []);
         populateSelect2('#chassis', []);
@@ -843,51 +1048,54 @@
 
         if (!model) return;
 
-        const url = '{{ route("get.variants", ":model") }}'.replace(':model', model);
+        const url = '{{ route("get.variants", ":model") }}'.replace(':model', encodeURIComponent(model));
         $.get(url).done(function(data) {
-            populateSelect2('#variant', data, 'name');
+            populateSelect2('#variant', data, 'code', 'name', { variant: true });
             $('#variant').prop('disabled', false);
         });
     });
 
-    // Variant Change
+    // Variant Change — user interaction
     $('#variant').on('change', function() {
-        const variant = encodeURIComponent($(this).val());
+        const variant = $(this).val();
+        const segmentId = $('#segment').val();
+        const modelVal = $('#model').val();
         populateSelect2('#color', []);
         populateSelect2('#chassis', []);
         populateSelect2('#accessories', []);
-        $('#seating').val('');
+        // Seating comes from variant data-seating (set during populateSelect2)
+        $('#seating').val($(this).find(':selected').data('seating') || '');
         $('#apack_amount').val(0);
 
         if (!variant) return;
 
-        const colorUrl = '{{ route("get.colors", ":variant") }}'.replace(':variant', variant);
+        const colorUrl = '{{ route("get.colors", ":variant") }}'.replace(':variant', encodeURIComponent(variant));
         $.get(colorUrl).done(function(data) {
-            populateSelect2('#color', data, 'colr_name', 'colr_name', { color: true });
+            populateSelect2('#color', data, 'code', 'name', { color: true });
             $('#color').prop('disabled', false);
             updateFromColor();
         });
 
-        // const segmentName = $('#segment_id option:selected').text().trim();
-        // const modelVal = $('#model').val();
-        // const accUrl = '{{ route("get.accessories", [":segment", ":model", ":variant"]) }}'
-        //     .replace(':segment', encodeURIComponent(segmentName))
-        //     .replace(':model', encodeURIComponent(modelVal || ''))
-        //     .replace(':variant', encodeURIComponent(variant));
+        if (segmentId && modelVal) {
+            const accUrl = '{{ route("get.accessories", [":segment", ":model", ":variant"]) }}'
+                .replace(':segment',  encodeURIComponent(segmentId))
+                .replace(':model',    encodeURIComponent(modelVal))
+                .replace(':variant',  encodeURIComponent(variant));
 
-        // $.get(accUrl).done(function(data) {
-        //     populateSelect2('#accessories', data, 'id', 'name', { accessory: true });
-        //     $('#accessories').prop('disabled', false);
+            $.get(accUrl).done(function(data) {
+                populateSelect2('#accessories', data, 'part_no', 'display_name', { accessory: true });
+                $('#accessories').prop('disabled', false);
 
-        //     const savedAcc = {!! json_encode(array_filter(explode(',', trim($entry->accessories ?? '')))) !!};
-        //     if (savedAcc.length > 0) {
-        //         $('#accessories').val(savedAcc).trigger('change.select2');
-        //     }
-        //     updateAccessoriesAmount();
-        // });
+                const savedAcc = {!! json_encode(array_filter(explode(',', trim($entry->accessories ?? '')))) !!};
+                if (savedAcc.length > 0) {
+                    $('#accessories').val(savedAcc).trigger('change.select2');
+                }
+                updateAccessoriesAmount();
+            });
+        }
     });
 
-    // Color Change
+    // Color Change — user interaction
     $('#color').on('change', function() {
         const code = $(this).find(':selected').data('code');
         updateFromColor();
@@ -897,76 +1105,143 @@
 
         const url = '{{ route("get.chasis", ":modelCode") }}'.replace(':modelCode', encodeURIComponent(code));
         $.get(url).done(function(data) {
-            populateSelect2('#chassis', data, 'id', 'chasis_no');
+            populateSelect2('#chassis', data, 'chasis_no', 'chasis_no');
             $('#chassis').prop('disabled', false);
         });
     });
 
     $('#accessories').on('change', updateAccessoriesAmount);
 
-    // Initial Load - Restore saved values
-    // ==================== RESTORE SAVED VALUES ON EDIT (Sequential) ====================
-async function restoreVehicleDetails() {
-    if (!{{ $entry->segment_id ?? 'null' }}) return;
+    // ==================== RESTORE SAVED VALUES ON EDIT ====================
+    // Direct AJAX cascade — does NOT use trigger('change') to avoid
+    // the reset-chain wiping already-restored values.
+    async function restoreVehicleDetails() {
+        const saved = {
+            segment:  '{{ $entry->segment_code ?? '' }}',
+            model:    '{{ addslashes($entry->model_code ?? '') }}',
+            variant:  '{{ addslashes($entry->variant_code ?? '') }}',
+            color:    '{{ addslashes($entry->color_code ?? '') }}',
+            chassis:  '{{ addslashes($entry->chasis_no ?? '') }}',
+            accessories: {!! json_encode(array_filter(explode(',', trim($entry->accessories ?? '')))) !!}
+        };
 
-    // 1. Set Segment
-    $('#segment_id').val('{{ $entry->segment_id }}').trigger('change');
+        console.log('🔄 [RESTORE] Starting restoreVehicleDetails with saved:', saved);
 
-    // Wait for models to load
-    await new Promise(resolve => {
-        const check = setInterval(() => {
-            if ($('#model option').length > 1) {
-                clearInterval(check);
-                resolve();
-            }
-        }, 100);
-    });
-
-    // 2. Set Model
-    $('#model').val('{{ addslashes($entry->model) }}').trigger('change');
-
-    // Wait for variants
-    await new Promise(resolve => {
-        const check = setInterval(() => {
-            if ($('#variant option').length > 1) {
-                clearInterval(check);
-                resolve();
-            }
-        }, 100);
-    });
-
-    // 3. Set Variant
-    $('#variant').val('{{ addslashes($entry->variant) }}').trigger('change');
-
-    // Wait for colors
-    await new Promise(resolve => {
-        const check = setInterval(() => {
-            if ($('#color option').length > 1) {
-                clearInterval(check);
-                resolve();
-            }
-        }, 100);
-    });
-
-    // 4. Set Color + Chassis + Accessories
-    $('#color').val('{{ addslashes($entry->color) }}').trigger('change');
-
-    // Small delay for color data to attach
-    setTimeout(() => {
-        updateFromColor();
-
-        if ('{{ $entry->chasis_no }}') {
-            $('#chassis').val('{{ $entry->chasis_no }}').trigger('change.select2');
+        if (!saved.segment) {
+            console.error('❌ [RESTORE] saved.segment is empty — cannot restore cascade. Check $entry->segment_code in DB vs segment IDs from XpricingHelper::getSegments().');
+            return;
         }
 
-        updateAccessoriesAmount();
-    }, 800);
-}
+        // Step 1: Verify segment is visually selected (PHP already rendered it, but Select2 may not reflect it)
+        const currentSegVal = $('#segment').val();
+        console.log('🔍 [RESTORE-STEP1] #segment val:', currentSegVal, '| expected:', saved.segment, '| match:', String(currentSegVal) === String(saved.segment));
+        if (String(currentSegVal) !== String(saved.segment)) {
+            console.warn('⚠️ [RESTORE-STEP1] Select2 not reflecting PHP selected attr — forcing val to:', saved.segment);
+            $('#segment').val(String(saved.segment)).trigger('change.select2');
+            console.log('🔍 [RESTORE-STEP1] After force — #segment val:', $('#segment').val());
+        } else {
+            console.log('✅ [RESTORE-STEP1] Segment matched — no force needed');
+        }
 
-// Call it after document ready
-$(document).ready(function() {
+        // Step 2: Fetch models, set model
+        const modelsUrl = '{{ route("get.models", ":segment_id") }}'.replace(':segment_id', saved.segment);
+        console.log('📡 [RESTORE-STEP2] GET', modelsUrl);
+        await $.get(modelsUrl)
+            .done(function(data) {
+                const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+                console.log('✅ [RESTORE-STEP2] Models received:', count, 'items. First 3:', JSON.stringify(toArray(data).slice(0,3)));
+                if (count === 0) console.warn('⚠️ [RESTORE-STEP2] 0 models — check get-models controller for segment_id:', saved.segment);
+                populateSelect2('#model', data, 'code', 'name');
+                $('#model').val(saved.model).prop('disabled', false).trigger('change.select2');
+                const actualModel = $('#model').val();
+                console.log('🔍 [RESTORE-STEP2] #model → set to:', saved.model, '| got:', actualModel);
+                if (actualModel !== saved.model) {
+                    const available = $('#model option').map(function(){ return $(this).val(); }).get();
+                    console.warn('⚠️ [RESTORE-STEP2] model val mismatch! Available options:', available);
+                }
+            })
+            .fail(function(xhr) {
+                console.error('❌ [RESTORE-STEP2] get-models XHR failed', xhr.status, xhr.statusText, xhr.responseText.substring(0, 200));
+            });
+
+        if (!saved.model) {
+            console.warn('⚠️ [RESTORE] saved.model empty — stopping after step 2');
+            return;
+        }
+
+        // Step 3: Fetch variants, set variant
+        const variantsUrl = '{{ route("get.variants", ":model") }}'.replace(':model', encodeURIComponent(saved.model));
+        console.log('📡 [RESTORE-STEP3] GET', variantsUrl);
+        await $.get(variantsUrl)
+            .done(function(data) {
+                const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+                console.log('✅ [RESTORE-STEP3] Variants received:', count, 'items');
+                if (count === 0) console.warn('⚠️ [RESTORE-STEP3] 0 variants for model:', saved.model);
+                populateSelect2('#variant', data, 'code', 'name', { variant: true });
+                $('#variant').val(saved.variant).prop('disabled', false).trigger('change.select2');
+                // Set seating from the restored variant option
+                const seating = $('#variant option:selected').data('seating') || '';
+                $('#seating').val(seating);
+                console.log('🔍 [RESTORE-STEP3] #variant → set to:', saved.variant, '| got:', $('#variant').val(), '| seating:', seating);
+            })
+            .fail(function(xhr) {
+                console.error('❌ [RESTORE-STEP3] get-variants XHR failed', xhr.status, xhr.statusText);
+            });
+
+        if (!saved.variant) {
+            console.warn('⚠️ [RESTORE] saved.variant empty — stopping after step 3');
+            return;
+        }
+
+        // Step 4: Fetch colors, set color
+        const colorsUrl = '{{ route("get.colors", ":variant") }}'.replace(':variant', encodeURIComponent(saved.variant));
+        console.log('📡 [RESTORE-STEP4] GET', colorsUrl);
+        await $.get(colorsUrl)
+            .done(function(data) {
+                const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+                console.log('✅ [RESTORE-STEP4] Colors received:', count, 'items');
+                if (count === 0) console.warn('⚠️ [RESTORE-STEP4] 0 colors for variant:', saved.variant);
+                populateSelect2('#color', data, 'code', 'name', { color: true });
+                $('#color').val(saved.color).prop('disabled', false).trigger('change.select2');
+                console.log('🔍 [RESTORE-STEP4] #color → set to:', saved.color, '| got:', $('#color').val());
+                updateFromColor();
+                console.log('🔍 [RESTORE-STEP4] vh_id:', $('#vh_id').val(), '| seating:', $('#seating').val());
+            })
+            .fail(function(xhr) {
+                console.error('❌ [RESTORE-STEP4] get-colors XHR failed', xhr.status, xhr.statusText);
+            });
+
+        // Step 5: Fetch accessories, restore selection
+        if (saved.segment && saved.model && saved.variant) {
+            const accUrl = '{{ route("get.accessories", [":segment", ":model", ":variant"]) }}'
+                .replace(':segment',  encodeURIComponent(saved.segment))
+                .replace(':model',    encodeURIComponent(saved.model))
+                .replace(':variant',  encodeURIComponent(saved.variant));
+
+            console.log('📡 [RESTORE-STEP5] GET', accUrl);
+            await $.get(accUrl)
+                .done(function(data) {
+                    const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+                    console.log('✅ [RESTORE-STEP5] Accessories received:', count, 'items');
+                    populateSelect2('#accessories', data, 'part_no', 'display_name', { accessory: true });
+                    $('#accessories').prop('disabled', false);
+                    if (saved.accessories.length > 0) {
+                        $('#accessories').val(saved.accessories).trigger('change.select2');
+                        console.log('🔍 [RESTORE-STEP5] Accessories restored:', saved.accessories);
+                    } else {
+                        console.log('🔍 [RESTORE-STEP5] No saved accessories');
+                    }
+                    updateAccessoriesAmount();
+                })
+                .fail(function(xhr) {
+                    console.error('❌ [RESTORE-STEP5] get-accessories XHR failed', xhr.status, xhr.statusText);
+                });
+        }
+
+        console.log('🎉 [RESTORE] restoreVehicleDetails complete');
+    }
+
     restoreVehicleDetails();
-});
 });
 </script>
 
@@ -1280,5 +1555,87 @@ $(document).ready(function() {
         theme: 'bootstrap-5' // Adjust if your theme is different
     });
 });
+
+    $(document).ready(function () {
+
+    // Initialize select2
+    $('#branch, #location').select2({
+        width: '100%'
+    });
+
+    // Existing selected values
+    let selectedLocation = "{{ $entry->location_code }}";
+    let otherLocation = "{{ $entry->location_other }}";
+
+    // Branch change
+    $('#branch').on('change', function () {
+
+        let branchCode = $(this).val();
+
+        $('#location').html('<option value="">Loading...</option>');
+
+        if (!branchCode) {
+            $('#location').html('<option value="">Please Select...</option>');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ url('admin/get-locations') }}/" + branchCode,
+            type: "GET",
+            success: function (response) {
+
+                let options = '<option value="">Please Select...</option>';
+
+                $.each(response, function (key, location) {
+
+                    let selected = '';
+
+                    if (selectedLocation == location.id) {
+                        selected = 'selected';
+                    }
+
+                    options += `
+                        <option value="${location.id}" ${selected}>
+                            ${location.name} - ${location.code}
+                        </option>
+                    `;
+                });
+
+                // OTHER option
+                let otherSelected = selectedLocation == 0 ? 'selected' : '';
+
+                options += `<option value="0" ${otherSelected}>OTHER</option>`;
+
+                $('#location').html(options).trigger('change');
+            }
+        });
+    });
+
+    // Location change
+    $('#location').on('change', function () {
+
+        if ($(this).val() == '0') {
+
+            $('#location_other_group').show();
+
+            $('#location_other')
+                .prop('disabled', false)
+                .val(otherLocation);
+
+        } else {
+
+            $('#location_other_group').hide();
+
+            $('#location_other')
+                .prop('disabled', true)
+                .val('');
+        }
+    });
+
+    // Trigger on page load
+    $('#branch').trigger('change');
+});
+
+
 </script>
 @endsection

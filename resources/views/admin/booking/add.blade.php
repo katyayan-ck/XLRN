@@ -292,7 +292,7 @@
                                     <select name="branch" id="branch" class="form-control form-select" required>
                                         <option value="" disabled selected>-- Select Branch --</option>
                                         @foreach($data['branches'] ?? [] as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                        <option value="{{ $branch->code }}">{{ $branch->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -397,18 +397,17 @@
 
                             <div class="col-sm-2">
                                 <div class="form-group">
-                                    <label for="enummaster1">Brand Make 1 <span class="required-mark"
-                                            style="display: none;">*</span></label>
-                                    <select name="enummaster1" id="enummaster1" class="form-control form-select"
-                                        disabled>
+                                    <label for="enummaster1">Brand Make 1 <span class="required-mark" style="display: none;">*</span></label>
+                                    <select name="enummaster1" id="enummaster1" class="form-control form-select" disabled>
                                         <option value="" disabled selected>-- Select Brand Make 1 --</option>
                                         @foreach($data['enum_master'] ?? [] as $enum)
-                                        <option value="{{ $enum->id }}">{{ $enum->value }}</option>
+                                            <option value="{{ $enum->code ?? $enum['code'] ?? '' }}">
+                                                {{ $enum->value ?? $enum['value'] ?? '' }}
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
                             </div>
-
                             <div class="col-sm-3">
                                 <div class="form-group">
                                     <label for="vehicledetails">Model Variant 1 <span class="required-mark"
@@ -418,14 +417,19 @@
                                 </div>
                             </div>
 
+                            <!-- Brand Make 1 -->
+
+
+                            <!-- Brand Make 2 -->
                             <div class="col-sm-2">
                                 <div class="form-group">
                                     <label for="enummaster2">Brand Make 2</label>
-                                    <select name="enummaster2" id="enummaster2" class="form-control form-select"
-                                        disabled>
+                                    <select name="enummaster2" id="enummaster2" class="form-control form-select" disabled>
                                         <option value="" disabled selected>-- Select Brand Make 2 --</option>
                                         @foreach($data['enum_master'] ?? [] as $enum)
-                                        <option value="{{ $enum->id }}">{{ $enum->value }}</option>
+                                            <option value="{{ $enum->code ?? $enum['code'] ?? '' }}">
+                                                {{ $enum->value ?? $enum['value'] ?? '' }}
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -510,11 +514,11 @@
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label for="segmentid">Segment <span class="required-mark">*</span></label>
-                                    <select name="segmentid" id="segmentid" class="form-control select2" required>
-                                        <option value="0">Please Select...</option>
+                                    <label for="segment">Segment <span class="required-mark">*</span></label>
+                                    <select name="segment" id="segment" class="form-control select2" required>
+                                        <option value="">Please Select Segment...</option>
                                         @foreach($data['segments'] ?? [] as $segment)
-                                        <option value="{{ $segment->id }}">{{ $segment->name }}</option>
+                                        <option value="{{ $segment->code }}">{{ $segment->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -555,6 +559,8 @@
                                         readonly>
                                 </div>
                             </div>
+
+                            
 
                             <div class="col-sm-6">
                                 <div class="form-group">
@@ -638,12 +644,12 @@
                                 <div class="form-group">
                                     <label for="saleconsultant">Sales Consultant <span
                                             class="required-mark">*</span></label>
-                                    <select name="saleconsultant" id="saleconsultant" class="form-control select2"
-                                        required>
+                                    <select name="saleconsultant" id="saleconsultant" class="form-control select2" required>
                                         <option value="">Please Select...</option>
-                                        @foreach($data['allusers'] ?? [] as $consultant)
-                                        <option value="{{ $consultant->id }}">{{ $consultant->name }} - {{
-                                            $consultant->emp_code ?? '' }}</option>
+                                        @foreach($data['salesconsultants'] ?? [] as $consultant)
+                                            <option value="{{ $consultant['person_code'] }}">
+                                                {{ $consultant['display_name'] }} - {{ $consultant['employee_code'] }}
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -823,6 +829,7 @@
     input.numeric-only {
         -moz-appearance: textfield;
     }
+
     input.numeric-only::-webkit-outer-spin-button,
     input.numeric-only::-webkit-inner-spin-button {
         -webkit-appearance: none;
@@ -970,6 +977,8 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     let uploadedFile = null; // global variable to hold the file for download
+    let salesUsers = @json($data['allusers'] ?? []);
+    console.log('✅ SLS Users Loaded:', salesUsers.length);
 
     function handleProof(input) {
 
@@ -1038,6 +1047,8 @@ $('#proofModal').on('show.bs.modal', function () {
         bindEventListeners();
         initUppercaseInputs();
         initNumericOnlyFields();
+        // Add (or confirm) these declarations:
+        const accessories = $('#accessories');
 
         // Customer Category change → Care Of toggle
         $('#customercat').on('change', function() {
@@ -1057,7 +1068,7 @@ $('#proofModal').on('show.bs.modal', function () {
 
     // Initialize Select2 plugin for enhanced select elements
     function initSelect2() {
-        $('#segmentid, #model, #variant, #color, #saleconsultant, #user, #financier, #accessories, #chassis').select2();
+        $('#segment, #model, #variant, #color, #saleconsultant, #user, #financier, #accessories, #chassis').select2();
     }
 
     // Initialize Flatpickr date pickers
@@ -1356,7 +1367,7 @@ function initNumericOnlyFields() {
                         return $('#buyertype').val() === 'Exchange Buy';
                     }
                 },
-                segmentid: { required: true },
+                segment: { required: true },
                 model: { required: true },
                 variant: { required: true },
                 color: { required: true },
@@ -1423,7 +1434,7 @@ function initNumericOnlyFields() {
                 expectedprice: 'Please enter expected price',
                 offeredprice: 'Please enter offered price',
                 exchangebonus: 'Please enter exchange bonus',
-                segmentid: 'Please select segment',
+                segment: 'Please select segment',
                 model: 'Please select model',
                 variant: 'Please select variant',
                 color: 'Please select color',
@@ -1575,16 +1586,16 @@ $('#financier').on('change', function() {
             togglePurchaseFields(this.value);
         });
 
-        $('#segmentid').on('change', function() {
-            const segmentId = this.value;  // Numeric ID
+        $('#segment').on('change', function() {
+            const segment = this.value;  // Numeric ID
             const segmentName = $(this).find(':selected').text();
 
 
     $.ajax({
-        url: '../get-models/' + segmentId,
+        url: '../get-models/' + segment,
         method: 'GET',
         success: function(data) {
-            populateSelect($('#model'), data, 'name', 'id');
+            populateSelect($('#model'), data, 'name', 'code');
             $('#model').prop('disabled', false);
             resetFields($('#variant'), $('#color'), $('#chassis'));
         },
@@ -1595,23 +1606,28 @@ $('#financier').on('change', function() {
 $('#model').on('change', function() {
     const modelId = this.value;
     $.ajax({
-        url: '../get-variants/' + modelId,
+        url: '../get-variants/' + encodeURIComponent(modelId),  // ← this
         method: 'GET',
         success: function(data) {
-            populateSelect($('#variant'), data, 'name', 'id');
+            populateSelect($('#variant'), data, 'name', 'code', null, function(option, item) {
+                option.dataset.seating = item.seating_capacity || '0';
+            });
             $('#variant').prop('disabled', false);
             resetFields($('#color'), $('#chassis'));
             resetAccessories();
         },
         error: handleAjaxError('Error fetching variants')
-    });
+    })
 });
 
 $('#variant').on('change', function() {
     const variantId = this.value;  // Numeric ID (confirm from populateSelect 'id')
+    const seating = $(this).find(':selected').data('seating') || '0';
+    $('#seating').val(seating);   // ← set seating here, from variant data
+
     const modelId = $('#model').val();
-    const segmentName = $('#segmentid').find(':selected').text();  // Text for condition
-    const segmentNumericId = $('#segmentid').val();  // Numeric for accessories URL
+    const segmentName = $('#segment').find(':selected').text();  // Text for condition
+    const segmentNumericId = $('#segment').val();  // Numeric for accessories URL
 
     console.log('Variant changed to ID:', variantId);
 
@@ -1631,12 +1647,10 @@ $('#variant').on('change', function() {
             }
 
             if (colorsArray.length > 0) {
-                populateSelect($('#color'), colorsArray, 'colr_name', 'colr_name', null, function(option, item) {
-                    option.dataset.code = item.modelcode || item.model_code || '';
-                    option.dataset.vid = item.vid || '';
+                populateSelect($('#color'), colorsArray, 'name', 'code', null, function(option, item) {
+                    option.dataset.variantCode = item.variant_code || '';
                 });
                 $('#color').prop('disabled', false);
-                $('#seating').val(colorsArray[0]?.seating || '0');
                 resetFields($('#chassis'));
             } else {
                 resetFields($('#color'), $('#chassis'));
@@ -1648,13 +1662,26 @@ $('#variant').on('change', function() {
 
     if (segmentName && modelId && variantId) {
         $.ajax({
-            url: '../get-accessories/' + segmentNumericId + '/' + modelId + '/' + variantId,
+            url: '../get-accessories/' + $('#segment').val() + '/' + $('#model').val() + '/' + this.value,
             method: 'GET',
+            // variant.onchange ke andar accessories ajax success callback:
             success: function(data) {
-                populateSelect($('#accessories'), data, 'name', 'id', null, function(option, item) {
-                    option.dataset.price = item.price;
+                const $accessories = $('#accessories');   // local jQuery object
+
+                $accessories.select2('destroy');          // destroy old instance safely
+                $accessories.prop('disabled', false);
+                $accessories.empty();
+                $accessories.append('<option value="0" selected disabled>Please Select...</option>');
+
+                $.each(data, function(i, item) {
+                    const opt = $('<option>', {
+                        value: item.part_no,
+                        text: item.display_name || item.item
+                    }).attr('data-price', item.ndp);
+                    $accessories.append(opt);
                 });
-                $('#accessories').prop('disabled', false);
+            
+                $accessories.select2();                   // re-init select2
             },
             error: handleAjaxError('Error fetching accessories')
         });
@@ -1665,9 +1692,12 @@ $('#variant').on('change', function() {
 $('#color').on('change', function() {
     const selectedColor = $(this).find(':selected');
     const vhid = selectedColor.data('vid');           // VID (future mein use ho sakta hai)
-    const modelCode = selectedColor.data('code');     // YEH BHEJNA HAI – jaise BH826G2S7U6WD
+    const modelCode = $('#model').val();
 
-    console.log('Selected Color VID:', vhid);
+    if (!modelCode || modelCode.trim() === '') {
+        console.warn('Model code missing! Cannot load chassis.');
+        return;
+    }
     console.log('Model Code for Chassis Search:', modelCode);
 
     $('#vhid').val(vhid); // agar kahin aur use ho
@@ -1676,54 +1706,54 @@ $('#color').on('change', function() {
     resetFields($('#chassis'));
     $('#chassis').prop('disabled', true);
 
-    if (!modelCode || modelCode.trim() === '') {
-        console.warn('Model code missing! Cannot load chassis.');
-        alert('Model code not available for this color.');
-        return;
-    }
+    // if (!modelCode || modelCode.trim() === '') {
+    //     console.warn('Model code missing! Cannot load chassis.');
+    //     alert('Model code not available for this color.');
+    //     return;
+    // }
 
-    $.ajax({
-    url: '../get-chassis-numbers/' + encodeURIComponent(modelCode.trim()),
-    method: 'GET',
-    success: function(data) {
-        console.log('Chassis Numbers Received:', data);
+//     $.ajax({
+//     url: '../get-chassis-numbers/' + encodeURIComponent(modelCode.trim()),
+//     method: 'GET',
+//     success: function(data) {
+//         console.log('Chassis Numbers Received:', data);
 
-        if (Array.isArray(data) && data.length > 0) {
-            populateSelect($('#chassis'), data, 'chasis_no', 'id');
-            $('#chassis').prop('disabled', false);
-            console.log('Chassis dropdown loaded with', data.length, 'options');
-        } else {
-            console.warn('No chassis available for model code:', modelCode);
+//         if (Array.isArray(data) && data.length > 0) {
+//             populateSelect($('#chassis'), data, 'chasis_no', 'id');
+//             $('#chassis').prop('disabled', false);
+//             console.log('Chassis dropdown loaded with', data.length, 'options');
+//         } else {
+//             console.warn('No chassis available for model code:', modelCode);
 
-            $('#chassis').html('<option value="">No chassis available</option>');
-            $('#chassis').prop('disabled', true);
+//             $('#chassis').html('<option value="">No chassis available</option>');
+//             $('#chassis').prop('disabled', true);
 
-            // SweetAlert2 इस्तेमाल करें
-            Swal.fire({
-                icon: 'warning',
-                title: 'Chassis Not Found',
-                text: 'No allotted chassis found for this model + color combination.',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'OK'
-            });
-        }
-    },
-    error: function(xhr) {
-        console.error('Chassis Load Failed:', xhr.status, xhr.responseText);
+//             // SweetAlert2 इस्तेमाल करें
+//             Swal.fire({
+//                 icon: 'warning',
+//                 title: 'Chassis Not Found',
+//                 text: 'No allotted chassis found for this model + color combination.',
+//                 confirmButtonColor: '#3085d6',
+//                 confirmButtonText: 'OK'
+//             });
+//         }
+//     },
+//     error: function(xhr) {
+//         console.error('Chassis Load Failed:', xhr.status, xhr.responseText);
 
-        $('#chassis').html('<option value="">Error loading chassis</option>');
+//         $('#chassis').html('<option value="">Error loading chassis</option>');
 
-        // SweetAlert2 error version
-        Swal.fire({
-            icon: 'error',
-            title: 'Oops...',
-            text: 'Error loading chassis numbers. Please try again or contact support.',
-            footer: 'Status: ' + xhr.status,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'OK'
-        });
-    }
-});
+//         // // SweetAlert2 error version
+//         // Swal.fire({
+//         //     icon: 'error',
+//         //     title: 'Oops...',
+//         //     text: 'Error loading chassis numbers. Please try again or contact support.',
+//         //     footer: 'Status: ' + xhr.status,
+//         //     confirmButtonColor: '#d33',
+//         //     confirmButtonText: 'OK'
+//         // });
+//     }
+// });
 });
 
         $('#accessories').on('select2:select select2:unselect', function(e) {
@@ -1741,30 +1771,57 @@ $('#color').on('change', function() {
             attachDuplicateCheck($(input), fieldName, type);
         });
 
-        $('#branch').on('change', function() {
-            const branchId = this.value;
-            if (!branchId) return;
 
-            $.ajax({
-                url: '../branchlocations/' + branchId + '/',  // Match your current route exactly
-                method: 'GET',
-                success: function(data) {
-                    populateSelect($('#location'), data, 'name', 'id', '<option value="0">OTHER</option>');
-                    $('#location').prop('disabled', false);
-                },
-                error: function(xhr) {
-                    console.error('Error fetching locations', xhr);
-                    alert('Error fetching locations. Please try again.');
-                }
-            });
-        });
+$('#branch').on('change', function() {
+    let branchValue = $(this).val() ? $(this).val().trim() : '';
 
+    // Use direct URL instead of backpack_url for named route issue
+    let baseUrl = '{{ url("./admin/get-locations") }}';  // try this first
+
+    let url = baseUrl;
+
+    if (branchValue !== '' && branchValue !== '0') {
+        url += '/' + encodeURIComponent(branchValue);
+    }
+
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(data) {
+            let html = '<option value="" disabled selected>-- Select Location --</option>';
+            
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(function(loc) {
+                    html += `<option value="${loc.code}">${loc.name} (${loc.code})</option>`;
+                });
+            }
+
+            html += '<option value="0">OTHER</option>';
+            
+            $('#location').html(html).prop('disabled', false);
+        },
+        error: function(xhr) {
+            console.error('Location fetch failed:', xhr.responseText || xhr.status);
+            
+            $('#location').html(`
+                <option value="" disabled selected>-- Select Location --</option>
+                <option value="0">OTHER</option>
+            `).prop('disabled', false);
+        }
+    });
+});
+        // Location change handler
         $('#location').on('change', function() {
             const isOther = parseInt(this.value) === 0;
-            $('#locationother').prop('disabled', !isOther).prop('required', isOther);
+
+            $('#locationother')
+                .prop('disabled', !isOther)
+                .prop('required', isOther);
+
             if (!isOther) {
                 $('#locationother').val('');
             }
+
             toggleRequiredMark($('#locationother'), isOther);
         });
 
@@ -1811,148 +1868,136 @@ $('#color').on('change', function() {
         }
     }
 
-    function toggleCollectionFields(type) {
+function toggleCollectionFields(type) {
 
-        const isDummy = $('#customertype').val() === 'Dummy';
-        const isFieldSales = type == '2';
-        const isFieldDSA = type == '3';
-        const isField = isFieldSales || isFieldDSA;
-        const isUsedCar = type == '4';
-        const isReceipt = type == '1';
+    const isDummy = $('#customertype').val() === 'Dummy';
+    const isFieldSales = type == '2';
+    const isFieldDSA = type == '3';
+    const isField = isFieldSales || isFieldDSA;
+    const isUsedCar = type == '4';
+    const isReceipt = type == '1';
 
+    // User field
+    $('#user').prop('disabled', !isField).prop('required', isField);
+    toggleRequiredMark($('#user'), isField);
 
-        // User field
-        $('#user').prop('disabled', !isField).prop('required', isField);
-        toggleRequiredMark($('#user'), isField);
+    const userSelect = $('#user');
+    userSelect.html('<option value="">Please Select...</option>');
 
-        const userSelect = $('#user');
-        userSelect.html('<option value="">Please Select...</option>');
+    if (isFieldSales) {
+        console.log('Field Sales Selected → Loading SLS Users', salesUsers.length);
 
-        if (isFieldSales) {
-            @php
-                foreach($data['allusers'] ?? [] as $user) {
-                    echo "userSelect.append('<option value=\\\"" . $user->id . "\\\">" . $user->name . " - " . ($user->emp_code ?? '') . "</option>');";
-                }
-            @endphp
-        } else if (isFieldDSA) {
-            @php
-                foreach($data['dsa_details'] ?? [] as $dsa) {
-                    echo "userSelect.append('<option value=\\\"" . $dsa->id . "\\\">" . $dsa->name . " - " . ($dsa->mobile ?? '') . "</option>');";
-                }
-            @endphp
-        }
+        if (salesUsers && salesUsers.length > 0) {
+            salesUsers.forEach(function(u) {
+                const personCode = u.person_code || u.id || '';
+                const displayName = u.display_name || u.username || 'N/A';
+                const empCode = u.employee_code || u.username || '';
 
-        userSelect.select2();
-
-        // Label swap
-        const bookingAmtLabel = $('#bookingamount').siblings('label');
-        const receiptDateLabel = $('#receiptdate').siblings('label');
-
-        if (isUsedCar) {
-            bookingAmtLabel.html('Received Amount<span class="required-mark">*</span>');
-            receiptDateLabel.html('Voucher Date<span class="required-mark">*</span>');
+                userSelect.append(
+                    `<option value="${personCode}">${displayName} - ${empCode}</option>`
+                );
+            });
         } else {
-            bookingAmtLabel.html('Booking Amount<span class="required-mark">*</span>');
-            receiptDateLabel.html('Receipt Date<span class="required-mark">*</span>');
+            userSelect.append('<option value="">No Sales Users Available</option>');
+            console.error('salesUsers is empty!');
         }
 
-        // Dynamic Receipt/Voucher field
-        const input = $('#receiptvoucherinput');
-        const label = $('#receiptvoucherlabel');
-        const warning = $('#receiptvoucherwarning');
-        const group = $('#receiptvouchergroup');
+        userSelect.prop('disabled', false).prop('required', true);
+        userSelect.next('.select2-container').removeClass('select2-disabled-custom');
+    } 
+    else if (isFieldDSA) {
+        @php
+            foreach($data['dsa_details'] ?? [] as $dsa) {
+                echo "userSelect.append('<option value=\\\"" . $dsa->id . "\\\">" . $dsa->name . " - " . ($dsa->mobile ?? '') . "</option>');";
+            }
+        @endphp
+    }
 
-        let inputName, inputPlaceholder, inputMask, labelText;
-        let isRequired = true;
+    userSelect.select2();
 
-        if (isReceipt) {
-            inputName = 'receiptno';
-            inputPlaceholder = '12345';
-            inputMask = '00000';
-            labelText = 'Receipt No.';
+    // Label swap
+    const bookingAmtLabel = $('#bookingamount').siblings('label');
+    const receiptDateLabel = $('#receiptdate').siblings('label');
 
-            input.unmask().mask(inputMask, { placeholder: inputPlaceholder, reverse: true });
-            attachDuplicateCheck(input, inputName, 'type1');
+    if (isUsedCar) {
+        bookingAmtLabel.html('Received Amount<span class="required-mark">*</span>');
+        receiptDateLabel.html('Voucher Date<span class="required-mark">*</span>');
+    } else {
+        bookingAmtLabel.html('Booking Amount<span class="required-mark">*</span>');
+        receiptDateLabel.html('Receipt Date<span class="required-mark">*</span>');
+    }
 
-            input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
-            label.html(labelText + '<span class="required-mark">*</span>');
-            group.show();
-            input.val('');
-            warning.hide();
-            input.removeClass('is-invalid');
-        } else if (isUsedCar) {
-            inputName = 'voucherno';
-            inputPlaceholder = 'Enter Voucher No.';
-            inputMask = null;
-            labelText = 'Voucher No.';
+    // Dynamic Receipt/Voucher field
+    const input = $('#receiptvoucherinput');
+    const label = $('#receiptvoucherlabel');
+    const warning = $('#receiptvoucherwarning');
+    const group = $('#receiptvouchergroup');
 
-            input.unmask();
-            attachDuplicateCheck(input, inputName, 'type4');
+    let inputName, inputPlaceholder, inputMask, labelText;
+    let isRequired = true;
 
-            input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
-            label.html(labelText + '<span class="required-mark">*</span>');
-            group.show();
-            input.val('');
-            warning.hide();
-            input.removeClass('is-invalid');
-        } else {
-            // Field Collection (2,3) ya koi aur case - receipt/voucher hide karo
-            group.hide();
-            input.val('').prop('required', false);
-            // IMPORTANT: Don't return - DSA logic neeche chalega
-        }
+    if (isReceipt) {
+        inputName = 'receiptno';
+        inputPlaceholder = '12345';
+        inputMask = '00000';
+        labelText = 'Receipt No.';
 
-        const receiptDatePicker = $('#receiptdate').data('flatpickr');
-        if (isReceipt || isUsedCar) {
-            receiptDatePicker?.enable();
-        } else {
-            receiptDatePicker?.disable();
-        }
+        input.unmask().mask(inputMask, { placeholder: inputPlaceholder, reverse: true });
+        attachDuplicateCheck(input, inputName, 'type1');
 
+        input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
+        label.html(labelText + '<span class="required-mark">*</span>');
+        group.show();
+        input.val('');
+        warning.hide();
+        input.removeClass('is-invalid');
+    } else if (isUsedCar) {
+        inputName = 'voucherno';
+        inputPlaceholder = 'Enter Voucher No.';
+        inputMask = null;
+        labelText = 'Voucher No.';
 
+        input.unmask();
+        attachDuplicateCheck(input, inputName, 'type4');
 
-        if (isFieldDSA) {
-        // Force + freeze Booking Source = DSA
-        $('#bookingsource')
-            .val('DSA')
-            .prop('disabled', true)
-            .trigger('change');
+        input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
+        label.html(labelText + '<span class="required-mark">*</span>');
+        group.show();
+        input.val('');
+        warning.hide();
+        input.removeClass('is-invalid');
+    } else {
+        group.hide();
+        input.val('').prop('required', false);
+    }
 
+    const receiptDatePicker = $('#receiptdate').data('flatpickr');
+    if (isReceipt || isUsedCar) {
+        receiptDatePicker?.enable();
+    } else {
+        receiptDatePicker?.disable();
+    }
+
+    // DSA Logic
+    if (isFieldDSA) {
+        $('#bookingsource').val('DSA').prop('disabled', true).trigger('change');
         $('#bookingsource').next('.select2-container').addClass('select2-disabled-custom');
 
-        // Mirror selected user → DSA field + freeze
         const selectedUserId = $('#user').val();
         if (selectedUserId) {
-            $('#dsadetails')
-                .val(selectedUserId)
-                .prop('disabled', true)
-                .trigger('change');
-
+            $('#dsadetails').val(selectedUserId).prop('disabled', true).trigger('change');
             $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
         }
 
-        // Keep them in sync if user changes "Collected By"
         $('#user').off('change.syncDSA').on('change.syncDSA', function() {
-            $('#dsadetails')
-                .val(this.value)
-                .trigger('change');
-            $('#dsadetails').prop('disabled', true);
-            $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
+            $('#dsadetails').val(this.value).trigger('change').prop('disabled', true);
         });
-    }
-    else {
-        // ── Not DSA field collection ───────────────────────
-        $('#bookingsource')
-            .prop('disabled', false)
-            .trigger('change');
+    } else {
+        $('#bookingsource').prop('disabled', false).trigger('change');
         $('#bookingsource').next('.select2-container').removeClass('select2-disabled-custom');
-
         $('#user').off('change.syncDSA');
-
-        // Important: DSA field control moved OUT from here
-        // → now controlled only by #bookingsource change
     }
-    }
+}
 
     // Toggle finance fields - 100% WORKING VERSION
 function toggleFinanceFields(mode) {

@@ -22,7 +22,7 @@ class BranchCrudController extends CrudController
 
     public function setup()
     {
-        CRUD::setModel(\App\Models\Admin\Branch::class);
+        CRUD::setModel(Branch::class);                    // ← Fixed
         CRUD::setRoute(config('backpack.base.route_prefix') . '/branch');
         CRUD::setEntityNameStrings('branch', 'branches');
     }
@@ -36,16 +36,22 @@ class BranchCrudController extends CrudController
     {
         $this->crud->setListView('admin.branch.list');
 
-        $branches = \App\Models\Admin\Branch::select([
+        $branches = Branch::select([
             'id',
             'code',
+            'branch_code',
             'name',
             'short_name',
+            'description',   // ✅ ADD
             'phone',
             'email',
+            'address',       // ✅ ADD
             'city',
             'state',
             'pincode',
+            'country',       // ✅ ADD
+            'latitude',      // ✅ ADD
+            'longitude',     // ✅ ADD
             'is_head_office',
             'is_active'
         ])->orderBy('id', 'desc')->get();
@@ -57,7 +63,7 @@ class BranchCrudController extends CrudController
             $mapped['is_active'] = $branch->is_active ? 'Active' : 'Inactive';
             $mapped['is_head_office'] = $branch->is_head_office ? 'Yes' : 'No';
 
-            $editUrl = backpack_url("branch/{$branch->id}/edit");
+            $editUrl = backpack_url("branch/{$branch->branch_code}/edit");
 
             $mapped['action'] = '
             <div class="d-flex gap-2 justify-content-center">
@@ -73,13 +79,19 @@ class BranchCrudController extends CrudController
                 'columns' => [
                     ['field' => 'serial_no',      'headerName' => 'S.No'],
                     ['field' => 'code',           'headerName' => 'Code'],
+                    ['field' => 'branch_code', 'headerName' => 'Branch Code'],
                     ['field' => 'name',           'headerName' => 'Branch Name'],
                     ['field' => 'short_name',     'headerName' => 'Short Name'],
+                    ['field' => 'description',    'headerName' => 'Description'], // ✅
                     ['field' => 'phone',          'headerName' => 'Phone'],
                     ['field' => 'email',          'headerName' => 'Email'],
+                    ['field' => 'address',        'headerName' => 'Address'],     // ✅
                     ['field' => 'city',           'headerName' => 'City'],
                     ['field' => 'state',          'headerName' => 'State'],
                     ['field' => 'pincode',        'headerName' => 'Pincode'],
+                    ['field' => 'country',        'headerName' => 'Country'],     // ✅
+                    ['field' => 'latitude',       'headerName' => 'Latitude'],    // ✅
+                    ['field' => 'longitude',      'headerName' => 'Longitude'],   // ✅
                     ['field' => 'is_head_office', 'headerName' => 'Head Office'],
                     ['field' => 'is_active',      'headerName' => 'Status'],
                     ['field' => 'action',         'headerName' => 'Actions']
@@ -89,11 +101,11 @@ class BranchCrudController extends CrudController
         ]);
     }
 
-    public function edit($id)
+    public function edit($branch_code)
     {
         $this->crud->setEditView('admin.branch.edit');
 
-        $branch = \App\Models\Admin\Branch::findOrFail($id);
+        $branch = Branch::where('branch_code', $branch_code)->firstOrFail();   // ← Fixed
 
         return view('admin.branch.edit', [
             'title'  => 'Edit Branch - ' . $branch->name,
@@ -101,23 +113,30 @@ class BranchCrudController extends CrudController
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $branch_code)
     {
-        $branch = \App\Models\Admin\Branch::findOrFail($id);
+        $branch = Branch::where('branch_code', $branch_code)->firstOrFail();   // ← Fixed
 
         $validated = $request->validate([
-            'code'           => 'required|string|unique:xlr8_branch,code,' . $id,
+            'code'           => 'required|string|unique:xlr8_admin_branch,code,' . $branch->id,
+            'branch_code'    => 'required|string|max:10|unique:xlr8_admin_branch,branch_code,' . $branch->id,
             'name'           => 'required|string|max:255',
             'short_name'     => 'required|string|max:100',
+            'description'    => 'nullable|string',     // ✅
             'phone'          => 'nullable|string',
             'email'          => 'nullable|email',
+            'address'        => 'nullable|string',     // ✅
             'city'           => 'required|string',
             'state'          => 'required|string',
             'pincode'        => 'required|string',
+            'country'        => 'nullable|string',     // ✅
+            'latitude'  => 'nullable|numeric|between:-90,90',    // ✅
+            'longitude' => 'nullable|numeric|between:-180,180',    // ✅
             'is_head_office' => 'boolean',
             'is_active'      => 'boolean',
         ]);
 
+        $validated['branch_code'] = strtoupper(trim($validated['branch_code']));
         $branch->update($validated);
 
         \Alert::success('Branch updated successfully!')->flash();
@@ -133,10 +152,40 @@ class BranchCrudController extends CrudController
             'title' => 'Add New Branch',
         ]);
     }
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|unique:xlr8_admin_branch,code',
+            'branch_code' => 'required|string|max:10|unique:xlr8_admin_branch,branch_code',
+            'name' => 'required|string|max:255',
+            'short_name' => 'required|string|max:100',
+            'description' => 'nullable|string',
+            'phone' => 'nullable|string',
+            'email' => 'nullable|email',
+            'address' => 'nullable|string',
+            'city' => 'required|string',
+            'state' => 'required|string',
+            'pincode' => 'required|string',
+            'country' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'is_head_office' => 'boolean',
+            'is_active' => 'boolean',
+        ]);
+        $validated['branch_code'] = strtoupper(trim($validated['branch_code']));
+
+        Branch::create($validated);
+
+        \Alert::success('Branch created successfully!')->flash();
+
+        return redirect(backpack_url('branch'));
+    }
+
 
     protected function setupCreateOperation()
     {
         CRUD::field('code');
+        CRUD::field('branch_code');
         CRUD::field('name');
         CRUD::field('short_name');
         CRUD::field('description')->type('textarea');

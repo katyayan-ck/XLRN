@@ -229,69 +229,10 @@ abstract class BaseModel extends Model implements Auditable, HasMedia
      * @param int $limit Number of records to retrieve
      * @return \Illuminate\Support\Collection Array of audit entries
      */
-    public function getHistory($limit = 50)
-    {
-        return $this->audits()
-            ->orderByDesc('created_at')
-            ->limit($limit)
-            ->get()
-            ->map(function ($audit) {
-                return [
-                    'id' => $audit->id,
-                    'event' => $audit->event,
-                    'user' => $audit->user?->name ?? 'System',
-                    'user_id' => $audit->user_id,
-                    'changes' => $audit->getModified(),
-                    'created_at' => $audit->created_at->toIso8601String(),
-                ];
-            });
-    }
+    
+ 
 
-    /**
-     * Get creation details
-     *
-     * @return array
-     */
-    public function getCreationDetails()
-    {
-        return [
-            'created_at' => $this->created_at->toIso8601String(),
-            'created_by_id' => $this->created_by,
-            'created_by_name' => $this->createdByUser?->name ?? 'System',
-        ];
-    }
-
-    /**
-     * Get update details
-     *
-     * @return array
-     */
-    public function getUpdateDetails()
-    {
-        return [
-            'updated_at' => $this->updated_at->toIso8601String(),
-            'updated_by_id' => $this->updated_by,
-            'updated_by_name' => $this->updatedByUser?->name ?? 'System',
-        ];
-    }
-
-    /**
-     * Get deletion details
-     *
-     * @return array|null
-     */
-    public function getDeletionDetails()
-    {
-        if (!$this->deleted_at) {
-            return null;
-        }
-
-        return [
-            'deleted_at' => $this->deleted_at->toIso8601String(),
-            'deleted_by_id' => $this->deleted_by,
-            'deleted_by_name' => $this->deletedByUser?->name ?? 'System',
-        ];
-    }
+    
 
     // ╔════════════════════════════════════════════════════════╗
     // ║ MEDIA LIBRARY SETUP ║
@@ -493,11 +434,51 @@ public function scopeActive(Builder $query): Builder
         return now()->diffInMinutes($this->updated_at) <= $minutes;
     }
 
-    /**
-     * Get all audit fields for this record
-     *
-     * @return array
-     */
+    
+        public function getHistory($limit = 50)
+    {
+        return $this->audits()
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get()
+            ->map(fn($audit) => [
+                'id' => $audit->id,
+                'event' => $audit->event,
+                'user' => $audit->user?->name ?? 'System',
+                'user_id' => $audit->user_id,
+                'changes' => $audit->getModified(),
+                'created_at' => $audit->created_at->toIso8601String(),
+            ]);
+    }
+
+    public function getCreationDetails()
+    {
+        return [
+            'created_at' => $this->created_at->toIso8601String(),
+            'created_by_id' => $this->created_by,
+            'created_by_name' => $this->createdByUser?->name ?? 'System',
+        ];
+    }
+
+    public function getUpdateDetails()
+    {
+        return [
+            'updated_at' => $this->updated_at->toIso8601String(),
+            'updated_by_id' => $this->updated_by,
+            'updated_by_name' => $this->updatedByUser?->name ?? 'System',
+        ];
+    }
+
+    public function getDeletionDetails()
+    {
+        if (!$this->deleted_at) return null;
+        return [
+            'deleted_at' => $this->deleted_at->toIso8601String(),
+            'deleted_by_id' => $this->deleted_by,
+            'deleted_by_name' => $this->deletedByUser?->name ?? 'System',
+        ];
+    }
+
     public function getAllAuditDetails()
     {
         return [

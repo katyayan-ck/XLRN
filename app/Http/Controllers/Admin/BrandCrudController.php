@@ -35,7 +35,7 @@ class BrandCrudController extends CrudController
             'id',
             'code',
             'name',
-            'description',
+            
             'is_active'
         ])->orderBy('id', 'desc')->get();
 
@@ -65,7 +65,7 @@ class BrandCrudController extends CrudController
                     ['field' => 'serial_no',    'headerName' => 'S.No'],
                     ['field' => 'code',         'headerName' => 'Code'],
                     ['field' => 'name',         'headerName' => 'Brand Name'],
-                    ['field' => 'description',  'headerName' => 'Description'],
+                   
                     ['field' => 'is_active',    'headerName' => 'Active'],
                     ['field' => 'action',       'headerName' => 'Actions']
                 ],
@@ -93,7 +93,6 @@ class BrandCrudController extends CrudController
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
             'code'        => 'required|string|size:5|unique:xlr8_vehicle_brand,code,' . $id,
-            'description' => 'nullable|string',
             'is_active'   => 'boolean',
         ]);
 

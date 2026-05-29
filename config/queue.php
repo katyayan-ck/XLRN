@@ -38,7 +38,7 @@ return [
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_QUEUE_CONNECTION'),
-            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'table' => env('DB_QUEUE_TABLE', 'xlr8_system_jobs'),
             'queue' => env('DB_QUEUE', 'default'),
             'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
             'after_commit' => false,
@@ -118,9 +118,7 @@ return [
     |
     | Supported drivers: "database-uuids", "dynamodb", "file", "null"
     |
-    */
-
-    'failed' => [
+    */'failed' => [
         'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
         'database' => env('DB_CONNECTION', 'sqlite'),
         'table' => 'xlr8_system_failed_jobs',

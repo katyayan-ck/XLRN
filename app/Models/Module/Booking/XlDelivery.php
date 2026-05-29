@@ -9,6 +9,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\Traits\HasHashedMediaTrait;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
+use App\Models\BaseModel;
 
 class XlDelivery extends BaseModel  implements HasMedia
 {

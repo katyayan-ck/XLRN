@@ -16,12 +16,26 @@
                     <div class="row g-4">
 
                         <!-- Basic Info -->
+                        <!-- Basic Info -->
                         <div class="col-md-3">
-                            <strong class="text-muted d-block mb-1">Name</strong>
-                            <h5>{{ $current_user_details['name'] ?? 'N/A' }}</h5>
-                            <small class="text-muted">{{ $current_user_details['username'] ?? '—' }}</small>
-                            <div><strong>Designation:</strong> {{ $current_user_details['designation'] ?? '—' }}</div>
-                            <div><strong>Mile ID:</strong> {{ $current_user_details['mile_id'] ?? '—' }}</div>
+                            <div class="d-flex align-items-center mb-2">
+                                <img src="{{ $current_user_details['profile_image'] }}" 
+                                    alt="Profile Photo" 
+                                    class="rounded-circle me-3 border" 
+                                    width="64" height="64" style="object-fit: cover; border-color: #0D8ABC !important;">
+                                
+                                <div>
+                                    <h5 class="mb-0">{{ $current_user_details['name'] ?? 'N/A' }}</h5>
+                                    <small class="text-muted d-block">{{ $current_user_details['username'] ?? '—' }}</small>
+                                </div>
+                            </div>
+
+                            <div class="mt-2">
+                                <strong>Designation:</strong> {{ $current_user_details['designation'] ?? '—' }}
+                            </div>
+                            <div>
+                                <strong>Mile ID:</strong> {{ $current_user_details['mile_id'] ?? '—' }}
+                            </div>
                         </div>
 
                         <!-- Primary Assignment -->
@@ -31,7 +45,6 @@
                             <div>Location: <strong>{{ $current_user_details['primary_location'] ?? '—' }}</strong></div>
                             <div>Department: <strong>{{ $current_user_details['primary_department'] ?? '—' }}</strong></div>
                             <div>Division: <strong>{{ $current_user_details['primary_division'] ?? '—' }}</strong></div>
-                            <div>Post: <strong>{{ $current_user_details['primary_post'] ?? '—' }}</strong></div>
                             <div>Vertical: <strong>{{ $current_user_details['vertical'] ?? '—' }}</strong></div>
                             <div>Segment: <strong>{{ $current_user_details['segment'] ?? '—' }}</strong></div>
                             <div>Sub Segment: <strong>{{ $current_user_details['sub_segment'] ?? '—' }}</strong></div>
@@ -49,12 +62,14 @@
                         <!-- All Access -->
                         <div class="col-md-3">
                             <strong class="text-muted d-block mb-1">All Access</strong>
-                            <div>Branches: {{ implode(', ', array_keys($current_user_details['all_branches'] ?? [])) ?: '—' }}</div>
-                            <div>Locations: {{ implode(', ', array_keys($current_user_details['all_locations'] ?? [])) ?: '—' }}</div>
-                            <div>Departments: {{ implode(', ', array_keys($current_user_details['all_departments'] ?? [])) ?: '—' }}</div>
-                            <div>Divisions: {{ implode(', ', array_keys($current_user_details['all_divisions'] ?? [])) ?: '—' }}</div>
-                            <div>Roles: {{ implode(', ', $current_user_details['roles'] ?? []) ?: '—' }}</div>
-                            <div>Posts: {{ implode(', ', $current_user_details['posts'] ?? []) ?: '—' }}</div>
+                            <div>Branches: <strong>{{ implode(', ', $current_user_details['all_branches'] ?? []) ?: '—' }}</strong></div>
+                            <div>Locations: <strong>{{ implode(', ', $current_user_details['all_locations'] ?? []) ?: '—' }}</strong></div>
+                            <div>Departments: <strong>{{ implode(', ', $current_user_details['all_departments'] ?? []) ?: '—' }}</strong></div>
+                            <div>Divisions: <strong>{{ implode(', ', $current_user_details['all_divisions'] ?? []) ?: '—' }}</strong></div>
+                            <div>Verticals: <strong>{{ implode(', ', $current_user_details['all_verticals'] ?? []) ?: '—' }}</strong></div>
+                            <div>Segments: <strong>{{ implode(', ', $current_user_details['all_segments'] ?? []) ?: '—' }}</strong></div>
+                            <div>Sub Segments: <strong>{{ implode(', ', $current_user_details['all_sub_segments'] ?? []) ?: '—' }}</strong></div>
+                            <div>Models: <strong>{{ implode(', ', $current_user_details['all_models'] ?? []) ?: '—' }}</strong></div>
                         </div>
 
                     </div>

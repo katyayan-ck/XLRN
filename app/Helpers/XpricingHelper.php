@@ -2,15 +2,17 @@
 
 namespace App\Helpers;
 
-use App\Models\Bookingamount;
+
 use App\User;
-
+use App\Models\Module\Booking\Xessories;
 use Auth;
-
+use App\Models\Vehicle\Segment;
+use App\Models\Vehicle\VehicleModel;
 use Illuminate\Support\Facades\DB;
+use App\Models\Vehicle\Variant;
+use App\Models\Module\Booking\Bookingamount;
 
-
-use App\Models\Admin\Person;
+use App\Models\Person;
 
 use App\Models\XVehicleMaster;
 
@@ -34,7 +36,7 @@ use App\Models\XRSA;
 
 use App\Models\XSchemeMaster;
 
-use App\Models\Xessories;
+
 
 use App\Models\XPriceHeads;
 
@@ -185,48 +187,35 @@ class XpricingHelper
 
     public static function selectfsc($withTrashed = false)
     {
-        // Build query to fetch users where department = 1
-        $query = DB::table('users')
-            ->select('id', 'name', 'mile_id', 'mobile', 'email', 'segment', 'vertical', 'models', 'designation', 'department')
-            ->where('department', 1);
-
-
-
-        // Get results and convert to array of arrays
-        $users = $query->orderBy('name', 'asc')
+        return DB::table('users')
+            ->select(
+                'id',
+                'username',
+                'employee_code',
+                'person_code'
+            )
+            ->whereNull('deleted_at')
+            ->orderBy('username', 'asc')
             ->get()
             ->map(function ($user) {
                 return (array) $user;
             })
             ->toArray();
-
-        return $users;
     }
     public static function selectUsers($withTrashed = false)
     {
-        // Step 1: Get user IDs from xcore_user_departments where department_id = 22665
-        $userIds = DB::table('xcore_user_departments')
-            ->where('department_id', 22665)
-            ->pluck('user_id')
-            ->toArray();
-
-        // Step 2: Fetch users from the users table for the retrieved user IDs
-        $query = DB::table('users')
-            ->select('id', 'name', 'mile_id', 'mobile', 'email', 'segment', 'vertical', 'models', 'designation', 'department')
-            ->whereIn('id', $userIds);
-
-
-        // Step 4: Get results and convert to array of arrays
-        $users = $query->orderBy('name', 'asc')
+        return DB::table('users')
+            ->select(
+                'id',
+                'username',
+                'employee_code',
+                'person_code'
+            )
+            ->whereNull('deleted_at')
+            ->orderBy('username', 'asc')
             ->get()
-            ->map(function ($user) {
-                return (array) $user;
-            })
             ->toArray();
-
-        return $users;
     }
-
 
 
 
@@ -1107,19 +1096,18 @@ class XpricingHelper
 
     public static function getSegments()
     {
-        $list = XVehicleMaster::select('segment_id')
-            ->distinct()
-            ->where('status', 1)
-            ->where('segment_id', '!=', 0)  // Added condition to exclude 0
+        $list = DB::table('xlr8_vehicle_segment')
+            ->select('id', 'name')
+            ->whereNull('deleted_at')
             ->get();
 
-        $data = array();
+        $data = [];
 
         foreach ($list as $item) {
-            $data[$item->segment_id] = array(
-                'id' => $item->segment_id,
-                'name' => CommonHelper::enumValueById($item->segment_id)
-            );
+            $data[$item->id] = [
+                'id'   => $item->id,
+                'name' => $item->name,
+            ];
         }
 
         return $data;
@@ -1127,28 +1115,31 @@ class XpricingHelper
 
 
 
-    public static function getModelsX($segid = 0)
-
+    public static function getModelsX($segid = null)
     {
+        $query = DB::table('xlr8_vehicle_model')
+            ->select('id', 'name')
+            ->whereNull('deleted_at');
 
-        if ($segid == 0)
+        if (!empty($segid)) {
 
-            $list = XVehicleMaster::select('custom_model')->distinct()->where('status', 1)->get();
+            $segment = Segment::find($segid);
 
-        else
-
-            $list = XVehicleMaster::select('custom_model')->distinct()->where('status', 1)->where('segment_id', $segid)->get();
-
-        //print_r($list->toarray());
-
-        $data = array();
-
-        foreach ($list as $item) {
-
-            $data[] = array('name' => $item->custom_model);
+            if ($segment) {
+                $query->where('segment_code', $segment->code);
+            }
         }
 
-        return $data;
+        return $query
+            ->orderBy('name')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id'   => $item->id,
+                    'name' => $item->name,
+                ];
+            })
+            ->toArray();
     }
 
     public static function checkReceiptX($rn)
@@ -1163,64 +1154,54 @@ class XpricingHelper
 
 
 
-    public static function getVehiclesX($cm = "ALL")
-
+    public static function getVehiclesX($cm = null)
     {
+        $query = DB::table('xlr8_vehicle_variant')
+            ->select('id', 'name')
+            ->whereNull('deleted_at');
 
-        // print_r($cm);
+        if (!empty($cm)) {
 
-        $cm = strtoupper($cm);
+            $model = VehicleModel::find($cm);
 
-        // print_r("<br> AfterChange : " . $cm);
-
-        if ($cm == "ALL")
-
-            $list = XVehicleMaster::select('display_name')->distinct()->where('status', 1)->get();
-
-        else
-
-            $list = XVehicleMaster::select('display_name')->distinct()->where('status', 1)->where('custom_model', $cm)->get();
-
-        //print_r($list->toarray());
-
-        $data = array();
-
-        foreach ($list as $item) {
-
-            $data[] = array('name' => $item->display_name);
+            if ($model) {
+                $query->where('model_code', $model->code);
+            }
         }
 
-        return $data;
+        return $query
+            ->orderBy('name')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id'   => $item->id,
+                    'name' => $item->name,
+                ];
+            })
+            ->toArray();
     }
 
 
 
-    public static function getColorX($dn = "ALL")
-
+    public static function getColorX($variantId = null)
     {
+        $query = DB::table('xlr8_vehicle_color')
+            ->select('id', 'name', 'code')
+            ->whereNull('deleted_at');
 
-        $dn = strtoupper($dn);
-
-        if ($dn == "ALL")
-
-            $list = XVehicleMaster::select('id', 'display_name', 'color', 'code', 'seating')->distinct()->where('status', 1)->get();
-
-        else
-
-            $list = XVehicleMaster::select('id', 'display_name', 'color', 'code', 'seating')->distinct()->where('display_name', $dn)->where('status', 1)->get();
-
-
-
-        //print_r($list->toarray());
-
-        $data = array();
-
-        foreach ($list as $item) {
-
-            $data[$item->color] = array('vid' => $item->id, 'vname' => $item->display_name, 'colr_name' => $item->color, 'model_code' => $item->code, 'seating' => $item->seating);
-        }
-
-        return $data;
+        return $query
+            ->orderBy('name')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'vid'        => $item->id,
+                    'vname'      => $item->name,
+                    'colr_name'  => $item->name,
+                    'model_code' => $item->code ?? '',
+                    'seating'    => '',
+                ];
+            })
+            ->toArray();
     }
 
 

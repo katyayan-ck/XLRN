@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
+use App\Models\BaseModel;
 
 class XlInsurance extends BaseModel
 {

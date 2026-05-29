@@ -111,28 +111,62 @@
     let gridApi;
 
         const columnDefs = [
-        ...getCols(['serial_no', 'code', 'name', 'short_name']).map(col => {
-            if (['serial_no', 'code'].includes(col.field)) {
-                col.pinned = 'left';
-            }
-            return col;
-        }),
+    ...getCols([
+    'serial_no',
+    'code',
+    'branch_code',
+    'name',
+    'short_name'
+]).map(col => {
+    // ✅ LEFT PIN (freeze)
+    if (['serial_no', 'code', 'branch_code'].includes(col.field)) {
+        col.pinned = 'left';
+        col.lockPinned = true; // optional (user remove na kar sake)
+    }
 
-        ...getCols(['phone', 'email']),
+    // optional width
+    if (col.field === 'serial_no') col.width = 60;
+    if (col.field === 'code') col.width = 120;
 
-        ...getCols(['city', 'state', 'pincode']),
+    return col;
+}),
 
-        ...getCols(['is_head_office', 'is_active']),
+    ...getCols([
+        'description',
+        'address'
+    ]),
 
-        ...getCols(['action']).map(col => {
-            col.pinned = 'right';
-            col.width = 140;
-            col.sortable = false;
-            col.filter = false;
-            col.cellRenderer = 'htmlRenderer';
-            return col;
-        })
-    ];
+    ...getCols([
+        'phone',
+        'email'
+    ]),
+
+    ...getCols([
+        'city',
+        'state',
+        'pincode',
+        'country'
+    ]),
+
+    ...getCols([
+        'latitude',
+        'longitude'
+    ]),
+
+    ...getCols([
+        'is_head_office',
+        'is_active'
+    ]),
+
+    ...getCols(['action']).map(col => {
+        col.pinned = 'right';
+        col.width = 140;
+        col.sortable = false;
+        col.filter = false;
+        col.cellRenderer = 'htmlRenderer';
+        return col;
+    })
+];
 
     const gridOptions = {
         columnDefs: columnDefs,
@@ -145,15 +179,37 @@
             sortable: true,
             filter: true,
             resizable: true,
-            headerClass: 'center-header',           // All headers center
-            cellStyle: { textAlign: 'center' }
+            headerClass: 'center-header',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 130,   // ✅ ADD
+            wrapText: true,  // ✅ ADD
+            autoHeight: true // ✅ ADD
         },
         components: {
             htmlRenderer: params => params.value || ''
         },
         onGridReady: params => {
             gridApi = params.api;
-            const defaultFields = ['serial_no', 'code', 'name', 'short_name', 'phone', 'email', 'city', 'state', 'pincode', 'action'];
+            const defaultFields = [
+    'serial_no',
+    'code',
+    'branch_code',
+    'name',
+    'short_name',
+    'description',
+    'phone',
+    'email',
+    'address',
+    'city',
+    'state',
+    'pincode',
+    'country',
+    'latitude',
+    'longitude',
+    'is_head_office',
+    'is_active',
+    'action'
+];
             const allCols = [];
             gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
             gridApi.setColumnsVisible(allCols, false);
@@ -173,10 +229,16 @@
         // Sab columns ko ek saath flat list mein show karo
         const allFlatColumns = [
             ...getCols(['serial_no', 'code', 'name', 'short_name']),
+
+            ...getCols(['description']), // ✅ ADD
+
             ...getCols(['phone', 'email']),
+
+            ...getCols(['address']), // ✅ ADD
+
             ...getCols(['city', 'state', 'pincode']),
-            ...getCols(['is_head_office', 'is_active']),
-            ...getCols(['action'])
+
+            ...getCols(['country', 'latitude', 'longitude']), // ✅ ADD
         ];
 
         allFlatColumns.forEach(col => {
@@ -192,7 +254,7 @@
             checkbox.checked = column ? column.isVisible() : false;
 
             // Primary columns ko disable kar sakte ho (optional)
-            if (['serial_no', 'code', 'name', 'short_name'].includes(col.field)) {
+            if (['serial_no', 'code','branch_code', 'name', 'short_name'].includes(col.field)) {
                 checkbox.checked = true;
                 checkbox.disabled = true;
             }
@@ -267,7 +329,26 @@
         });
 
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
-            const defaultFields = ['serial_no', 'code', 'name', 'short_name', 'phone', 'email', 'city', 'state', 'pincode', 'action'];
+            const defaultFields = [
+    'serial_no',
+    'code',
+    'branch_code',
+    'name',
+    'short_name',
+    'description',
+    'phone',
+    'email',
+    'address',
+    'city',
+    'state',
+    'pincode',
+    'country',
+    'latitude',
+    'longitude',
+    'is_head_office',
+    'is_active',
+    'action'
+];
             const allCols = [];
             gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
             gridApi.setColumnsVisible(allCols, false);

@@ -4,7 +4,7 @@ namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
-
+use App\Models\BaseModel;
 class X_Vh_Order extends BaseModel
 {
 	/**

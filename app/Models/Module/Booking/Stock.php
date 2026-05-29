@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
 use \App\Models\Traits\ScopedQuery;
-
+use App\Models\BaseModel;
 class Stock extends BaseModel
 {
 	/**
@@ -14,7 +14,7 @@ class Stock extends BaseModel
 	 * @var string
 	 */
 	use SoftDeletes;
-	protected $table = 'xcelr8_stock_master';
+	protected $table = 'xlr8_booking_stock_master';
 public string $scopeType   = 'branch';
 public string $scopeColumn = 'branchid';
 public string $scopeGroup  = 'org';

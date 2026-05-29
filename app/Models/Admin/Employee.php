@@ -17,8 +17,8 @@ class Employee extends BaseModel
     protected $fillable = [
         'code',
         'person_code',
-        'desig_code',           // Legacy - kept for backward compatibility
-        'designation_code',     // New clean column (preferred going forward)
+        'desig_code',
+        'designation_code',
         'primary_branch_code',
         'primary_loc_code',
         'primary_dept_code',
@@ -71,103 +71,28 @@ class Employee extends BaseModel
         return $this->belongsTo(Person::class, 'person_code', 'person_code');
     }
 
-    /**
-     * New clean relation to Designation (which now acts as Spatie Role)
-     */
     public function designation(): BelongsTo
     {
         return $this->belongsTo(Designation::class, 'designation_code', 'code');
     }
 
-    /**
-     * Legacy relation (still works)
-     */
     public function designationLegacy(): BelongsTo
     {
         return $this->belongsTo(Designation::class, 'desig_code', 'code');
     }
 
-    // ── Pivot Relations (Organization Structure) ─────────────────
-
-    public function branches(): BelongsToMany
-    {
-        return $this->belongsToMany(Branch::class, 'xlr8_admin_emp_branch_pivot', 'employee_code', 'branch_code')
-            ->withPivot(['from_date', 'to_date'])
-            ->wherePivotNull('to_date')
-            ->whereNull('xlr8_admin_emp_branch_pivot.deleted_at');
-    }
-
-    public function locations(): BelongsToMany
-    {
-        return $this->belongsToMany(Location::class, 'xlr8_admin_emp_location_pivot', 'employee_code', 'location_code')
-            ->withPivot(['from_date', 'to_date'])
-            ->wherePivotNull('to_date')
-            ->whereNull('xlr8_admin_emp_location_pivot.deleted_at');
-    }
-
-    public function departments(): BelongsToMany
-    {
-        return $this->belongsToMany(Department::class, 'xlr8_admin_emp_department_pivot', 'employee_code', 'department_code')
-            ->withPivot(['from_date', 'to_date'])
-            ->wherePivotNull('to_date')
-            ->whereNull('xlr8_admin_emp_department_pivot.deleted_at');
-    }
-
-    public function divisions(): BelongsToMany
-    {
-        return $this->belongsToMany(Division::class, 'xlr8_admin_emp_division_pivot', 'employee_code', 'div_code')
-            ->withPivot(['from_date', 'to_date'])
-            ->wherePivotNull('to_date')
-            ->whereNull('xlr8_admin_emp_division_pivot.deleted_at');
-    }
-
-    // Add more pivots here if needed (vertical, segment, etc.)
-
     // ─────────────────────────────────────────────────────────────
-    // ACCESSORS / HELPERS
+    // LEGACY RELATIONS CLEANED (No longer using dead pivots)
+    // These old belongsToMany relations pointed to orphan pivot tables.
+    // They have been removed. Use User scopes or direct queries instead.
     // ─────────────────────────────────────────────────────────────
 
-    public function getDesignationCodeAttribute(): ?string
-    {
-        return $this->designation_code ?? $this->desig_code;
-    }
-
-    public function getDesignationNameAttribute(): ?string
-    {
-        return $this->designation?->name ?? $this->designationLegacy?->name;
-    }
-
-    public function getPrimaryBranchCodeAttribute(): ?string
-    {
-        return $this->primary_branch_code;
-    }
-
-    public function getPrimaryLocationCodeAttribute(): ?string
-    {
-        return $this->primary_loc_code;
-    }
-
-    public function getPrimaryDepartmentCodeAttribute(): ?string
-    {
-        return $this->primary_dept_code;
-    }
-
-    public function getPrimaryDivisionCodeAttribute(): ?string
-    {
-        return $this->primary_div_code;
-    }
+    // Old relations removed:
+    // branches(), locations(), departments(), divisions()
+    // They pointed to xlr8_admin_emp_*_pivot tables which are being dropped.
 
     // ─────────────────────────────────────────────────────────────
-    // SCOPES
-    // ─────────────────────────────────────────────────────────────
-
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // BOOT (Auto-sync desig_code ↔ designation_code during transition)
+    // BOOT
     // ─────────────────────────────────────────────────────────────
 
     protected static function boot()
@@ -175,7 +100,6 @@ class Employee extends BaseModel
         parent::boot();
 
         static::saving(function (self $employee) {
-            // Keep legacy and new column in sync during transition period
             if (empty($employee->designation_code) && !empty($employee->desig_code)) {
                 $employee->designation_code = strtoupper(trim($employee->desig_code));
             }
@@ -184,7 +108,6 @@ class Employee extends BaseModel
                 $employee->desig_code = strtoupper(trim($employee->designation_code));
             }
 
-            // Always store codes in UPPERCASE
             if ($employee->designation_code) {
                 $employee->designation_code = strtoupper(trim($employee->designation_code));
             }

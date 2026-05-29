@@ -1355,7 +1355,7 @@
                 <div class="col-sm-3">
                     <label class="small fw-bold">Financier</label>
                     <input type="text" class="form-control"
-                        value="{{ \App\Models\XlFinancier::find($booking->financier)?->name ?? 'N/A' }}" readonly>
+                        value="{{ \App\Models\Module\Booking\XlFinancier::find($booking->financier)?->name ?? 'N/A' }}" readonly>
                 </div>
 
                 <div class="col-sm-3">

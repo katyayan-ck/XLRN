@@ -4,6 +4,7 @@ namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use App\Models\BaseModel;
 
 class XVehicleStock extends BaseModel
 {
@@ -56,13 +57,13 @@ class XVehicleStock extends BaseModel
 		$branchColumns = [];
 		foreach ($branches as $id => $abbr) {
 			$sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
-			$branchColumns["stock_branch_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_stock_master.branch_id = $id THEN xcelr8_stock_master.id END)");
+			$branchColumns["stock_branch_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xlr8_booking_stock_master.branch_id = $id THEN xlr8_booking_stock_master.id END)");
 		}
 
 		$locationColumns = [];
 		foreach ($locations as $id => $abbr) {
 			$sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
-			$locationColumns["stock_location_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_stock_master.location_id = $id THEN xcelr8_stock_master.id END)");
+			$locationColumns["stock_location_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xlr8_booking_stock_master.location_id = $id THEN xlr8_booking_stock_master.id END)");
 		}
 
 		return $query->select([
@@ -70,14 +71,14 @@ class XVehicleStock extends BaseModel
 			'xcelr8_vehicle_master.custom_model as model',
 			'xcelr8_vehicle_master.custom_variant as variant',
 			'xcelr8_vehicle_master.color',
-			DB::raw('COUNT(DISTINCT xcelr8_stock_master.id) as stock_total'),
-			DB::raw('COUNT(DISTINCT CASE WHEN xcelr8_stock_master.location_id IS NULL OR xcelr8_stock_master.location_id = 0 THEN xcelr8_stock_master.id END) as stock_other'),
-			DB::raw('MAX(DATEDIFF(CURDATE(), xcelr8_stock_master.oem_invoice_date)) as stock_max_age'),
-			DB::raw('COUNT(DISTINCT CASE WHEN DATEDIFF(CURDATE(), xcelr8_stock_master.oem_invoice_date) > 60 THEN xcelr8_stock_master.id END) as stock_older_than_60_days'),
+			DB::raw('COUNT(DISTINCT xlr8_booking_stock_master.id) as stock_total'),
+			DB::raw('COUNT(DISTINCT CASE WHEN xlr8_booking_stock_master.location_id IS NULL OR xlr8_booking_stock_master.location_id = 0 THEN xlr8_booking_stock_master.id END) as stock_other'),
+			DB::raw('MAX(DATEDIFF(CURDATE(), xlr8_booking_stock_master.oem_invoice_date)) as stock_max_age'),
+			DB::raw('COUNT(DISTINCT CASE WHEN DATEDIFF(CURDATE(), xlr8_booking_stock_master.oem_invoice_date) > 60 THEN xlr8_booking_stock_master.id END) as stock_older_than_60_days'),
 			...$branchColumns,
 			...$locationColumns
 		])
-			->join('xcelr8_vehicle_master', 'xcelr8_stock_master.model_code', '=', 'xcelr8_vehicle_master.code')
+			->join('xcelr8_vehicle_master', 'xlr8_booking_stock_master.model_code', '=', 'xcelr8_vehicle_master.code')
 			->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
 			->get();
 	}
@@ -102,13 +103,13 @@ class XVehicleStock extends BaseModel
 		$branchColumns = [];
 		foreach ($branches as $id => $abbr) {
 			$sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
-			$branchColumns["stock_branch_damage_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_stock_master.branch_id = $id THEN xcelr8_stock_master.id END)");
+			$branchColumns["stock_branch_damage_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xlr8_booking_stock_master.branch_id = $id THEN xlr8_booking_stock_master.id END)");
 		}
 
 		$locationColumns = [];
 		foreach ($locations as $id => $abbr) {
 			$sanitizedAbbr = str_replace([' ', '-'], '_', strtolower($abbr));
-			$locationColumns["stock_location_damage_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xcelr8_stock_master.location_id = $id THEN xcelr8_stock_master.id END)");
+			$locationColumns["stock_location_damage_$sanitizedAbbr"] = DB::raw("COUNT(DISTINCT CASE WHEN xlr8_booking_stock_master.location_id = $id THEN xlr8_booking_stock_master.id END)");
 		}
 
 		return $query->select([
@@ -116,12 +117,12 @@ class XVehicleStock extends BaseModel
 			'xcelr8_vehicle_master.custom_model as model',
 			'xcelr8_vehicle_master.custom_variant as variant',
 			'xcelr8_vehicle_master.color',
-			DB::raw('COUNT(DISTINCT xcelr8_stock_master.id) as stock_damage_total'),
-			DB::raw('COUNT(DISTINCT CASE WHEN xcelr8_stock_master.location_id IS NULL OR xcelr8_stock_master.location_id = 0 THEN xcelr8_stock_master.id END) as stock_damage_other'),
+			DB::raw('COUNT(DISTINCT xlr8_booking_stock_master.id) as stock_damage_total'),
+			DB::raw('COUNT(DISTINCT CASE WHEN xlr8_booking_stock_master.location_id IS NULL OR xlr8_booking_stock_master.location_id = 0 THEN xlr8_booking_stock_master.id END) as stock_damage_other'),
 			...$branchColumns,
 			...$locationColumns
 		])
-			->join('xcelr8_vehicle_master', 'xcelr8_stock_master.model_code', '=', 'xcelr8_vehicle_master.code')
+			->join('xcelr8_vehicle_master', 'xlr8_booking_stock_master.model_code', '=', 'xcelr8_vehicle_master.code')
 			->groupBy('segment', 'xcelr8_vehicle_master.custom_model', 'xcelr8_vehicle_master.custom_variant', 'xcelr8_vehicle_master.color')
 			->get();
 	}

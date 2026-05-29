@@ -4,11 +4,45 @@ namespace App\Services;
 
 use App\Models\Admin\{Branch, Location, Department, Division, Vertical};
 use App\Models\Vehicle\{Segment, SubSegment, VehicleModel, Variant, Color};
+use App\Models\Utilities\KeyValue\{Keyvalue,KeywordMaster};
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 class OrgService
 {
+    // ── Private Helpers ──────────────────────────────────────────────────
+
+private static function userQuery(array $filters = [])
+{
+    return User::query()
+        ->when(
+            $filters['dept_code'] ?? null,
+            fn($q, $v) => $q->whereHas('employee', fn($e) => $e->where('primary_dept_code', $v))
+        )
+        ->when(
+            $filters['div_code'] ?? null,
+            fn($q, $v) => $q->whereHas('employee', fn($e) => $e->where('primary_div_code', $v))
+        )
+        ->when(
+            $filters['desig_code'] ?? null,
+            fn($q, $v) => $q->whereHas('employee', fn($e) => $e->where('designation_code', $v))
+        )
+        ->when(
+            isset($filters['branch_code']) && $filters['branch_code'] !== 'ALL',
+            fn($q) => $q->whereHas('branches', fn($b) => $b->where('code', $filters['branch_code']))
+        )
+        ->select('id', 'username', 'employee_code')
+        ->get();
+}
+
+private static function formatUsers($users): array
+{
+    return $users->mapWithKeys(fn($u) => [
+        $u->id => $u->employee_code
+            ? "{$u->username} ({$u->employee_code})"
+            : $u->username,
+    ])->toArray();
+}
     private const CACHE_TTL = 3600;
 
     // ── Master Entities (code-based) ─────────────────────────────────────
@@ -134,14 +168,7 @@ class OrgService
     ->toArray();
 }
 
-    public static function usersByDesignation(string $desigCode, string $branchCode = 'ALL'): array
-    {
-        return User::whereHas('employee', fn($q) => $q->where('desig_code', $desigCode))
-            ->when($branchCode !== 'ALL', fn($q) => $q->whereHas('branches', fn($b) => $b->where('code', $branchCode)))
-            ->select('id', 'username', 'employee_code')
-            ->get()
-            ->toArray();
-    }
+
 
     // ── Single lookups ───────────────────────────────────────────────────
     public static function branchName(string $code): string { return self::branches()[$code] ?? $code; }
@@ -151,4 +178,246 @@ class OrgService
     public static function verticalName(string $code): string { return self::verticals()[$code] ?? $code; }
     public static function segmentName(string $code): string { return self::segments()[$code] ?? $code; }
     public static function subSegmentName(string $code): string { return self::subSegments()[$code] ?? $code; }
+    // Add these methods to your current new OrgService.php
+
+    /**
+ * Master User Filter Function (Uses flexible User Scopes)
+ *
+ * Filters work on `xlr8_admin_user_scopes` table (not just primary employee columns)
+ */
+public static function getUsers(
+    string $branchCode     = 'ALL',
+    string $locCode        = 'ALL',
+    string $deptCode       = 'ALL',
+    string $divCode        = 'ALL',
+    string $desigCode      = 'ALL',
+    string $verticalCode   = 'ALL',
+    string $segmentCode    = 'ALL',
+    string $subSegmentCode = 'ALL'
+): array {
+    $query = User::with(['person', 'scopes', 'employee'])
+        ->whereHas('employee');
+
+    // Designation (from employee table)
+    if ($desigCode !== 'ALL') {
+        $query->whereHas('employee', function ($e) use ($desigCode) {
+            $e->where('designation_code', $desigCode)
+              ->orWhere('desig_code', $desigCode);
+        });
+    }
+
+    // Build scope filters
+    $scopeMap = [
+        'branch'      => $branchCode,
+        'location'    => $locCode,
+        'department'  => $deptCode,
+        'division'    => $divCode,
+        'vertical'    => $verticalCode,
+        'segment'     => $segmentCode,
+        'sub_segment' => $subSegmentCode,
+    ];
+
+    foreach ($scopeMap as $type => $code) {
+        if ($code === 'ALL') continue;
+
+        $query->where(function ($q) use ($type, $code) {
+            // Match in primary employee columns
+            $primaryColumn = match($type) {
+                'branch'      => 'primary_branch_code',
+                'location'    => 'primary_loc_code',
+                'department'  => 'primary_dept_code',
+                'division'    => 'primary_div_code',
+                'vertical'    => 'vertical_code',
+                'segment'     => 'segment_code',
+                'sub_segment' => 'sub_segment_code',
+            };
+
+            $q->whereHas('employee', fn($e) => $e->where($primaryColumn, $code))
+              // OR match in flexible user_scopes
+              ->orWhereHas('scopes', function ($s) use ($type, $code) {
+                  $s->where('scope_type', $type)
+                    ->where('scope_code', $code)
+                    ->where('is_active', true);
+              });
+        });
+    }
+
+    $users = $query->get();
+
+    return $users->map(function ($user) {
+        $emp = $user->employee;
+
+        return [
+            'id'                    => $user->id,
+            'employee_code'         => $user->employee_code,
+            'person_code'           => $user->person_code,
+            'display_name'          => $user->display_name,
+            'designation_code'      => $emp?->designation_code ?? $emp?->desig_code,
+            'reporting_manager_code'=> $emp?->reporting_manager_code,
+            'mile_id'               => $emp?->mile_id,
+
+            'primary_branch_code'   => $emp?->primary_branch_code,
+            'primary_loc_code'      => $emp?->primary_loc_code,
+            'primary_dept_code'     => $emp?->primary_dept_code,
+            'primary_div_code'      => $emp?->primary_div_code,
+            'vertical_code'         => $emp?->vertical_code,
+            'segment_code'          => $emp?->segment_code,
+            'sub_segment_code'      => $emp?->sub_segment_code,
+
+            // All assigned scopes from user_scopes
+            'branches'      => $user->scopes->where('scope_type', 'branch')->pluck('scope_code')->unique()->values()->toArray(),
+            'locations'     => $user->scopes->where('scope_type', 'location')->pluck('scope_code')->unique()->values()->toArray(),
+            'departments'   => $user->scopes->where('scope_type', 'department')->pluck('scope_code')->unique()->values()->toArray(),
+            'divisions'     => $user->scopes->where('scope_type', 'division')->pluck('scope_code')->unique()->values()->toArray(),
+            'verticals'     => $user->scopes->where('scope_type', 'vertical')->pluck('scope_code')->unique()->values()->toArray(),
+            'segments'      => $user->scopes->where('scope_type', 'segment')->pluck('scope_code')->unique()->values()->toArray(),
+            'sub_segments'  => $user->scopes->where('scope_type', 'sub_segment')->pluck('scope_code')->unique()->values()->toArray(),
+
+            'primary_mobile' => $user->primary_mobile,
+            'primary_email'  => $user->primary_email,
+            'profile_image'  => $user->avatar?? $user->person?->getFirstMediaUrl('profile_photos')?? null,
+        ];
+    })->toArray();
+}
+
+public static function getCurrentUser(): ?array
+    {
+       $user = auth()->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        $user->load(['person', 'scopes', 'employee']);
+
+        $emp = $user->employee;
+
+        return [
+            'id'                    => $user->id,
+            'employee_code'         => $user->employee_code,
+            'person_code'           => $user->person_code,
+            'display_name'          => $user->display_name,
+            'designation_code'      => $emp?->designation_code ?? $emp?->desig_code,
+            'reporting_manager_code'=> $emp?->reporting_manager_code,
+            'mile_id'               => $emp?->mile_id,
+            'primary_branch_code'   => $emp?->primary_branch_code,
+            'primary_loc_code'      => $emp?->primary_loc_code,
+            'primary_dept_code'     => $emp?->primary_dept_code,
+            'primary_div_code'      => $emp?->primary_div_code,
+            'vertical_code'         => $emp?->vertical_code,
+            'segment_code'          => $emp?->segment_code,
+            'sub_segment_code'      => $emp?->sub_segment_code,
+            'branches'      => $user->scopes->where('scope_type', 'branch')->pluck('scope_code')->unique()->values()->toArray(),
+            'locations'     => $user->scopes->where('scope_type', 'location')->pluck('scope_code')->unique()->values()->toArray(),
+            'departments'   => $user->scopes->where('scope_type', 'department')->pluck('scope_code')->unique()->values()->toArray(),
+            'divisions'     => $user->scopes->where('scope_type', 'division')->pluck('scope_code')->unique()->values()->toArray(),
+            'verticals'     => $user->scopes->where('scope_type', 'vertical')->pluck('scope_code')->unique()->values()->toArray(),
+            'segments'      => $user->scopes->where('scope_type', 'segment')->pluck('scope_code')->unique()->values()->toArray(),
+            'sub_segments'  => $user->scopes->where('scope_type', 'sub_segment')->pluck('scope_code')->unique()->values()->toArray(),
+            'primary_mobile' => $user->primary_mobile,
+            'primary_email'  => $user->primary_email,
+            'profile_image'  => $user->avatar 
+                ?? $user->person?->getFirstMediaUrl('profile_photos') 
+                ?? null,
+        ];
+    }
+
+
+////////
+public static function usersByDesignation(string $desigCode, string $branchCode = 'ALL'): array
+{
+    $users = User::with('person')                    // ← Eager load person (needed for display_name)
+        ->whereHas('employee', function ($q) use ($desigCode) {
+            $q->where('designation_code', $desigCode);   // ← Use new column (recommended)
+            // $q->where('desig_code', $desigCode);      // ← Use this only if still using legacy column
+        })
+        ->when($branchCode !== 'ALL', function ($q) use ($branchCode) {
+            $q->whereHas('branches', fn($b) => $b->where('code', $branchCode));
+        })
+        ->select('id', 'username', 'employee_code', 'person_code')
+        ->get();
+
+    // Now map and include display_name (accessor will work)
+    return $users->map(function ($user) {
+        return [
+            'id'            => $user->id,
+            'username'      => $user->username,
+            'employee_code' => $user->employee_code,
+            'person_code'   => $user->person_code,
+            'display_name'  => $user->display_name,     // ← This now works
+        ];
+    })->toArray();
+}
+
+    public static function usersByDepartment(string $deptCode, string $branchCode = 'ALL', string $divCode = 'ALL'): array
+    {
+        return self::formatUsers(
+            self::userQuery([
+                'dept_code'   => $deptCode,
+                'branch_code' => $branchCode,
+                'div_code'    => $divCode !== 'ALL' ? $divCode : null,
+            ])
+        );
+    }
+
+    public static function usersByDivision(string $divCode, string $branchCode = 'ALL'): array
+    {
+        return self::formatUsers(
+            self::userQuery([
+                'div_code'    => $divCode,
+                'branch_code' => $branchCode,
+            ])
+        );
+    }
+
+    public static function salesConsultants(string $branchCode = 'ALL'): array
+    {
+        return self::formatUsers(
+            self::userQuery([
+                'desig_code'  => 'CNS',
+                'dept_code'   => 'SLS',
+                'branch_code' => $branchCode,
+            ])
+        );
+    }
+
+    public static function salesTeamUsers(string $branchCode = 'ALL'): array
+    {
+        return self::formatUsers(
+            self::userQuery([
+                'dept_code'   => 'SLS',
+                'branch_code' => $branchCode,
+            ])
+        );
+    }
+
+    public static function getKeyValuesByCode(string $keywordCode): ?\Illuminate\Support\Collection
+    {
+        return KeywordMaster::where('code', strtoupper(trim($keywordCode)))
+            ->first()?->keyvalues()->where('is_active', true)->get();
+    }
+
+    public static function getKeyValuesByColName(string $colName): ?\Illuminate\Support\Collection
+    {
+        return KeywordMaster::where('keyword', strtoupper(trim($colName)))
+            ->first()?->keyvalues()->where('is_active', true)->get();
+    }
+
+    public static function getKeyValueById(int $id): ?Keyvalue
+    {
+        return Keyvalue::where('id', $id)->where('is_active', true)->first();
+    }
+
+    public static function keywordValueByCode(string $keywordCode): array
+    {
+        return Keyvalue::where('keyword_code', strtoupper(trim($keywordCode)))
+            ->where('is_active', true)
+            ->pluck('value', 'code')
+            ->toArray();
+    }
+
+    public static function users(array $filters = []): array
+    {
+        return self::formatUsers(self::userQuery($filters));
+    }
 }

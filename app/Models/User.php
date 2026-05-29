@@ -12,6 +12,8 @@ use App\Models\Admin\Employee;
 use App\Models\Admin\Person;
 use App\Models\Admin\UserScope;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Builder;
+use App\Services\OrgService;
 
 class User extends Authenticatable
 {
@@ -28,6 +30,7 @@ class User extends Authenticatable
         'user_type_id',
         'avatar',
         'is_active',
+        'bypass_data_scoping',
         'last_login_at',
         'remember_token',
         'created_by',
@@ -41,11 +44,12 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'is_active'      => 'boolean',
-        'last_login_at'  => 'datetime',
-        'created_at'     => 'datetime',
-        'updated_at'     => 'datetime',
-        'deleted_at'     => 'datetime',
+        'is_active'           => 'boolean',
+        'bypass_data_scoping' => 'boolean',
+        'last_login_at'       => 'datetime',
+        'created_at'          => 'datetime',
+        'updated_at'          => 'datetime',
+        'deleted_at'          => 'datetime',
     ];
 
     // ─────────────────────────────────────────────────────────────
@@ -62,9 +66,6 @@ class User extends Authenticatable
         return $this->belongsTo(Person::class, 'person_code', 'person_code');
     }
 
-    /**
-     * New: Flexible per-user data scopes (Branch/Location/Department/etc.)
-     */
     public function scopes()
     {
         return $this->hasMany(UserScope::class);
@@ -72,21 +73,24 @@ class User extends Authenticatable
 
     public function activeScopes()
     {
-        return $this->scopes()->active();
+        return $this->scopes()->where('is_active', true);
     }
 
-    /**
-     * Designation acts as Spatie Role (for authorization/permissions)
-     * Returns the primary Designation role assigned to this user.
-     */
-    public function designation()
+    // ─────────────────────────────────────────────────────────────
+    // DASHBOARD HELPERS
+    // ─────────────────────────────────────────────────────────────
+    public function getAccessProfileAttribute(): ?array
     {
-        return $this->roles()->where('guard_name', 'web')->first();
+        return OrgService::getCurrentUser();
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // PRIMARY CODE HELPERS (from Employee)
-    // ─────────────────────────────────────────────────────────────
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->person?->display_name 
+            ?? $this->employee?->person?->display_name 
+            ?? $this->username 
+            ?? 'N/A';
+    }
 
     public function primaryBranchCode(): ?string
     {
@@ -108,50 +112,10 @@ class User extends Authenticatable
         return $this->employee?->primary_div_code;
     }
 
-    public function primaryVerticalCode(): ?string
+    public function primaryPost(): ?string
     {
-        return $this->employee?->vertical_code;
+        return $this->employee?->desig_code ?? $this->employee?->designation_code ?? '—';
     }
-
-    public function primarySegmentCode(): ?string
-    {
-        return $this->employee?->segment_code;
-    }
-
-    public function primarySubSegmentCode(): ?string
-    {
-        return $this->employee?->sub_segment_code;
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // ALL XXX HELPERS (via Employee pivots - preserved from working version)
-    // ─────────────────────────────────────────────────────────────
-
-    public function branches(): Collection
-    {
-        return $this->employee?->branches() ?? collect();
-    }
-
-    public function locations(): Collection
-    {
-        return $this->employee?->locations() ?? collect();
-    }
-
-    public function departments(): Collection
-    {
-        return $this->employee?->departments() ?? collect();
-    }
-
-    public function divisions(): Collection
-    {
-        return $this->employee?->divisions() ?? collect();
-    }
-
-    // Add more (segments, verticals, etc.) in Employee model if needed
-
-    // ─────────────────────────────────────────────────────────────
-    // PERSON PROXY ACCESSORS (Mobile / Email / Address / Banking)
-    // ─────────────────────────────────────────────────────────────
 
     public function getPrimaryMobileAttribute(): ?string
     {
@@ -173,28 +137,87 @@ class User extends Authenticatable
         return $this->person?->all_emails ?? collect();
     }
 
-    public function getPrimaryAddressAttribute()
+    // ─────────────────────────────────────────────────────────────
+    // LEGACY RELATIONS (Updated to use user_scopes for compatibility)
+    // These methods previously used old pivot tables that no longer exist.
+    // They now pull data from the modern xlr8_admin_user_scopes table
+    // while keeping the same method names and return behavior.
+    // ─────────────────────────────────────────────────────────────
+
+    public function branches()
     {
-        return $this->person?->primary_address;
+        $codes = $this->activeScopes()
+            ->where('scope_type', 'branch')
+            ->pluck('scope_code')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($codes)) {
+            return collect();
+        }
+
+        return \App\Models\Admin\Branch::whereIn('code', $codes)
+            ->where('is_active', true)
+            ->get();
     }
 
-    public function getAllAddressesAttribute()
+    public function locations()
     {
-        return $this->person?->all_addresses ?? collect();
+        $codes = $this->activeScopes()
+            ->where('scope_type', 'location')
+            ->pluck('scope_code')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($codes)) {
+            return collect();
+        }
+
+        return \App\Models\Admin\Location::whereIn('code', $codes)
+            ->where('is_active', true)
+            ->get();
     }
 
-    public function getPrimaryBankAttribute()
+    public function departments()
     {
-        return $this->person?->primary_bank;
+        $codes = $this->activeScopes()
+            ->where('scope_type', 'department')
+            ->pluck('scope_code')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($codes)) {
+            return collect();
+        }
+
+        return \App\Models\Admin\Department::whereIn('code', $codes)
+            ->where('is_active', true)
+            ->get();
     }
 
-    public function getAllBankingAttribute()
+    public function divisions()
     {
-        return $this->person?->all_banking ?? collect();
+        $codes = $this->activeScopes()
+            ->where('scope_type', 'division')
+            ->pluck('scope_code')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($codes)) {
+            return collect();
+        }
+
+        return \App\Models\Admin\Division::whereIn('code', $codes)
+            ->where('is_active', true)
+            ->get();
     }
 
     // ─────────────────────────────────────────────────────────────
-    // NEW USER SCOPE HELPERS (Data Filtering)
+    // DATA SCOPING HELPERS
     // ─────────────────────────────────────────────────────────────
 
     public function hasScope(string $type, string $code): bool
@@ -208,10 +231,14 @@ class User extends Authenticatable
             ->exists();
     }
 
+    public function bypassesDataScoping(): bool
+    {
+        return (bool) $this->bypass_data_scoping;
+    }
+
     public function getScopeCodes(string $type): array
     {
         $type = strtoupper(trim($type));
-
         return $this->activeScopes()
             ->where('scope_type', $type)
             ->pluck('scope_code')
@@ -229,42 +256,11 @@ class User extends Authenticatable
     }
 
     // ─────────────────────────────────────────────────────────────
-    // POSTS / ROLES / PERMISSIONS (Backward Compatible)
-    // ─────────────────────────────────────────────────────────────
-
-    public function posts()
-    {
-        if (!$this->employee) {
-            return collect();
-        }
-
-        // Reuse existing logic from Employee or keep your current implementation
-        return $this->employee->posts();
-    }
-
-    public function primaryPost()
-    {
-        return $this->posts()->where('assignment_type', 'primary')->first();
-    }
-
-    // Spatie methods inherited via HasRoles:
-    // - getRoleNames()
-    // - getAllPermissions()
-    // - hasRole()
-    // - hasPermissionTo()
-    // - assignRole()
-    // - removeRole()
-    // Since Designation is the Role model, these work directly with Designation codes/names.
-
-    // ─────────────────────────────────────────────────────────────
     // BOOT
     // ─────────────────────────────────────────────────────────────
 
     protected static function boot()
     {
         parent::boot();
-
-        // Optional: Auto-assign designation role when employee designation changes
-        // You can add observer or here if needed in future
     }
 }

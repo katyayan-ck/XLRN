@@ -12,20 +12,24 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\Traits\HasHashedMediaTrait;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Models\BaseModel;
+use App\Models\Traits\HasCommunications;
+
 
 class Booking extends BaseModel  implements HasMedia
 {
     use CrudTrait;
     use SoftDeletes;
     use InteractsWithMedia;
+    use HasCommunications;
     //protected Carpdates = ['booking_date'];
     protected $table = 'xlr8_booking_master';
     protected $fillable = [];
     protected $guarded = ['id'];
 
     public string $scopeType   = 'branch';
-public string $scopeColumn = 'branchid';   // existing column name on xlr8_booking_master
-public string $scopeGroup  = 'org';
+    public string $scopeColumn = 'branchid';   // existing column name on xlr8_booking_master
+    public string $scopeGroup  = 'org';
 
 
 
@@ -43,15 +47,18 @@ public string $scopeGroup  = 'org';
         return $this->hasMany(Bookingamount::class, 'bid', 'id');
     }
 
-    public function location()
-    {
-        return $this->belongsTo(Location::class, 'location_id', 'id');
-    }
 
-    public function branch()
-    {
-        return $this->belongsTo(Branches::class, 'branch_id', 'id');
-    }
+
+public function location()
+{
+    return $this->belongsTo(\App\Models\Admin\Location::class, 'location_code', 'code');
+    // or 'code' depending on your foreign key logic
+}
+public function branch()
+{
+    return $this->belongsTo(\App\Models\Admin\Branch::class, 'branch_code', 'code');
+    // or 'code' depending on your foreign key logic
+}
 
     public function finances()
     {

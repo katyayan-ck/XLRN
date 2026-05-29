@@ -9,7 +9,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\User;
 
-class Person extends Model implements HasMedia
+class Person extends \App\Models\BaseModel implements HasMedia
 {
     use SoftDeletes, InteractsWithMedia;
 

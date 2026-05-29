@@ -4,6 +4,7 @@ namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
+use App\Models\BaseModel;
 
 class XlFeeCollection extends BaseModel
 {

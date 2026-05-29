@@ -1,9 +1,12 @@
+
 @extends(backpack_view('blank'))
 
 @section('title', 'Edit Branch - ' . $branch->name)
 
 @push('after_styles')
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <style>
     .readonly-value {
         background-color: #f8f9fa;
@@ -17,155 +20,326 @@
 
     .card {
         border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, .08);
     }
 
     .form-control:focus {
         border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+        box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
     }
 </style>
+
 @endpush
 
 @section('content')
+
 <div class="container-fluid">
+
     <div class="row">
+
         <div class="col-12">
 
-            <!-- Back Button -->
-            {{-- <a href="{{ backpack_url('branch') }}" class="btn btn-link mb-3">
-                ← Back to All Branches
-            </a> --}}
-
             <div class="card">
+
                 <div class="card-header text-black">
                     <h2 class="mb-0">Edit Branch Information</h2>
                 </div>
+
                 <div class="card-body">
 
-                    <form method="POST" action="{{ backpack_url('branch/' . $branch->id) }}">
+                    <form method="POST" action="{{ backpack_url('branch/' . $branch->branch_code) }}">
+
                         @csrf
                         @method('PUT')
 
                         <div class="row">
 
-                            <!-- Read Only Section -->
+                            {{-- READONLY --}}
                             <div class="col-md-12 mb-4">
-                                {{-- <h5 class="text-muted border-bottom pb-2">Basic Information (Read Only)</h5> --}}
+
                                 <div class="row">
+
                                     <div class="col-md-3">
-                                        <label class="form-label fw-bold">Branch ID</label>
-                                        <div class="readonly-value">{{ $branch->id }}</div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">Created At</label>
+                                        <label class="form-label fw-bold">
+                                            Branch ID
+                                        </label>
+
                                         <div class="readonly-value">
-                                            {{ $branch->created_at ? $branch->created_at->format('d-m-Y H:i') : '—' }}
+                                            {{ $branch->id }}
                                         </div>
                                     </div>
+
+                                    <div class="col-md-3">
+
+                                        <label class="form-label fw-bold">
+                                            Created At
+                                        </label>
+
+                                        <div class="readonly-value">
+
+                                            {{
+                                            $branch->created_at
+                                            ? $branch->created_at->format('d-m-Y H:i')
+                                            : '—'
+                                            }}
+
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
 
-                            <!-- Editable Fields -->
-                            <div class="col-md-3 mb-3">
-                                <label>Branch Code <span class="text-danger">*</span></label>
+                            {{-- CODE --}}
+                            <div class="col-md-2 mb-3">
+
+                                <label>
+                                    Code
+                                    <span class="text-danger">*</span>
+                                </label>
+
                                 <input type="text" name="code" class="form-control"
                                     value="{{ old('code', $branch->code) }}" required>
                             </div>
 
+                            {{-- BRANCH CODE --}}
+                            <div class="col-md-2 mb-3">
+
+                                <label>
+                                    Org Branch Code
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <input type="text" name="branch_code" class="form-control"
+                                    value="{{ old('branch_code', $branch->branch_code) }}" required>
+                            </div>
+
+                            {{-- NAME --}}
                             <div class="col-md-3 mb-3">
-                                <label>Branch Name <span class="text-danger">*</span></label>
+
+                                <label>
+                                    Branch Name
+                                    <span class="text-danger">*</span>
+                                </label>
+
                                 <input type="text" name="name" id="name" class="form-control"
                                     value="{{ old('name', $branch->name) }}" required>
                             </div>
 
-                            <div class="col-md-3 mb-3">
-                                <label>Short Name <span class="text-danger">*</span></label>
+                            {{-- SHORT NAME --}}
+                            <div class="col-md-2 mb-3">
+
+                                <label>
+                                    Short Name
+                                    <span class="text-danger">*</span>
+                                </label>
+
                                 <input type="text" name="short_name" id="short_name" class="form-control"
                                     value="{{ old('short_name', $branch->short_name) }}" required>
                             </div>
 
+                            {{-- DESCRIPTION --}}
                             <div class="col-md-3 mb-3">
-                                <label>Phone <small class="text-muted">(10 digits)</small></label>
+
+                                <label>Description</label>
+
+                                <textarea name="description"
+                                    class="form-control">{{ old('description', $branch->description) }}</textarea>
+
+                            </div>
+
+                            {{-- PHONE --}}
+                            <div class="col-md-3 mb-3">
+
+                                <label>
+                                    Phone
+                                    <small class="text-muted">(10 digits)</small>
+                                </label>
+
                                 <input type="text" name="phone" class="form-control"
                                     value="{{ old('phone', $branch->phone) }}" maxlength="10" pattern="[0-9]{10}">
                             </div>
 
+                            {{-- EMAIL --}}
                             <div class="col-md-3 mb-3">
+
                                 <label>Email</label>
+
                                 <input type="email" name="email" class="form-control"
                                     value="{{ old('email', $branch->email) }}">
                             </div>
 
+                            {{-- ADDRESS --}}
+                            <div class="col-md-6 mb-3">
+
+                                <label>Address</label>
+
+                                <textarea name="address" class="form-control"
+                                    rows="3">{{ old('address', $branch->address) }}</textarea>
+
+                            </div>
+
+                            {{-- CITY --}}
                             <div class="col-md-3 mb-3">
-                                <label>City <span class="text-danger">*</span></label>
+
+                                <label>
+                                    City
+                                    <span class="text-danger">*</span>
+                                </label>
+
                                 <input type="text" name="city" class="form-control"
                                     value="{{ old('city', $branch->city) }}" required>
                             </div>
 
+                            {{-- STATE --}}
                             <div class="col-md-3 mb-3">
-                                <label>State <span class="text-danger">*</span></label>
+
+                                <label>
+                                    State
+                                    <span class="text-danger">*</span>
+                                </label>
+
                                 <input type="text" name="state" class="form-control"
                                     value="{{ old('state', $branch->state) }}" required>
                             </div>
 
+                            {{-- PINCODE --}}
                             <div class="col-md-3 mb-3">
-                                <label>Pincode <span class="text-danger">*</span> <small class="text-muted">(6
-                                        digits)</small></label>
+
+                                <label>
+                                    Pincode
+                                    <span class="text-danger">*</span>
+
+                                    <small class="text-muted">
+                                        (6 digits)
+                                    </small>
+                                </label>
+
                                 <input type="text" name="pincode" class="form-control"
                                     value="{{ old('pincode', $branch->pincode) }}" required maxlength="6"
                                     pattern="[0-9]{6}">
                             </div>
 
+                            {{-- COUNTRY --}}
+                            <div class="col-md-3 mb-3">
+
+                                <label>Country</label>
+
+                                <input type="text" name="country" class="form-control"
+                                    value="{{ old('country', $branch->country) }}">
+                            </div>
+
+                            {{-- LATITUDE --}}
+                            <div class="col-md-3 mb-3">
+
+                                <label>Latitude</label>
+
+                                <small class="text-muted">
+                                    (Range: -90 to 90)
+                                </small>
+
+                                <input type="text" name="latitude" class="form-control"
+                                    value="{{ old('latitude', $branch->latitude) }}">
+                            </div>
+
+                            {{-- LONGITUDE --}}
+                            <div class="col-md-3 mb-3">
+
+                                <label>Longitude</label>
+
+                                <small class="text-muted">
+                                    (Range: -180 to 180)
+                                </small>
+
+                                <input type="text" name="longitude" class="form-control"
+                                    value="{{ old('longitude', $branch->longitude) }}">
+                            </div>
+
+                            {{-- HEAD OFFICE --}}
                             <div class="col-md-1 mb-3">
-                                <label class="form-label">Is Head Office?</label>
+
+                                <label class="form-label">
+                                    Is Head Office?
+                                </label>
+
                                 <div class="form-check form-switch">
-                                    <!-- Hidden fallback -->
+
                                     <input type="hidden" name="is_head_office" value="0">
 
-                                    <!-- Checkbox -->
                                     <input type="checkbox" name="is_head_office" value="1" class="form-check-input" {{
-                                        old('is_head_office', $branch->is_head_office) ? 'checked' : '' }}>
+                                        old('is_head_office', $branch->is_head_office)
+                                    ? 'checked'
+                                    : ''
+                                    }}
+                                    >
                                 </div>
                             </div>
 
+                            {{-- ACTIVE --}}
                             <div class="col-md-1 mb-3">
-                                <label class="form-label">Is Active?</label>
+
+                                <label class="form-label">
+                                    Is Active?
+                                </label>
+
                                 <div class="form-check form-switch">
-                                    <!-- Hidden fallback -->
+
                                     <input type="hidden" name="is_active" value="0">
 
-                                    <!-- Checkbox -->
                                     <input type="checkbox" name="is_active" value="1" class="form-check-input" {{
-                                        old('is_active', $branch->is_active) ? 'checked' : '' }}>
+                                        old('is_active', $branch->is_active)
+                                    ? 'checked'
+                                    : ''
+                                    }}
+                                    >
                                 </div>
                             </div>
-
 
                         </div>
 
                         <div class="mt-4">
+
                             <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="la la-save"></i> Update Branch
+                                <i class="la la-save"></i>
+                                Update Branch
                             </button>
-                            <a href="{{ backpack_url('branch') }}" class="btn btn-secondary btn-lg">Cancel</a>
+
+                            <a href="{{ backpack_url('branch') }}" class="btn btn-secondary btn-lg">
+                                Cancel
+                            </a>
+
                         </div>
+
                     </form>
+
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 @endsection
+
 @push('after_scripts')
+
 <script>
-    document.getElementById('name').addEventListener('input', function() {
-        let name = this.value.trim();
-        let shortNameField = document.getElementById('short_name');
-        if (name) {
-            let firstWord = name.split(' ')[0].toUpperCase();
-            shortNameField.value = firstWord;
-        }
-    });
+    document
+        .getElementById('name')
+        .addEventListener('input', function () {
+
+            let name = this.value.trim();
+
+            let shortNameField =
+                document.getElementById('short_name');
+
+            if (name) {
+
+                let firstWord =
+                    name.split(' ')[0].toUpperCase();
+
+                shortNameField.value = firstWord;
+            }
+        });
+
 </script>
+
 @endpush

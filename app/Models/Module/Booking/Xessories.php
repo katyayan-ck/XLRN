@@ -4,6 +4,7 @@
 
 namespace App\Models\Module\Booking;
 
+use App\Models\BaseModel;
 
 
 use Illuminate\Database\Eloquent\SoftDeletes;

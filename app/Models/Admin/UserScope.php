@@ -4,6 +4,7 @@ namespace App\Models\Admin;
 
 use App\Models\BaseModel;
 use Backpack\CRUD\app\Models\Traits\CrudTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -44,7 +45,10 @@ class UserScope extends BaseModel
     // Scopes
     // ─────────────────────────────────────────────────────────────
 
-    public function scopeActive($query)
+    /**
+     * Scope active records with valid from_date / to_date range.
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true)
             ->where(function ($q) {
@@ -57,12 +61,12 @@ class UserScope extends BaseModel
             });
     }
 
-    public function scopeOfType($query, string $type)
+    public function scopeOfType(Builder $query, string $type): Builder
     {
         return $query->where('scope_type', $type);
     }
 
-    public function scopeForUser($query, int $userId)
+    public function scopeForUser(Builder $query, int $userId): Builder
     {
         return $query->where('user_id', $userId);
     }

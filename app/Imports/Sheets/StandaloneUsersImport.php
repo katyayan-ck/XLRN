@@ -4,18 +4,31 @@ namespace App\Imports\Sheets;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Collection;
 use App\Services\OrgScopeService;
+use App\Services\HR\EmployeeJourneyService;
+use App\Models\Admin\{Branch, Location, Designation, Department, Division, Vertical, PersonContact};
+use App\Models\Vehicle\{Segment, SubSegment};
 
 class StandaloneUsersImport implements ToCollection, WithHeadingRow
 {
     private int $success = 0;
     private int $rowIndex = 1;
     private bool $headersDumped = false;
+
+    private int $fallbackMobile = 0;
+    private int $fallbackDesignation = 0;
+    private int $fallbackBranch = 0;
+    private int $fallbackLocation = 0;
+    private int $fallbackDepartment = 0;
+    private int $fallbackDivision = 0;
+    private int $fallbackVertical = 0;
+    private int $fallbackSegment = 0;
+    private int $fallbackSubSegment = 0;
+    private int $fallbackReportingManager = 0;
 
     public function collection(Collection $rows)
     {
@@ -26,7 +39,22 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
             $this->processRow($row->toArray(), $this->rowIndex);
         }
 
-        echo "\n✅ Standalone Users Import Completed! Success: {$this->success}\n\n";
+        echo "\n✅ Standalone Users Import Completed! Success: {$this->success}\n";
+
+        echo "\n════════════════════════════════════════════════════════════";
+        echo "\n📊 FALLBACK SUMMARY REPORT";
+        echo "\n════════════════════════════════════════════════════════════";
+        echo "\nMobile (Personal Contact Number) : {$this->fallbackMobile}";
+        echo "\nDesignation                      : {$this->fallbackDesignation}";
+        echo "\nPrimary Branch                   : {$this->fallbackBranch}";
+        echo "\nPrimary Location                 : {$this->fallbackLocation}";
+        echo "\nPrimary Department               : {$this->fallbackDepartment}";
+        echo "\nPrimary Division                 : {$this->fallbackDivision}";
+        echo "\nVertical                         : {$this->fallbackVertical}";
+        echo "\nSegment                          : {$this->fallbackSegment}";
+        echo "\nSub Segment                      : {$this->fallbackSubSegment}";
+        echo "\nReporting Manager                : {$this->fallbackReportingManager}";
+        echo "\n════════════════════════════════════════════════════════════\n";
     }
 
     private function processRow(array $row, int $rowIndex): void
@@ -37,18 +65,21 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
         }
 
         $empCode = $this->getValue($row, ['emp_code', 'Emp Code*']);
-        if (!$empCode) {
-            $this->logRow($rowIndex, '❌ FAIL', 'Missing emp_code');
-            return;
-        }
+        if (!$empCode) return;
 
-        echo "\n[Row {$rowIndex}] Processing Emp: {$empCode}\n";
+        $rawPersonalMobile = $this->getValue($row, ['personal_contact_number', 'Personal Contact Number*']);
+        $rawOfficialMobile = $this->getValue($row, ['official_contact_number', 'Official Contact Number']);
+        $rawPersonalEmail  = $this->getValue($row, ['personal_mail_id', 'Personal Mail Id']);
+        $rawOfficialEmail  = $this->getValue($row, ['official_mail_id', 'Official Mail ID']);
 
         $personCode = $this->derivePersonCode($row);
 
-        if (!$this->createOrUpdatePerson($row, $personCode, $rowIndex)) return;
-        if (!$this->createOrUpdateEmployee($row, $empCode, $personCode, $rowIndex)) return;
+        $this->createOrUpdatePerson($row, $personCode, $rowIndex);
+        $this->createOrUpdateEmployee($row, $empCode, $personCode, $rowIndex);
         $this->createOrUpdateUser($row, $empCode, $personCode, $rowIndex);
+
+        $this->createPrimaryMobileContact($personCode, $rawPersonalMobile, $rawOfficialMobile, $rowIndex);
+        $this->createPrimaryEmailContact($personCode, $rawPersonalEmail, $rawOfficialEmail, $rowIndex);
 
         $this->assignDesignationAndScopes($empCode, $row, $rowIndex);
 
@@ -56,98 +87,155 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
         echo "[Row {$rowIndex}] ✅ SUCCESS - {$empCode}\n";
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // PERSON
-    // ─────────────────────────────────────────────────────────────
-    private function createOrUpdatePerson(array $row, string $personCode, int $rowIndex): bool
+    // ==================== PERSON ====================
+    private function createOrUpdatePerson(array $row, string $personCode, int $rowIndex): void
     {
         $now = Carbon::now();
         $fullName = $this->s($this->getValue($row, ['employee_name', 'Employee Name*']));
         $nameParts = array_values(array_filter(explode(' ', $fullName)));
-        $firstName  = $nameParts[0] ?? '';
-        $middleName = $nameParts[1] ?? '';
-        $lastName   = implode(' ', array_slice($nameParts, 2)) ?: ($nameParts[1] ?? '');
 
         $data = [
-            'person_code' => $personCode,
-            'display_name' => $fullName,
-            'first_name' => $firstName,
-            'middle_name' => $middleName,
-            'last_name' => $lastName,
-            'gender' => $this->s($this->getValue($row, ['gender'])),
-            'dob' => $this->parseDate($this->getValue($row, ['date_of_birth'])),
-            'pan_no' => $this->n($this->getValue($row, ['pan_no'])),
-            'aadhaar_no' => $this->n($this->getValue($row, ['aadhaar_no'])),
-            'created_at' => $now,
-            'updated_at' => $now,
+            'person_code'   => $personCode,
+            'display_name'  => $fullName,
+            'first_name'    => $nameParts[0] ?? '',
+            'middle_name'   => $nameParts[1] ?? '',
+            'last_name'     => implode(' ', array_slice($nameParts, 2)) ?: ($nameParts[1] ?? ''),
+            'gender'        => $this->getValue($row, ['gender']),
+            'dob'           => $this->parseDate($this->getValue($row, ['date_of_birth'])),
+            'pan_no'        => $this->n($this->getValue($row, ['pan_no'])),
+            'aadhaar_no'    => $this->n($this->getValue($row, ['aadhaar_no'])),
+            'created_at'    => $now,
+            'updated_at'    => $now,
         ];
 
-        $exists = DB::table('xlr8_admin_person')->where('person_code', $personCode)->exists();
-        $exists ? DB::table('xlr8_admin_person')->where('person_code', $personCode)->update($data)
-                : DB::table('xlr8_admin_person')->insert($data);
-
-        // Mobile + Email + Address + Banking (simplified)
-        $mobile = $this->cleanPhone($this->getValue($row, ['personal_contact_number']));
-        if ($mobile) {
-            DB::table('xlr8_admin_person_contacts')->updateOrInsert(
-                ['person_code' => $personCode, 'data_type' => 'Mobile', 'contact_type' => 'Primary'],
-                ['contact_detail' => $mobile, 'updated_at' => $now]
-            );
-        }
-
-        return true;
+        DB::table('xlr8_admin_person')->updateOrInsert(['person_code' => $personCode], $data);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // EMPLOYEE - Safe with OrgScopeService
-    // ─────────────────────────────────────────────────────────────
-    private function createOrUpdateEmployee(array $row, string $empCode, string $personCode, int $rowIndex): bool
+    // ==================== EMPLOYEE ====================
+    private function createOrUpdateEmployee(array $row, string $empCode, string $personCode, int $rowIndex): void
     {
         $now = Carbon::now();
 
-        $desigCode      = OrgScopeService::firstCode('designation', $this->getValue($row, ['designation', 'Designation*']));
-        $verticalCode   = OrgScopeService::firstCode('vertical',   $this->getValue($row, ['vertical']));
-        $segmentCode    = OrgScopeService::firstCode('segment',    $this->getValue($row, ['segment']));
-        $subSegmentCode = OrgScopeService::firstCode('sub_segment',$this->getValue($row, ['sub_segment']));
+        $rawDesig = $this->getValue($row, ['designation', 'Designation*']);
+        $desigCode = $this->resolveDesignationCode($rawDesig);
+
+        if (!$desigCode && $rawDesig) {
+            $this->fallbackDesignation++;
+            echo "[Row {$rowIndex}] ⚠️  FALLBACK DESIGNATION → Could not resolve: {$rawDesig}\n";
+        }
+
+        $primaryBranch   = $this->resolveSingleCode('branch', $this->getValue($row, ['primary_branch', 'Primary Branch*']));
+        $primaryLocation = $this->resolveSingleCode('location', $this->getValue($row, ['primary_location', 'Primary Location*']));
+        $primaryDept     = $this->resolveSingleCode('department', $this->getValue($row, ['primary_department', 'Primary Department*']));
+        $primaryDiv      = $this->resolveSingleCode('division', $this->getValue($row, ['primary_division', 'Primary Division']));
+        $verticalCode    = $this->resolveSingleCode('vertical', $this->getValue($row, ['vertical']));
+        $segmentCode     = $this->resolveSingleCode('segment', $this->getValue($row, ['segment']));
+        $subSegmentCode  = $this->resolveSingleCode('sub_segment', $this->getValue($row, ['sub_segment', 'Sub Segment']));
+
+        $reportingManagerRaw = $this->getValue($row, ['reporting_manager', 'Reporting Manager']);
+        $reportingManagerCode = $this->extractEmployeeCode($reportingManagerRaw);
+
+        if (!$primaryBranch && $this->getValue($row, ['primary_branch', 'Primary Branch*'])) {
+            $this->fallbackBranch++;
+            echo "[Row {$rowIndex}] ⚠️  FALLBACK BRANCH → Raw: " . $this->getValue($row, ['primary_branch', 'Primary Branch*']) . "\n";
+        }
 
         $data = [
-            'code'                 => $empCode,
-            'person_code'          => $personCode,
-            'desig_code'           => $desigCode,
-            'designation_code'     => $desigCode,
-            'primary_branch_code'  => $this->code($this->getValue($row, ['primary_branch'])),
-            'primary_loc_code'     => $this->code($this->getValue($row, ['primary_location'])),
-            'primary_dept_code'    => $this->code($this->getValue($row, ['primary_department'])),
-            'primary_div_code'     => $this->code($this->getValue($row, ['primary_division'])),
-            'vertical_code'        => $verticalCode,
-            'segment_code'         => $segmentCode,
-            'sub_segment_code'     => $subSegmentCode,
-            'father_name'          => $this->s($this->getValue($row, ['father_name'])),
-            'employment_type'      => 'Permanent',
-            'joining_date'         => $this->parseDate($this->getValue($row, ['date_of_joining'])),
-            'created_at'           => $now,
-            'updated_at'           => $now,
+            'code'                   => $empCode,
+            'person_code'            => $personCode,
+            'desig_code'             => ($desigCode && strlen($desigCode) <= 10) ? $desigCode : null,
+            'designation_code'       => $desigCode,
+            'primary_branch_code'    => $primaryBranch,
+            'primary_loc_code'       => $primaryLocation,
+            'primary_dept_code'      => $primaryDept,
+            'primary_div_code'       => $primaryDiv,
+            'mile_id'                => $this->getValue($row, ['oem_mile_id', 'OEM Mile ID', 'Mile ID']),
+            'vertical_code'          => $verticalCode,
+            'segment_code'           => $segmentCode,
+            'sub_segment_code'       => $subSegmentCode,
+            'reporting_manager_code' => $reportingManagerCode,
+            'employment_type'        => 'Permanent',
+            'joining_date'           => $this->parseDate($this->getValue($row, ['date_of_joining'])),
+            'created_at'             => $now,
+            'updated_at'             => $now,
         ];
 
-        $exists = DB::table('xlr8_admin_employee')->where('code', $empCode)->exists();
-        $exists ? DB::table('xlr8_admin_employee')->where('code', $empCode)->update($data)
-                : DB::table('xlr8_admin_employee')->insert($data);
-
-        return true;
+        DB::table('xlr8_admin_employee')->updateOrInsert(['code' => $empCode], $data);
+        app(EmployeeJourneyService::class)->logChange($empCode, $data, 'import', 'Imported/Updated from Excel');
     }
 
+    // ==================== CONTACTS ====================
+    private function createPrimaryMobileContact(string $personCode, ?string $personal, ?string $official, int $rowIndex): void
+    {
+        $mobile = $personal ?: $official;
+        if (!$mobile) return;
+
+        $cleaned = $this->cleanPhone($mobile);
+        if (!$cleaned) return;
+
+        $exists = PersonContact::where('person_code', $personCode)
+            ->where('data_type', 'Mobile')
+            ->where('contact_type', 'Primary')
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($exists) return;
+
+        PersonContact::create([
+            'person_code'    => $personCode,
+            'data_type'      => 'Mobile',
+            'contact_type'   => 'Primary',
+            'contact_detail' => $cleaned,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+    }
+
+    private function createPrimaryEmailContact(string $personCode, ?string $personal, ?string $official, int $rowIndex): void
+    {
+        $email = $personal ?: $official;
+        if (!$email) return;
+
+        $cleaned = trim($email);
+        if (!filter_var($cleaned, FILTER_VALIDATE_EMAIL)) return;
+
+        $exists = PersonContact::where('person_code', $personCode)
+            ->where('data_type', 'Email')
+            ->where('contact_type', 'Primary')
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($exists) return;
+
+        PersonContact::create([
+            'person_code'    => $personCode,
+            'data_type'      => 'Email',
+            'contact_type'   => 'Primary',
+            'contact_detail' => $cleaned,
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+    }
+
+    // ==================== USER ====================
     private function createOrUpdateUser(array $row, string $empCode, string $personCode, int $rowIndex): void
     {
         $now = Carbon::now();
         $username = strtolower($empCode);
-        $userType = 'Emp';
 
-        $mobile = $this->cleanPhone($this->getValue($row, ['personal_contact_number'])) ?? '1234567890';
+        $rawMobile = $this->getValue($row, ['personal_contact_number', 'Personal Contact Number*', 'official_contact_number', 'Official Contact Number']);
+        $cleanedMobile = $this->cleanPhone($rawMobile);
+        $finalMobile = $cleanedMobile ?? '1234567890';
+
+        if (!$cleanedMobile) {
+            $this->fallbackMobile++;
+            echo "[Row {$rowIndex}] ⚠️  FALLBACK MOBILE USED → 1234567890\n";
+        }
 
         $data = [
             'username'      => $username,
-            'password'      => Hash::make($mobile),
-            'user_type'     => $userType,
+            'password'      => Hash::make($finalMobile),
+            'user_type'     => 'Emp',
             'person_code'   => $personCode,
             'employee_code' => $empCode,
             'is_active'     => 1,
@@ -160,62 +248,118 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
                 : DB::table('users')->insert($data);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // Designation + Full Hierarchical User Scopes
-    // ─────────────────────────────────────────────────────────────
+    // ==================== ASSIGN + SCOPES ====================
     private function assignDesignationAndScopes(string $empCode, array $row, int $rowIndex): void
     {
         $user = \App\Models\User::where('username', strtolower($empCode))->first();
         if (!$user) return;
 
-        $desigCode = OrgScopeService::firstCode('designation', $this->getValue($row, ['designation']));
+        $rawDesig = $this->getValue($row, ['designation', 'Designation*']);
+        $desigCode = $this->resolveDesignationCode($rawDesig);
+
         if ($desigCode) {
-            \App\Models\Admin\Designation::firstOrCreate(
-                ['code' => $desigCode],
-                ['name' => $desigCode, 'guard_name' => 'web', 'is_active' => 1]
-            );
-            $user->assignRole($desigCode);
-            $this->logRow($rowIndex, '✅ ASSIGNED (Designation Role)', $desigCode);
+            $role = Designation::where('code', $desigCode)->first();
+            if ($role) {
+                try {
+                    $user->assignRole($role);
+                } catch (\Throwable $e) {
+                    echo "[Row {$rowIndex}] ⚠️  Could not assign role: " . $e->getMessage() . "\n";
+                }
+            }
         }
 
         $this->syncUserScopes($user->id, $row, $rowIndex);
     }
 
+    // ==================== CORE SCOPING LOGIC (AS PER YOUR RULES) ====================
     private function syncUserScopes(int $userId, array $row, int $rowIndex): void
     {
         $now = now()->toDateString();
 
-        $scopeMap = [
-            'primary_branch'    => 'branch',
-            'addon_branch'      => 'branch',
-            'primary_location'  => 'location',
-            'addon_location'    => 'location',
-            'primary_department'=> 'department',
-            'addon_department'  => 'department',
-            'primary_division'  => 'division',
-            'add_on_divisions'  => 'division',
-            'vertical'          => 'vertical',
-            'segment'           => 'segment',
-            'sub_segment'       => 'sub_segment',
-            'models'            => 'model',
-            'variant'           => 'variant',
-            'variants'          => 'variant',
+        // 1. PRIMARY BRANCH
+        $primaryBranchRaw = $this->getValue($row, ['primary_branch', 'Primary Branch*']);
+        $primaryBranchCodes = $this->resolvePrimaryField('branch', $primaryBranchRaw);
+
+        // 2. ADDON BRANCH (only if Primary Branch was specific)
+        $addonBranchCodes = [];
+        if (!empty($primaryBranchCodes) && count($primaryBranchCodes) === 1) {
+            $addonBranchRaw = $this->getValue($row, ['addon_branch', 'Addon Branch']);
+            if ($addonBranchRaw) {
+                $addonBranchCodes = $this->resolveEntityCodes('branch', $addonBranchRaw);
+            }
+        }
+
+        // 3. PRIMARY LOCATION (hierarchical with Primary Branch)
+        $primaryLocationRaw = $this->getValue($row, ['primary_location', 'Primary Location*']);
+        $primaryLocationCodes = $this->resolvePrimaryLocation($primaryLocationRaw, $primaryBranchCodes);
+
+        // 4. ADDON LOCATION (only if Primary Location was specific)
+        $addonLocationCodes = [];
+        if (!empty($primaryLocationCodes) && count($primaryLocationCodes) === 1) {
+            $addonLocationRaw = $this->getValue($row, ['addon_location', 'AddOn Location']);
+            if ($addonLocationRaw) {
+                $addonLocationCodes = $this->resolveEntityCodes('location', $addonLocationRaw);
+            }
+        }
+
+        // 5. PRIMARY DEPARTMENT
+        $primaryDeptRaw = $this->getValue($row, ['primary_department', 'Primary Department*']);
+        $primaryDeptCodes = $this->resolvePrimaryField('department', $primaryDeptRaw);
+
+        // 6. ADDON DEPARTMENT (only if Primary Department was specific)
+        $addonDeptCodes = [];
+        if (!empty($primaryDeptCodes) && count($primaryDeptCodes) === 1) {
+            $addonDeptRaw = $this->getValue($row, ['addon_department', 'Addon Department']);
+            if ($addonDeptRaw) {
+                $addonDeptCodes = $this->resolveEntityCodes('department', $addonDeptRaw);
+            }
+        }
+
+        // 7. PRIMARY DIVISION (hierarchical with Primary Department)
+        $primaryDivRaw = $this->getValue($row, ['primary_division', 'Primary Division']);
+        $primaryDivCodes = $this->resolvePrimaryDivision($primaryDivRaw, $primaryDeptCodes);
+
+        // 8. ADDON DIVISION (only if Primary Division was specific)
+        $addonDivCodes = [];
+        if (!empty($primaryDivCodes) && count($primaryDivCodes) === 1) {
+            $addonDivRaw = $this->getValue($row, ['add_on_divisions', 'Add On Divisions']);
+            if ($addonDivRaw) {
+                $addonDivCodes = $this->resolveEntityCodes('division', $addonDivRaw);
+            }
+        }
+
+        // 9. VERTICAL (multi)
+        $verticalCodes = $this->resolveMultiField('vertical', $this->getValue($row, ['vertical']));
+
+        // 10. SEGMENT (multi)
+        $segmentCodes = $this->resolveMultiField('segment', $this->getValue($row, ['segment']));
+
+        // 11. SUB SEGMENT (multi + child filter)
+        $subSegmentCodes = $this->resolveChildField('sub_segment', $this->getValue($row, ['sub_segment', 'Sub Segment']), 'segment', $segmentCodes);
+
+        // 12. MODELS (multi + child filter)
+        $modelCodes = $this->resolveChildField('model', $this->getValue($row, ['models']), 'sub_segment', $subSegmentCodes);
+
+        // Save all scopes
+        $allScopes = [
+            'branch'      => array_unique(array_merge($primaryBranchCodes, $addonBranchCodes)),
+            'location'    => array_unique(array_merge($primaryLocationCodes, $addonLocationCodes)),
+            'department'  => array_unique(array_merge($primaryDeptCodes, $addonDeptCodes)),
+            'division'    => array_unique(array_merge($primaryDivCodes, $addonDivCodes)),
+            'vertical'    => $verticalCodes,
+            'segment'     => $segmentCodes,
+            'sub_segment' => $subSegmentCodes,
+            'model'       => $modelCodes,
         ];
 
-        $context = [];
-
-        foreach ($scopeMap as $field => $scopeType) {
-            $rawValue = $this->getValue($row, [$field]);
-            if (!$rawValue) continue;
-
-            $resolvedCodes = OrgScopeService::expandCodes($scopeType, $rawValue, $context);
-
-            foreach ($resolvedCodes as $code) {
+        foreach ($allScopes as $scopeType => $codes) {
+            foreach ($codes as $code) {
+                if (!$code) continue;
                 DB::table('xlr8_admin_user_scopes')->updateOrInsert(
                     [
                         'user_id'    => $userId,
                         'scope_type' => $scopeType,
-                        'scope_code' => $code,
+                        'scope_code' => strtoupper($code),
                     ],
                     [
                         'is_active'  => 1,
@@ -224,40 +368,166 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
                         'updated_at' => now(),
                     ]
                 );
-
-                $this->logRow($rowIndex, '✅ SCOPED', "{$scopeType} = {$code}");
-            }
-
-            // Update context for child levels
-            if (!empty($resolvedCodes) && $resolvedCodes[0] !== 'ALL') {
-                $parentCol = $this->getParentColumn($scopeType);
-                if ($parentCol) {
-                    $context[$parentCol] = $resolvedCodes[0];
-                }
             }
         }
     }
 
-    private function getParentColumn(string $type): ?string
+    // ==================== HELPER METHODS FOR SCOPING ====================
+
+    private function resolvePrimaryField(string $type, ?string $input): array
     {
-        return match($type) {
-            'location'    => 'branch_code',
-            'division'    => 'dept_code',
-            'sub_segment' => 'segment_code',
-            'model'       => 'segment_code',
-            'variant'     => 'model_code',
-            default       => null,
-        };
+        if (!$input || in_array(strtoupper(trim($input)), ['ALL', 'ANY', ''])) {
+            return match($type) {
+                'branch'     => Branch::where('is_active', true)->pluck('code')->toArray(),
+                'department' => Department::where('is_active', true)->pluck('code')->toArray(),
+                default      => [],
+            };
+        }
+        return $this->resolveEntityCodes($type, $input);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────────────────────
+    private function resolvePrimaryLocation(?string $input, array $primaryBranchCodes): array
+    {
+        if (!$input || in_array(strtoupper(trim($input)), ['ALL', 'ANY', ''])) {
+            if (empty($primaryBranchCodes)) {
+                return Location::where('is_active', true)->pluck('code')->toArray();
+            }
+            return Location::whereIn('branch_code', $primaryBranchCodes)->where('is_active', true)->pluck('code')->toArray();
+        }
+        return $this->resolveEntityCodes('location', $input);
+    }
+
+    private function resolvePrimaryDivision(?string $input, array $primaryDeptCodes): array
+    {
+        if (!$input || in_array(strtoupper(trim($input)), ['ALL', 'ANY', ''])) {
+            if (empty($primaryDeptCodes)) {
+                return Division::where('is_active', true)->pluck('code')->toArray();
+            }
+            return Division::whereIn('dept_code', $primaryDeptCodes)->where('is_active', true)->pluck('code')->toArray();
+        }
+        return $this->resolveEntityCodes('division', $input);
+    }
+
+    private function resolveMultiField(string $type, ?string $input): array
+    {
+        if (!$input || in_array(strtoupper(trim($input)), ['ALL', 'ANY', ''])) {
+            return match($type) {
+                'vertical' => Vertical::where('is_active', true)->pluck('code')->toArray(),
+                'segment'  => Segment::where('is_active', true)->pluck('code')->toArray(),
+                default    => [],
+            };
+        }
+        return $this->resolveEntityCodes($type, $input);
+    }
+
+    private function resolveChildField(string $type, ?string $input, string $parentType, array $parentCodes): array
+    {
+        if (!$input || in_array(strtoupper(trim($input)), ['ALL', 'ANY', ''])) {
+            if ($type === 'sub_segment' && !empty($parentCodes)) {
+                return SubSegment::whereIn('segment_code', $parentCodes)->where('is_active', true)->pluck('code')->toArray();
+            }
+            if ($type === 'model' && !empty($parentCodes)) {
+                return \App\Models\Vehicle\VehicleModel::whereIn('sub_segment_code', $parentCodes)->where('is_active', true)->pluck('code')->toArray();
+            }
+            return match($type) {
+                'sub_segment' => SubSegment::where('is_active', true)->pluck('code')->toArray(),
+                'model'       => \App\Models\Vehicle\VehicleModel::where('is_active', true)->pluck('code')->toArray(),
+                default       => [],
+            };
+        }
+        return $this->resolveEntityCodes($type, $input);
+    }
+
+    // ==================== EXISTING HELPER METHODS (unchanged) ====================
+
+    private function resolveSingleCode(string $type, ?string $input): ?string
+    {
+        $codes = $this->resolveEntityCodes($type, $input);
+        return $codes[0] ?? null;
+    }
+
+    private function resolveEntityCodes(string $type, ?string $input): array
+    {
+        if (!$input || in_array(strtoupper(trim($input)), ['ALL', 'ANY', ''])) {
+            return match($type) {
+                'branch'      => Branch::where('is_active', true)->pluck('code')->toArray(),
+                'location'    => Location::where('is_active', true)->pluck('code')->toArray(),
+                'department'  => Department::where('is_active', true)->pluck('code')->toArray(),
+                'division'    => Division::where('is_active', true)->pluck('code')->toArray(),
+                'vertical'    => Vertical::where('is_active', true)->pluck('code')->toArray(),
+                'segment'     => Segment::where('is_active', true)->pluck('code')->toArray(),
+                'sub_segment' => SubSegment::where('is_active', true)->pluck('code')->toArray(),
+                default       => [],
+            };
+        }
+
+        $parts = array_map('trim', explode(',', $input));
+        $resolved = [];
+
+        foreach ($parts as $part) {
+            if (!$part) continue;
+            $upper = strtoupper($part);
+
+            $model = match($type) {
+                'branch'      => Branch::class,
+                'location'    => Location::class,
+                'department'  => Department::class,
+                'division'    => Division::class,
+                'vertical'    => Vertical::class,
+                'segment'     => Segment::class,
+                'sub_segment' => SubSegment::class,
+                default       => null,
+            };
+
+            if (!$model) continue;
+
+            $record = $model::whereRaw('UPPER(code) = ?', [$upper])->first();
+            if (!$record) {
+                $record = $model::whereRaw('UPPER(name) LIKE ?', ["%{$upper}%"])->first();
+            }
+
+            if ($record) {
+                $resolved[] = $record->code;
+            }
+        }
+
+        return array_unique($resolved);
+    }
+
+    private function resolveDesignationCode(?string $value): ?string
+    {
+        if (!$value) return null;
+        $val = strtoupper(trim($value));
+
+        $d = Designation::whereRaw('UPPER(code) = ?', [$val])->first();
+        if ($d) return $d->code;
+
+        $d = Designation::whereRaw('UPPER(name) = ?', [$val])->first();
+        if ($d) return $d->code;
+
+        $d = Designation::whereRaw('UPPER(name) LIKE ?', ["%{$val}%"])->first();
+        if ($d) return $d->code;
+
+        return null;
+    }
+
+    private function extractEmployeeCode(?string $value): ?string
+    {
+        if (!$value) return null;
+        if (preg_match('/\(([A-Z0-9-]+)\)/', $value, $matches)) {
+            return strtoupper(trim($matches[1]));
+        }
+        return null;
+    }
+
     private function getValue(array $row, array $keys): ?string
     {
         foreach ($keys as $key) {
-            if (isset($row[$key]) && trim((string)$row[$key]) !== '') {
-                return trim((string)$row[$key]);
+            if (isset($row[$key]) && trim((string)$row[$key]) !== '') return trim((string)$row[$key]);
+            foreach ($row as $rowKey => $value) {
+                if (strtolower(trim($rowKey)) === strtolower(trim($key)) && trim((string)$value) !== '') {
+                    return trim((string)$value);
+                }
             }
         }
         return null;
@@ -275,15 +545,10 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
     }
 
     private function s(mixed $v): string { return trim((string)($v ?? '')); }
+
     private function n(mixed $v): ?string {
         $v = trim((string)($v ?? ''));
-        return in_array(strtolower($v), ['', 'null', 'n/a', 'na', '-', '?'], true) ? null : $v;
-    }
-
-    private function code(mixed $v, int $max = 0): ?string {
-        $v = strtoupper(trim((string)($v ?? '')));
-        if (in_array($v, ['', 'NULL', 'N/A', 'NA', '-'], true)) return null;
-        return $max > 0 ? substr($v, 0, $max) : $v;
+        return in_array(strtolower($v), ['', 'null', 'n/a', 'na', '-', '?', '0'], true) ? null : $v;
     }
 
     private function parseDate(mixed $v): ?string {
@@ -294,14 +559,8 @@ class StandaloneUsersImport implements ToCollection, WithHeadingRow
     private function cleanPhone(?string $v): ?string {
         if (!$v) return null;
         $v = preg_replace('/\D/', '', $v);
-        $v = ltrim($v, '91'); $v = ltrim($v, '0');
+        if (strlen($v) === 12 && str_starts_with($v, '91')) $v = substr($v, 2);
+        if (strlen($v) === 11 && str_starts_with($v, '0')) $v = substr($v, 1);
         return strlen($v) === 10 ? $v : null;
-    }
-
-    private function logRow(int $rowIndex, string $status, string $msg = ''): void
-    {
-        $log = "[Row {$rowIndex}] {$status}" . ($msg ? " | {$msg}" : '');
-        echo $log . PHP_EOL;
-        Log::info($log);
     }
 }
